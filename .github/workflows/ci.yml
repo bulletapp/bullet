@@ -1,0 +1,170 @@
+name: BULLET CI/CD & Verification Suite
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release Tag (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+      create_release:
+        description: 'Publish GitHub Release with standalone desktop package'
+        type: boolean
+        required: true
+        default: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-format:
+    name: Code Hygiene & Type Validation
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+            9.0.x
+
+      - name: Setup Node.js Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Restore .NET Solution Dependencies
+        run: dotnet restore Bullet.slnx
+
+      - name: Verify C# Build & Compilation
+        run: dotnet build Bullet.slnx --configuration Release --no-restore
+
+      - name: Install Frontend Dependencies
+        working-directory: src/Bullet.Web
+        run: npm install
+
+      - name: Build & Validate Frontend Bundle
+        working-directory: src/Bullet.Web
+        run: npm run build
+
+  e2e-click-through-tests:
+    name: 12-Phase Automated E2E Browser Suite
+    needs: lint-and-format
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+            9.0.x
+
+      - name: Setup Node.js Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build Frontend Distribution
+        working-directory: src/Bullet.Web
+        run: |
+          npm install
+          npm run build
+
+      - name: Copy Frontend Assets to API Host wwwroot
+        shell: pwsh
+        run: |
+          Copy-Item -Path "src/Bullet.Web/dist/*" -Destination "src/Bullet.Api/wwwroot" -Recurse -Force
+
+      - name: Execute Full 12-Phase E2E Browser Suite
+        working-directory: src/Bullet.Web
+        shell: pwsh
+        run: |
+          node e2e-full-suite.mjs
+
+      - name: Archive E2E Verification Screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bullet-e2e-screenshots
+          path: src/Bullet.Web/e2e-screenshots/*.png
+          if-no-files-found: ignore
+
+  release-desktop:
+    name: Package & Release Desktop Executable
+    needs: [lint-and-format, e2e-click-through-tests]
+    if: (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true') || startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+            9.0.x
+
+      - name: Setup Node.js Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build Production Frontend Assets
+        working-directory: src/Bullet.Web
+        run: |
+          npm install
+          npm run build
+
+      - name: Copy Bundle to API and Desktop Hosts
+        shell: pwsh
+        run: |
+          Copy-Item -Path "src/Bullet.Web/dist/*" -Destination "src/Bullet.Api/wwwroot" -Recurse -Force
+
+      - name: Publish Standalone Windows Desktop App
+        shell: pwsh
+        run: |
+          dotnet publish src/Bullet.Desktop/Bullet.Desktop.csproj -c Release -r win-x64 --self-contained false -o publish/desktop
+
+      - name: Create Release Zip Archive
+        shell: pwsh
+        run: |
+          Compress-Archive -Path publish/desktop/* -DestinationPath Bullet-Desktop-Windows-x64.zip -Force
+          $hash = (Get-FileHash -Algorithm SHA256 Bullet-Desktop-Windows-x64.zip).Hash
+          "$hash  Bullet-Desktop-Windows-x64.zip" | Out-File -Encoding utf8 Bullet-Desktop-Windows-x64.zip.sha256
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.release_version || github.ref_name }}
+          name: BULLET ${{ github.event.inputs.release_version || github.ref_name }}
+          draft: false
+          prerelease: false
+          body: |
+            ## BULLET: Load. Aim. API.
+
+            ### Desktop Release Artifacts
+            - **Platform**: Windows x64 (Native WinForms + WebView2 Engine)
+            - **Included**: Standalone `Bullet.exe`, embedded vector logo icon, immersive dark/light theme title bar matching, and full in-memory HTTP API test execution engine.
+            - **Checksum**: See `Bullet-Desktop-Windows-x64.zip.sha256`
+          files: |
+            Bullet-Desktop-Windows-x64.zip
+            Bullet-Desktop-Windows-x64.zip.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
