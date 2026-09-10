@@ -159,8 +159,9 @@ export function App() {
   }, [selectedShot, selectedLoadout]);
 
   // Actions
-  const handleFireShot = async () => {
-    if (!selectedShot) return;
+  const handleFireShot = async (shotOverride?: Shot) => {
+    const targetShot = shotOverride || selectedShot;
+    if (!targetShot) return;
     setIsFiring(true);
     setImpact(null);
 
@@ -170,24 +171,36 @@ export function App() {
       ...prev,
       {
         category: 'Trigger',
-        message: `Dispatching shot '${selectedShot.name}' [${selectedShot.method} ${selectedShot.url}]`,
+        message: `Dispatching shot '${targetShot.name}' [${targetShot.method} ${targetShot.url}]`,
         timestampUtc: startTime,
         level: 'Information',
       },
     ]);
 
     try {
-      const res = await bulletApi.fireShot(selectedShot.id, {
+      const globalSslDisabled = localStorage.getItem('bullet_verify_ssl') === 'false';
+      const effectiveVerifySsl = globalSslDisabled 
+        ? false 
+        : ((targetShot.settings?.verifySsl ?? targetShot.settings?.verifyTls) ?? true);
+
+      const effectiveSettings = {
+        ...targetShot.settings,
+        verifySsl: effectiveVerifySsl,
+        verifyTls: effectiveVerifySsl,
+      };
+
+      const targetShotId = targetShot.id || (targetShot as any).Id;
+      const res = await bulletApi.fireShot(targetShotId, {
         loadoutId: selectedLoadout?.id,
-        method: selectedShot.method,
-        url: selectedShot.url,
-        parameters: selectedShot.parameters,
-        headers: selectedShot.headers,
-        payload: selectedShot.payload,
-        armor: selectedShot.armor,
-        settings: selectedShot.settings,
-        triggerScript: selectedShot.triggerScript,
-        verifierScript: selectedShot.verifierScript,
+        method: targetShot.method,
+        url: targetShot.url,
+        parameters: targetShot.parameters,
+        headers: targetShot.headers,
+        payload: targetShot.payload,
+        armor: targetShot.armor,
+        settings: effectiveSettings,
+        triggerScript: targetShot.triggerScript,
+        verifierScript: targetShot.verifierScript,
       });
       setImpact(res);
 
@@ -200,17 +213,58 @@ export function App() {
         ...prev,
         {
           category: 'Impact',
-          message: `Impact received: ${res.statusCode} ${res.statusText} (${res.durationMs.toFixed(0)}ms, ${res.responseSizeBytes} bytes)`,
+          message: `Impact received: ${res.statusCode} ${res.statusText} (${res.durationMs.toFixed(0)}ms, ${res.responseSizeBytes ?? res.sizeBytes ?? 0} bytes)`,
           timestampUtc: new Date().toISOString(),
           level: res.isSuccess ? 'Information' : 'Warning',
         },
       ]);
     } catch (err: any) {
+      const errMsg = err.message || 'Execution failed due to network or connection error.';
+      const isSsl = errMsg.toLowerCase().includes('ssl') || 
+                    errMsg.toLowerCase().includes('certificate') ||
+                    errMsg.toLowerCase().includes('tls');
+
+      const fallbackImpact: Impact = {
+        shotId: targetShot.id,
+        shotName: targetShot.name,
+        method: targetShot.method,
+        resolvedUrl: targetShot.url,
+        statusCode: 0,
+        statusText: isSsl ? 'SSL Error' : 'Could not get response',
+        isSuccess: false,
+        durationMs: 0,
+        sizeBytes: 0,
+        responseHeaders: {},
+        requestHeadersSent: {},
+        cookies: [],
+        timing: {
+          dnsLookupMs: 0,
+          tcpConnectionMs: 0,
+          tlsHandshakeMs: 0,
+          ttfbMs: 0,
+          contentDownloadMs: 0,
+          totalMs: 0,
+        },
+        trajectoryLogs: [],
+        verifications: [],
+        exportedRounds: {},
+        errorMessage: errMsg,
+        tlsDiagnostics: {
+          handshakeSuccessful: false,
+          potentialIssues: isSsl ? ['SSL/TLS certificate rejected: validation procedure failed.'] : [errMsg],
+          recommendation: isSsl 
+            ? 'Disable SSL certificate verification in Shot Settings to allow self-signed or development certificates.' 
+            : 'Check server availability and target URL.'
+        }
+      };
+
+      setImpact(fallbackImpact);
+
       setTrajectoryLogs((prev) => [
         ...prev,
         {
           category: 'Impact',
-          message: `Execution failed: ${err.message}`,
+          message: `Execution failed: ${errMsg}`,
           timestampUtc: new Date().toISOString(),
           level: 'Error',
         },
@@ -218,6 +272,27 @@ export function App() {
     } finally {
       setIsFiring(false);
     }
+  };
+
+  const handleDisableSslAndRetry = async () => {
+    if (!selectedShot) return;
+    const updatedShot: Shot = {
+      ...selectedShot,
+      settings: {
+        ...selectedShot.settings,
+        verifySsl: false,
+        verifyTls: false,
+      },
+    };
+    setSelectedShot(updatedShot);
+
+    try {
+      await bulletApi.updateShot(updatedShot.id, {
+        settings: updatedShot.settings,
+      });
+    } catch {}
+
+    handleFireShot(updatedShot);
   };
 
   const handleSaveShot = async () => {
@@ -349,6 +424,8 @@ export function App() {
                     <ImpactViewer
                       impact={impact}
                       isFiring={isFiring}
+                      onDisableSslAndRetry={handleDisableSslAndRetry}
+                      onRetry={() => handleFireShot()}
                     />
                   </div>
                 </div>
@@ -508,7 +585,22 @@ export function App() {
           arsenals={arsenals}
           defaultArsenalId={newShotTarget.arsenalId}
           defaultSquadId={newShotTarget.squadId}
-          onCreated={(shot) => {
+          onCreated={(rawShot) => {
+            const shot: Shot = {
+              ...rawShot,
+              id: rawShot.id || (rawShot as any).Id,
+              arsenalId: rawShot.arsenalId || (rawShot as any).ArsenalId,
+              squadId: rawShot.squadId || (rawShot as any).SquadId,
+              name: rawShot.name || (rawShot as any).Name,
+              method: rawShot.method || (rawShot as any).Method,
+              url: rawShot.url || (rawShot as any).Url,
+              settings: rawShot.settings || (rawShot as any).Settings,
+              parameters: rawShot.parameters || (rawShot as any).Parameters || [],
+              headers: rawShot.headers || (rawShot as any).Headers || [],
+              payload: rawShot.payload || (rawShot as any).Payload || { type: 'none' },
+              armor: rawShot.armor || (rawShot as any).Armor || { type: 'inherit' },
+            };
+            setSelectedShot(shot);
             setArsenals((prev) =>
               prev.map((a) => {
                 if (a.id === shot.arsenalId) {
@@ -527,8 +619,6 @@ export function App() {
                 return a;
               })
             );
-            if (selectedRange) loadRangeData(selectedRange.id);
-            setSelectedShot(shot);
             setActiveSidebarTab('arsenals');
           }}
         />

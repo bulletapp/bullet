@@ -5,7 +5,7 @@ namespace Bullet.Execution;
 
 public interface IHttpMessageHandlerProvider
 {
-    HttpMessageHandler CreateHandler(TLSProfile? profile);
+    HttpMessageHandler CreateHandler(TLSProfile? profile, bool verifySsl = true);
 }
 
 public class DefaultHttpMessageHandlerProvider : IHttpMessageHandlerProvider
@@ -17,8 +17,8 @@ public class DefaultHttpMessageHandlerProvider : IHttpMessageHandlerProvider
         _tlsManager = tlsManager;
     }
 
-    public HttpMessageHandler CreateHandler(TLSProfile? profile)
+    public HttpMessageHandler CreateHandler(TLSProfile? profile, bool verifySsl = true)
     {
-        return _tlsManager.CreateConfiguredHandler(profile);
+        return _tlsManager.CreateConfiguredHandler(profile, verifySsl);
     }
 }

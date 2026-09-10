@@ -1,18 +1,26 @@
 import React, { useState } from 'react';
 import { 
   CheckCircle2, XCircle, Clock, Database, Copy, 
-  ExternalLink, FileText, Activity, ShieldCheck, Eye 
+  ExternalLink, FileText, Activity, ShieldCheck, Eye,
+  ShieldAlert, ShieldOff, AlertTriangle, RefreshCw, Terminal, Info 
 } from 'lucide-react';
 import { Impact } from '../types/bullet';
 
 interface ImpactViewerProps {
   impact: Impact | null;
   isFiring: boolean;
+  onDisableSslAndRetry?: () => void;
+  onRetry?: () => void;
 }
 
 type ImpactTab = 'pretty' | 'raw' | 'preview' | 'headers' | 'cookies' | 'timing' | 'verifiers';
 
-export const ImpactViewer: React.FC<ImpactViewerProps> = ({ impact, isFiring }) => {
+export const ImpactViewer: React.FC<ImpactViewerProps> = ({ 
+  impact, 
+  isFiring, 
+  onDisableSslAndRetry,
+  onRetry 
+}) => {
   const [activeTab, setActiveTab] = useState<ImpactTab>('pretty');
   const [copied, setCopied] = useState(false);
 
@@ -40,12 +48,29 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({ impact, isFiring }) 
     );
   }
 
+  const bodyContent = impact.bodyPreview ?? impact.bodyText ?? '';
+  const isExecutionError = impact.statusCode === 0 || (!impact.isSuccess && !bodyContent && Boolean(impact.errorMessage));
+
+  const isSslError = Boolean(
+    impact.statusText === 'SSL Error' ||
+    impact.errorMessage?.toLowerCase().includes('ssl') ||
+    impact.errorMessage?.toLowerCase().includes('tls') ||
+    impact.errorMessage?.toLowerCase().includes('certificate') ||
+    impact.errorMessage?.toLowerCase().includes('handshake') ||
+    impact.errorMessage?.toLowerCase().includes('untrusted') ||
+    impact.errorMessage?.toLowerCase().includes('chain') ||
+    impact.errorMessage?.toLowerCase().includes('namemismatch') ||
+    (impact.tlsDiagnostics?.potentialIssues && impact.tlsDiagnostics.potentialIssues.length > 0)
+  );
+
   const isSuccess = impact.statusCode >= 200 && impact.statusCode < 300;
   const isRedirect = impact.statusCode >= 300 && impact.statusCode < 400;
   const isClientError = impact.statusCode >= 400 && impact.statusCode < 500;
   const isServerError = impact.statusCode >= 500;
 
-  const statusColor = isSuccess
+  const statusColor = isExecutionError
+    ? 'text-rose-400 bg-rose-500/10 border-rose-500/30'
+    : isSuccess
     ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
     : isRedirect
     ? 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30'
@@ -60,7 +85,6 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({ impact, isFiring }) 
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 
-  const bodyContent = impact.bodyPreview ?? impact.bodyText ?? '';
   const responseSize = impact.sizeBytes ?? impact.responseSizeBytes ?? bodyContent.length;
 
   const copyToClipboard = (text: string) => {
@@ -84,8 +108,11 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({ impact, isFiring }) 
   const passedTests = verifications.filter((v: any) => v.passed).length;
   const totalTests = verifications.length;
 
-  const headersDict: Record<string, any> = impact.responseHeaders || impact.headers || {};
-  const headerCount = Object.keys(headersDict).length;
+  const responseHeadersDict: Record<string, any> = impact.responseHeaders || impact.headers || {};
+  const responseHeaderCount = Object.keys(responseHeadersDict).length;
+
+  const requestHeadersDict: Record<string, string> = impact.requestHeadersSent || {};
+  const requestHeaderCount = Object.keys(requestHeadersDict).length;
 
   const cookieEntries: { name: string; value: string; domain?: string }[] = Array.isArray(impact.cookies)
     ? impact.cookies.map((c: any) => ({ name: c.name || '', value: c.value || '', domain: c.domain }))
@@ -100,8 +127,10 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({ impact, isFiring }) 
         <div className="flex items-center gap-3">
           {/* Status Pill */}
           <div data-testid="status-pill" className={`flex items-center gap-1.5 px-2 py-0.5 rounded border font-mono text-xs font-bold ${statusColor}`}>
-            <span data-testid="status-code">{impact.statusCode}</span>
-            <span data-testid="status-text">{impact.statusText}</span>
+            {isExecutionError && <XCircle className="w-3.5 h-3.5 text-rose-400" />}
+            {isSuccess && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+            <span data-testid="status-code">{impact.statusCode > 0 ? impact.statusCode : (isSslError ? 'SSL Error' : 'Error')}</span>
+            <span data-testid="status-text">{impact.statusCode > 0 ? impact.statusText : (isSslError ? 'Certificate Invalid' : 'Could not get response')}</span>
           </div>
 
           {/* Timing */}
@@ -116,29 +145,38 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({ impact, isFiring }) 
             <span>{formatSize(responseSize)}</span>
           </div>
 
-          {/* TLS Version Pill */}
+          {/* TLS Protocol Indicator */}
           {impact.telemetry?.tlsProtocol && (
-            <div className="flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-              <ShieldCheck className="w-3 h-3 text-cyan-400" />
+            <div className="flex items-center gap-1 text-cyan-400 font-mono text-xs bg-cyan-950/30 px-1.5 py-0.5 rounded border border-cyan-500/20">
+              <ShieldCheck className="w-3 h-3" />
               <span>{impact.telemetry.tlsProtocol}</span>
+            </div>
+          )}
+
+          {/* Verification Counter */}
+          {totalTests > 0 && (
+            <div className={`flex items-center gap-1 font-mono text-xs px-2 py-0.5 rounded border ${
+              passedTests === totalTests ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-400' : 'bg-rose-950/30 border-rose-500/30 text-rose-400'
+            }`}>
+              {passedTests === totalTests ? (
+                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+              ) : (
+                <XCircle className="w-3 h-3 text-rose-400" />
+              )}
+              <span>Verifications: {passedTests}/{totalTests} Passed</span>
             </div>
           )}
         </div>
 
-        {/* Verifications Count Indicator */}
-        {totalTests > 0 && (
-          <div className={`flex items-center gap-1 px-2 py-0.5 rounded font-mono text-xs border ${
-            passedTests === totalTests
-              ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
-              : 'text-rose-400 bg-rose-500/10 border-rose-500/30'
-          }`}>
-            {passedTests === totalTests ? (
-              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-            ) : (
-              <XCircle className="w-3 h-3 text-rose-400" />
-            )}
-            <span>Verifications: {passedTests}/{totalTests} Passed</span>
-          </div>
+        {/* Retry Button if Error */}
+        {isExecutionError && onRetry && (
+          <button
+            onClick={onRetry}
+            className="flex items-center gap-1 text-xs font-mono text-slate-300 hover:text-white px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 cursor-pointer"
+          >
+            <RefreshCw className="w-3 h-3" />
+            <span>Retry</span>
+          </button>
         )}
       </div>
 
@@ -153,30 +191,34 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({ impact, isFiring }) 
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            Pretty
+            {isExecutionError ? 'Overview' : 'Pretty'}
           </button>
 
-          <button
-            onClick={() => setActiveTab('raw')}
-            className={`px-3 py-2 border-b-2 font-mono transition ${
-              activeTab === 'raw'
-                ? 'border-amber-400 text-amber-400 font-semibold'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Raw
-          </button>
+          {!isExecutionError && (
+            <>
+              <button
+                onClick={() => setActiveTab('raw')}
+                className={`px-3 py-2 border-b-2 font-mono transition ${
+                  activeTab === 'raw'
+                    ? 'border-amber-400 text-amber-400 font-semibold'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Raw
+              </button>
 
-          <button
-            onClick={() => setActiveTab('preview')}
-            className={`px-3 py-2 border-b-2 font-mono transition ${
-              activeTab === 'preview'
-                ? 'border-amber-400 text-amber-400 font-semibold'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Preview
-          </button>
+              <button
+                onClick={() => setActiveTab('preview')}
+                className={`px-3 py-2 border-b-2 font-mono transition ${
+                  activeTab === 'preview'
+                    ? 'border-amber-400 text-amber-400 font-semibold'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Preview
+              </button>
+            </>
+          )}
 
           <button
             onClick={() => setActiveTab('headers')}
@@ -186,7 +228,7 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({ impact, isFiring }) 
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            Headers ({headerCount})
+            Headers ({responseHeaderCount > 0 ? responseHeaderCount : requestHeaderCount})
           </button>
 
           <button
@@ -211,30 +253,30 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({ impact, isFiring }) 
             Timing
           </button>
 
-          <button
-            onClick={() => setActiveTab('verifiers')}
-            className={`px-3 py-2 border-b-2 font-mono transition flex items-center gap-1.5 ${
-              activeTab === 'verifiers'
-                ? 'border-amber-400 text-amber-400 font-semibold'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <span>Verifications</span>
-            {totalTests > 0 && (
+          {totalTests > 0 && (
+            <button
+              onClick={() => setActiveTab('verifiers')}
+              className={`px-3 py-2 border-b-2 font-mono transition flex items-center gap-1.5 ${
+                activeTab === 'verifiers'
+                  ? 'border-amber-400 text-amber-400 font-semibold'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span>Verifications</span>
               <span className={`text-[10px] px-1 rounded font-bold ${
                 passedTests === totalTests ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
               }`}>
                 {passedTests}/{totalTests}
               </span>
-            )}
-          </button>
+            </button>
+          )}
         </div>
 
-        {/* Copy Response Body */}
+        {/* Copy Response Body or Error */}
         <button
-          onClick={() => copyToClipboard(bodyContent)}
+          onClick={() => copyToClipboard(bodyContent || impact.errorMessage || '')}
           className="flex items-center gap-1 text-[11px] font-mono text-slate-400 hover:text-slate-200 px-2 py-1 rounded hover:bg-slate-800"
-          title="Copy Response Body"
+          title="Copy Details"
         >
           <Copy className="w-3 h-3" />
           <span>{copied ? 'Copied!' : 'Copy'}</span>
@@ -242,23 +284,97 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({ impact, isFiring }) 
       </div>
 
       {/* Tab Panels */}
-      <div className="flex-1 overflow-y-auto p-3 font-mono text-xs">
-        {/* PRETTY TAB */}
-        {activeTab === 'pretty' && (
+      <div className="flex-1 overflow-y-auto p-4 font-mono text-xs">
+        {/* ERROR SCREEN (Matches Postman Behavior) */}
+        {isExecutionError && (activeTab === 'pretty' || activeTab === 'raw' || activeTab === 'preview') && (
+          <div className="flex flex-col items-center justify-center p-6 text-center max-w-2xl mx-auto my-2 select-none">
+            {/* Header Icon */}
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-4 ${
+              isSslError 
+                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' 
+                : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+            }`}>
+              {isSslError ? <ShieldAlert className="w-7 h-7" /> : <AlertTriangle className="w-7 h-7" />}
+            </div>
+
+            {/* Error Title & Subtitle */}
+            <h2 className="text-base font-bold text-slate-100 mb-1 font-sans">
+              {isSslError ? 'Could not get response: SSL Certificate Verification Failed' : 'Could not get response'}
+            </h2>
+            <p className="text-xs text-slate-400 max-w-lg mb-4 leading-relaxed font-sans">
+              {isSslError
+                ? 'The SSL certificate presented by the remote server could not be verified. This happens when testing with self-signed certificates, internal development environments, or expired certificates.'
+                : 'BULLET was unable to connect to the target address or receive a response. Check network reachability and URL validity.'}
+            </p>
+
+            {/* Error Detail Card */}
+            <div className="w-full bg-slate-950/80 border border-slate-800 rounded p-3 mb-4 text-left font-mono text-xs text-rose-300 break-words select-text">
+              <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-500 mb-1.5 border-b border-slate-800 pb-1">
+                <span>Error Diagnostics</span>
+                <span className="text-slate-600 font-mono">{impact.resolvedUrl}</span>
+              </div>
+              <div className="whitespace-pre-wrap leading-relaxed">
+                {impact.errorMessage || impact.statusText || 'An unexpected execution error occurred.'}
+              </div>
+            </div>
+
+            {/* Actionable Button: Disable SSL Verification & Retry (Postman 1-Click Action) */}
+            {isSslError && onDisableSslAndRetry && (
+              <div className="flex flex-col items-center gap-2 mb-6">
+                <button
+                  onClick={onDisableSslAndRetry}
+                  data-testid="disable-ssl-retry-btn"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-950/40 transition-all cursor-pointer font-sans"
+                >
+                  <ShieldOff className="w-4 h-4" />
+                  <span>Disable SSL Verification & Retry</span>
+                </button>
+                <span className="text-[11px] text-slate-400 font-sans">
+                  Automatically turns off certificate validation for this shot (matching Postman behavior)
+                </span>
+              </div>
+            )}
+
+            {/* Postman-style Guidance / Troubleshooting Card */}
+            <div className="w-full bg-bullet-surface border border-bullet-border rounded p-4 text-left text-xs font-sans">
+              <div className="flex items-center gap-1.5 font-semibold text-slate-200 mb-2.5">
+                <Info className="w-4 h-4 text-cyan-400" />
+                <span>Troubleshooting & Guidance:</span>
+              </div>
+              <ul className="space-y-2 text-[11px] text-slate-400 list-disc list-inside leading-relaxed">
+                <li>
+                  <strong className="text-slate-200">Self-Signed / Local Certificates:</strong> Toggle off <span className="text-amber-400 font-semibold">Verify TLS / SSL Certificate</span> in the Shot Settings tab.
+                </li>
+                <li>
+                  <strong className="text-slate-200">Hostname Mismatch:</strong> Verify that the Shot URL hostname matches the certificate's Common Name (CN) or Subject Alternative Names (SAN).
+                </li>
+                <li>
+                  <strong className="text-slate-200">Custom Certificate Authority:</strong> If testing against an enterprise or private CA, create a Bulletproof TLS Profile with your root CA bundle (<code className="text-slate-300 font-mono">.pem</code>).
+                </li>
+                <li>
+                  <strong className="text-slate-200">Outgoing Request Telemetry:</strong> Check the <span className="text-cyan-400 font-mono">Headers</span> tab above to verify headers sent to the remote host.
+                </li>
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* PRETTY TAB (When response received) */}
+        {!isExecutionError && activeTab === 'pretty' && (
           <pre className="text-slate-200 leading-relaxed overflow-x-auto whitespace-pre-wrap select-text selection:bg-amber-500/30">
             {formattedJson}
           </pre>
         )}
 
         {/* RAW TAB */}
-        {activeTab === 'raw' && (
+        {!isExecutionError && activeTab === 'raw' && (
           <pre className="text-slate-300 leading-relaxed overflow-x-auto whitespace-pre-wrap select-text selection:bg-amber-500/30">
             {bodyContent}
           </pre>
         )}
 
         {/* PREVIEW TAB */}
-        {activeTab === 'preview' && (
+        {!isExecutionError && activeTab === 'preview' && (
           <div className="w-full h-full border border-bullet-border rounded bg-white overflow-hidden">
             <iframe
               title="Response Preview"
@@ -271,34 +387,53 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({ impact, isFiring }) 
 
         {/* HEADERS TAB */}
         {activeTab === 'headers' && (
-          <div className="border border-bullet-border rounded overflow-hidden">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-bullet-bg border-b border-bullet-border text-slate-400 font-mono">
-                  <th className="px-3 py-1.5 font-normal w-1/3">Header Name</th>
-                  <th className="px-3 py-1.5 font-normal">Header Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {headerCount === 0 ? (
-                  <tr>
-                    <td colSpan={2} className="p-4 text-center text-slate-500 font-mono text-xs">
-                      No response headers received.
-                    </td>
-                  </tr>
-                ) : (
-                  Object.entries(headersDict).map(([key, vals]) => {
-                    const displayVal = Array.isArray(vals) ? vals.join(', ') : String(vals ?? '');
-                    return (
+          <div className="space-y-4">
+            {/* Response Headers */}
+            <div className="border border-bullet-border rounded overflow-hidden">
+              <div className="bg-bullet-bg px-3 py-1.5 border-b border-bullet-border text-slate-400 font-mono font-medium flex items-center justify-between">
+                <span>Response Headers ({responseHeaderCount})</span>
+              </div>
+              <table className="w-full text-left text-xs border-collapse">
+                <tbody>
+                  {responseHeaderCount === 0 ? (
+                    <tr>
+                      <td colSpan={2} className="p-4 text-center text-slate-500 font-mono text-xs">
+                        {isExecutionError ? 'No response headers received (request did not complete).' : 'No response headers returned.'}
+                      </td>
+                    </tr>
+                  ) : (
+                    Object.entries(responseHeadersDict).map(([key, vals]) => {
+                      const displayVal = Array.isArray(vals) ? vals.join(', ') : String(vals ?? '');
+                      return (
+                        <tr key={key} className="border-b border-bullet-border/40 hover:bg-bullet-surface/50 font-mono">
+                          <td className="px-3 py-1 text-amber-400 font-medium w-1/3">{key}</td>
+                          <td className="px-3 py-1 text-slate-200 select-text">{displayVal}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Outgoing Request Headers Sent */}
+            {requestHeaderCount > 0 && (
+              <div className="border border-bullet-border rounded overflow-hidden">
+                <div className="bg-bullet-bg px-3 py-1.5 border-b border-bullet-border text-slate-400 font-mono font-medium">
+                  <span>Request Headers Sent ({requestHeaderCount})</span>
+                </div>
+                <table className="w-full text-left text-xs border-collapse">
+                  <tbody>
+                    {Object.entries(requestHeadersDict).map(([key, val]) => (
                       <tr key={key} className="border-b border-bullet-border/40 hover:bg-bullet-surface/50 font-mono">
-                        <td className="px-3 py-1 text-amber-400 font-medium">{key}</td>
-                        <td className="px-3 py-1 text-slate-200 select-text">{displayVal}</td>
+                        <td className="px-3 py-1 text-cyan-400 font-medium w-1/3">{key}</td>
+                        <td className="px-3 py-1 text-slate-300 select-text">{val}</td>
                       </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 

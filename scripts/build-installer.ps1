@@ -14,7 +14,7 @@ if (-not $SkipFrontendBuild) {
     Write-Host "[1/5] Building React Frontend Assets..." -ForegroundColor Yellow
     Push-Location "src/Bullet.Web"
     try {
-        npm run build
+        & "npm.cmd" run build
     } finally {
         Pop-Location
     }

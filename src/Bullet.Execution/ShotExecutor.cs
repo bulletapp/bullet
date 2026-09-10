@@ -255,7 +255,8 @@ public class ShotExecutor : IShotExecutor
         }
 
         // Step 9: Configure TLS & SocketsHttpHandler
-        var handler = _handlerProvider.CreateHandler(request.TlsProfile);
+        var verifySsl = shot.Settings.VerifySsl;
+        var handler = _handlerProvider.CreateHandler(request.TlsProfile, verifySsl);
         using var client = new HttpClient(handler, disposeHandler: false)
         {
             Timeout = TimeSpan.FromMilliseconds(shot.Settings.TimeoutMs > 0 ? shot.Settings.TimeoutMs : 30000)
@@ -267,7 +268,10 @@ public class ShotExecutor : IShotExecutor
 
         try
         {
-            AddTrajectory("TLS", request.TlsProfile != null ? $"Bulletproof TLS profile active: {request.TlsProfile.Name}" : "Standard TLS");
+            var tlsDesc = !verifySsl 
+                ? "SSL certificate verification: DISABLED (accepting all certificates)" 
+                : (request.TlsProfile != null ? $"Bulletproof TLS profile active: {request.TlsProfile.Name}" : "Standard TLS (Verify SSL enabled)");
+            AddTrajectory("TLS", tlsDesc);
             httpResponse = await client.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             var ttfbMs = sw.Elapsed.TotalMilliseconds;
             impact.Timing.TtfbMs = ttfbMs;
@@ -379,13 +383,29 @@ public class ShotExecutor : IShotExecutor
             sw.Stop();
             impact.DurationMs = sw.Elapsed.TotalMilliseconds;
             impact.StatusCode = 0;
-            impact.StatusText = "Execution Error";
-            impact.ErrorMessage = ex.Message;
+
+            var isSslError = ex is System.Security.Authentication.AuthenticationException ||
+                             ex.InnerException is System.Security.Authentication.AuthenticationException ||
+                             ex.Message.Contains("SSL", StringComparison.OrdinalIgnoreCase) ||
+                             ex.Message.Contains("certificate", StringComparison.OrdinalIgnoreCase);
+
+            impact.StatusText = isSslError ? "SSL Error" : "Could not get response";
+
+            var detailedMessage = ex.Message;
+            if (ex.InnerException != null)
+            {
+                detailedMessage = $"{ex.Message} -> {ex.InnerException.Message}";
+                if (ex.InnerException.InnerException != null)
+                {
+                    detailedMessage += $" -> {ex.InnerException.InnerException.Message}";
+                }
+            }
+            impact.ErrorMessage = detailedMessage;
 
             var targetHost = Uri.TryCreate(resolvedUrl, UriKind.Absolute, out var u) ? u.Host : "unknown";
             impact.TlsDiagnostics = TlsDiagnostics.DiagnoseFailure(ex, targetHost, request.TlsProfile);
 
-            AddTrajectory("Error", $"Request failed: {ex.Message}", "Error");
+            AddTrajectory("Error", $"Request failed: {detailedMessage}", "Error");
             if (impact.TlsDiagnostics.PotentialIssues.Count > 0)
             {
                 foreach (var issue in impact.TlsDiagnostics.PotentialIssues)

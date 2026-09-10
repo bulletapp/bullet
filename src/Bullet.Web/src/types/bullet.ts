@@ -82,7 +82,8 @@ export interface ShotSettings {
   timeoutMs: number;
   followRedirects: boolean;
   maxRedirects: number;
-  verifyTls: boolean;
+  verifyTls?: boolean;
+  verifySsl?: boolean;
   bypassSsrfGuard: boolean;
   tlsProfileId?: string;
 }
@@ -191,6 +192,17 @@ export interface TimingBreakdown {
   tlsProtocol?: string;
 }
 
+export interface TlsDiagnosticReport {
+  handshakeSuccessful: boolean;
+  tlsVersion?: string;
+  cipherSuite?: string;
+  serverCertificateSubject?: string;
+  serverCertificateIssuer?: string;
+  serverCertificateExpiration?: string;
+  potentialIssues: string[];
+  recommendation: string;
+}
+
 export interface Impact {
   shotId: string;
   shotName?: string;
@@ -212,6 +224,7 @@ export interface Impact {
   verifications: VerificationResult[];
   exportedRounds: Record<string, string>;
   errorMessage?: string;
+  tlsDiagnostics?: TlsDiagnosticReport;
 
   // Compatibility aliases
   responseSizeBytes?: number;

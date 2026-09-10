@@ -123,4 +123,68 @@ public class ScriptingAndExecutionTests
         var emptyCookies = await cookieLocker.GetCookiesAsync(rangeId);
         Assert.Empty(emptyCookies);
     }
+
+    [Fact]
+    public void TlsManager_WhenVerifySslDisabled_ShouldAcceptAllCertificates()
+    {
+        var tlsManager = new Bullet.Execution.Tls.TlsManager();
+        var handler = tlsManager.CreateConfiguredHandler(null, verifySsl: false);
+
+        Assert.NotNull(handler.SslOptions.RemoteCertificateValidationCallback);
+        var callback = handler.SslOptions.RemoteCertificateValidationCallback!;
+
+        // Should return true for untrusted root / chain errors (matches Postman)
+        var resultChainError = callback(this, null, null, System.Net.Security.SslPolicyErrors.RemoteCertificateChainErrors);
+        Assert.True(resultChainError);
+
+        // Should return true for hostname mismatch
+        var resultNameMismatch = callback(this, null, null, System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch);
+        Assert.True(resultNameMismatch);
+
+        // Should return true for combined errors
+        var resultBoth = callback(this, null, null, System.Net.Security.SslPolicyErrors.RemoteCertificateChainErrors | System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch);
+        Assert.True(resultBoth);
+    }
+
+    [Fact]
+    public void TlsManager_WhenVerifySslEnabled_AndNoProfile_ShouldEnforceStrictValidation()
+    {
+        var tlsManager = new Bullet.Execution.Tls.TlsManager();
+        var handler = tlsManager.CreateConfiguredHandler(null, verifySsl: true);
+
+        // When no custom profile and verifySsl is true, handler relies on OS default chain validation
+        Assert.Null(handler.SslOptions.RemoteCertificateValidationCallback);
+    }
+
+    [Fact]
+    public void ShotSettings_ShouldDeserializeBothVerifySslAndVerifyTls()
+    {
+        var jsonWithVerifyTls = "{\"verifyTls\": false}";
+        var settingsTls = System.Text.Json.JsonSerializer.Deserialize<Bullet.Domain.ValueObjects.ShotSettings>(jsonWithVerifyTls);
+        Assert.NotNull(settingsTls);
+        Assert.False(settingsTls.VerifySsl);
+        Assert.False(settingsTls.VerifyTls);
+
+        var jsonWithVerifySsl = "{\"verifySsl\": false}";
+        var settingsSsl = System.Text.Json.JsonSerializer.Deserialize<Bullet.Domain.ValueObjects.ShotSettings>(jsonWithVerifySsl);
+        Assert.NotNull(settingsSsl);
+        Assert.False(settingsSsl.VerifySsl);
+        Assert.False(settingsSsl.VerifyTls);
+    }
+
+    [Fact]
+    public void Shot_SerializationOptions_CasingCheck()
+    {
+        var shot = new Bullet.Domain.Entities.Shot { Name = "Test" };
+        var defaultJson = System.Text.Json.JsonSerializer.Serialize(shot);
+        // Default JsonSerializer without CamelCase produces PascalCase "Id"
+        var opt = new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            PropertyNameCaseInsensitive = true,
+            ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+        };
+        var camelJson = System.Text.Json.JsonSerializer.Serialize(shot, opt);
+        Assert.Contains("\"id\":", camelJson);
+    }
 }

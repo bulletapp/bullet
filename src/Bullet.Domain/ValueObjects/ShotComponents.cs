@@ -24,7 +24,17 @@ public class ShotSettings
     public int TimeoutMs { get; set; } = 30000;
     public bool FollowRedirects { get; set; } = true;
     public int MaxRedirects { get; set; } = 5;
+
+    [System.Text.Json.Serialization.JsonPropertyName("verifySsl")]
     public bool VerifySsl { get; set; } = true;
+
+    [System.Text.Json.Serialization.JsonPropertyName("verifyTls")]
+    public bool VerifyTls
+    {
+        get => VerifySsl;
+        set => VerifySsl = value;
+    }
+
     public bool EnableRetries { get; set; } = false;
     public int MaxRetries { get; set; } = 3;
     public int RetryDelayMs { get; set; } = 500;

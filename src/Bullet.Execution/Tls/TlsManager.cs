@@ -6,12 +6,12 @@ namespace Bullet.Execution.Tls;
 
 public interface ITlsManager
 {
-    SocketsHttpHandler CreateConfiguredHandler(TLSProfile? profile);
+    SocketsHttpHandler CreateConfiguredHandler(TLSProfile? profile, bool verifySsl = true);
 }
 
 public class TlsManager : ITlsManager
 {
-    public SocketsHttpHandler CreateConfiguredHandler(TLSProfile? profile)
+    public SocketsHttpHandler CreateConfiguredHandler(TLSProfile? profile, bool verifySsl = true)
     {
         var handler = new SocketsHttpHandler
         {
@@ -19,6 +19,12 @@ public class TlsManager : ITlsManager
             AutomaticDecompression = System.Net.DecompressionMethods.All,
             PooledConnectionLifetime = TimeSpan.FromMinutes(5)
         };
+
+        // Postman-Parity: When SSL verification is disabled, accept all server certificates unconditionally
+        if (!verifySsl)
+        {
+            handler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+        }
 
         if (profile == null)
         {
@@ -55,11 +61,13 @@ public class TlsManager : ITlsManager
             }
         }
 
-        // Custom CA Bundle or Self-signed validation
-        handler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+        // Custom CA Bundle or Self-signed validation (only when SSL verification is enabled)
+        if (verifySsl)
         {
-            if (profile.AllowSelfSigned)
-                return true;
+            handler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+            {
+                if (profile.AllowSelfSigned)
+                    return true;
 
             if (sslPolicyErrors == SslPolicyErrors.None)
                 return true;
@@ -105,6 +113,7 @@ public class TlsManager : ITlsManager
 
             return false;
         };
+        }
 
         return handler;
     }

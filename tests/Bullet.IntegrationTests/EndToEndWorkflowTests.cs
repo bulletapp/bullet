@@ -146,5 +146,5 @@ public class TestServerHandlerProvider : Bullet.Execution.IHttpMessageHandlerPro
 {
     private readonly HttpMessageHandler _handler;
     public TestServerHandlerProvider(HttpMessageHandler handler) => _handler = handler;
-    public HttpMessageHandler CreateHandler(TLSProfile? profile) => _handler;
+    public HttpMessageHandler CreateHandler(TLSProfile? profile, bool verifySsl = true) => _handler;
 }

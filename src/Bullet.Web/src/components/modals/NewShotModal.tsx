@@ -76,7 +76,8 @@ export const NewShotModal: React.FC<NewShotModalProps> = ({
           timeoutMs: 30000,
           followRedirects: true,
           maxRedirects: 5,
-          verifyTls: true,
+          verifyTls: localStorage.getItem('bullet_verify_ssl') !== 'false',
+          verifySsl: localStorage.getItem('bullet_verify_ssl') !== 'false',
           bypassSsrfGuard: false,
         },
       });

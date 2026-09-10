@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  ShieldAlert, Terminal, Layers, Play, 
+  ShieldAlert, ShieldCheck, ShieldOff, Terminal, Layers, Play, 
   Download, Command, Plus, RefreshCw, CheckCircle2,
   Sun, Moon
 } from 'lucide-react';
@@ -64,6 +64,17 @@ export const Header: React.FC<HeaderProps> = ({
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  const [globalSsl, setGlobalSsl] = React.useState<boolean>(() => {
+    return localStorage.getItem('bullet_verify_ssl') !== 'false';
+  });
+
+  const toggleGlobalSsl = () => {
+    const nextVal = !globalSsl;
+    setGlobalSsl(nextVal);
+    localStorage.setItem('bullet_verify_ssl', String(nextVal));
+    window.dispatchEvent(new CustomEvent('bullet_global_ssl_changed', { detail: nextVal }));
   };
 
   return (
@@ -216,6 +227,25 @@ export const Header: React.FC<HeaderProps> = ({
               {consoleLogCount}
             </span>
           )}
+        </button>
+
+        {/* Global SSL Verification Toggle (Postman Parity) */}
+        <button
+          data-testid="global-ssl-toggle-btn"
+          onClick={toggleGlobalSsl}
+          className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded border transition cursor-pointer ${
+            globalSsl
+              ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+              : 'bg-amber-950/50 border-amber-500/60 text-amber-300 hover:bg-amber-950/70 shadow-sm shadow-amber-950/50'
+          }`}
+          title={globalSsl ? 'SSL Verification: ON (Click to disable and bypass SSL errors globally)' : 'SSL Verification: OFF (Allowing self-signed & untrusted certs)'}
+        >
+          {globalSsl ? (
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          ) : (
+            <ShieldOff className="w-3.5 h-3.5 text-amber-400" />
+          )}
+          <span className="font-mono text-[10px] font-semibold">{globalSsl ? 'SSL: ON' : 'SSL: OFF'}</span>
         </button>
 
         {/* Theme Toggle (Light / Dark) */}

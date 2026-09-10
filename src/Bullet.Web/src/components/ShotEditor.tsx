@@ -736,18 +736,25 @@ bullet.test('Body contains token', function() {
             <div className="flex items-center justify-between p-3 bg-bullet-surface border border-bullet-border rounded">
               <div>
                 <div className="text-xs font-medium text-slate-200">Verify TLS / SSL Certificate</div>
-                <div className="text-[11px] text-slate-400">Reject invalid, self-signed, or expired server certificates</div>
+                <div className="text-[11px] text-slate-400">
+                  When enabled, invalid, self-signed, or expired certificates are rejected. Turn off to allow self-signed development certificates (Postman behavior).
+                </div>
               </div>
               <input
                 type="checkbox"
-                checked={shot.settings?.verifyTls ?? true}
+                data-testid="verify-ssl-toggle"
+                checked={(shot.settings?.verifySsl ?? shot.settings?.verifyTls) ?? true}
                 onChange={(e) =>
                   onChange({
                     ...shot,
-                    settings: { ...shot.settings, verifyTls: e.target.checked },
+                    settings: { 
+                      ...shot.settings, 
+                      verifySsl: e.target.checked, 
+                      verifyTls: e.target.checked 
+                    },
                   })
                 }
-                className="rounded bg-slate-900 border-slate-700 text-amber-500"
+                className="rounded bg-slate-900 border-slate-700 text-amber-500 cursor-pointer"
               />
             </div>
 

@@ -59,10 +59,46 @@ export const bulletApi = {
 
   // Shots
   getShot: (id: string) => request<Shot>(`/shots/${id}`),
-  createShot: (data: Partial<Shot>) =>
-    request<Shot>('/shots', { method: 'POST', body: JSON.stringify(data) }),
-  updateShot: (id: string, data: Partial<Shot>) =>
-    request<Shot>(`/shots/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  createShot: async (data: Partial<Shot>): Promise<Shot> => {
+    const raw: any = await request<any>('/shots', { method: 'POST', body: JSON.stringify(data) });
+    return {
+      ...raw,
+      id: raw.id || raw.Id,
+      arsenalId: raw.arsenalId || raw.ArsenalId,
+      squadId: raw.squadId || raw.SquadId,
+      name: raw.name || raw.Name,
+      method: raw.method || raw.Method,
+      url: raw.url || raw.Url,
+      settings: raw.settings || raw.Settings,
+      parameters: raw.parameters || raw.Parameters || [],
+      headers: raw.headers || raw.Headers || [],
+      payload: raw.payload || raw.Payload || { type: 'none' },
+      armor: raw.armor || raw.Armor || { type: 'inherit' },
+      triggerScript: raw.triggerScript || raw.TriggerScript,
+      verifierScript: raw.verifierScript || raw.VerifierScript,
+      orderIndex: raw.orderIndex ?? raw.OrderIndex ?? 0,
+    };
+  },
+  updateShot: async (id: string, data: Partial<Shot>): Promise<Shot> => {
+    const raw: any = await request<any>(`/shots/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    return {
+      ...raw,
+      id: raw.id || raw.Id || id,
+      arsenalId: raw.arsenalId || raw.ArsenalId,
+      squadId: raw.squadId || raw.SquadId,
+      name: raw.name || raw.Name,
+      method: raw.method || raw.Method,
+      url: raw.url || raw.Url,
+      settings: raw.settings || raw.Settings,
+      parameters: raw.parameters || raw.Parameters || [],
+      headers: raw.headers || raw.Headers || [],
+      payload: raw.payload || raw.Payload || { type: 'none' },
+      armor: raw.armor || raw.Armor || { type: 'inherit' },
+      triggerScript: raw.triggerScript || raw.TriggerScript,
+      verifierScript: raw.verifierScript || raw.VerifierScript,
+      orderIndex: raw.orderIndex ?? raw.OrderIndex ?? 0,
+    };
+  },
   deleteShot: (id: string) => request<void>(`/shots/${id}`, { method: 'DELETE' }),
   fireShot: (
     id: string,
@@ -79,8 +115,13 @@ export const bulletApi = {
       triggerScript?: string;
       verifierScript?: string;
     }
-  ) =>
-    request<Impact>(`/shots/${id}/fire`, { method: 'POST', body: JSON.stringify(options ?? {}) }),
+  ) => {
+    const validId = id && id !== 'undefined' ? id : (options as any)?.id;
+    if (!validId || validId === 'undefined') {
+      throw new Error(`Cannot fire shot: invalid or missing Shot ID '${id}'`);
+    }
+    return request<Impact>(`/shots/${validId}/fire`, { method: 'POST', body: JSON.stringify(options ?? {}) });
+  },
   fireAdHoc: (shot: Shot, loadoutId?: string, tlsProfileId?: string) =>
     request<Impact>('/shots/fire-ad-hoc', { method: 'POST', body: JSON.stringify({ shot, loadoutId, tlsProfileId }) }),
 

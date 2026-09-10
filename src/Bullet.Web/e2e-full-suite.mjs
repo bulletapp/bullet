@@ -5,6 +5,7 @@ import { spawn } from 'child_process';
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 const KNOWN_PATHS = [
   process.env.EDGE_PATH,
@@ -47,7 +48,10 @@ async function ensureBackendRunning() {
   }
 
   console.log('[E2E Setup] Starting backend server via dotnet run...');
-  const repoRoot = path.resolve('..', '..');
+  const currentScriptDir = path.dirname(fileURLToPath(import.meta.url));
+  const repoRoot = fs.existsSync(path.resolve('src', 'Bullet.Api')) 
+    ? process.cwd() 
+    : path.resolve(currentScriptDir, '..', '..');
   const serverProc = spawn(
     'dotnet',
     ['run', '--project', 'src/Bullet.Api', '-c', 'Release', '--no-launch-profile', '--no-build', '--', '--urls', APP_URL],
