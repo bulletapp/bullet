@@ -88,6 +88,10 @@ jobs:
         run: |
           Copy-Item -Path "src/Bullet.Web/dist/*" -Destination "src/Bullet.Api/wwwroot" -Recurse -Force
 
+      - name: Pre-build Solution for Instant Startup
+        run: |
+          dotnet build Bullet.slnx --configuration Release
+
       - name: Execute Full 12-Phase E2E Browser Suite
         working-directory: src/Bullet.Web
         shell: pwsh
@@ -102,9 +106,36 @@ jobs:
           path: src/Bullet.Web/e2e-screenshots/*.png
           if-no-files-found: ignore
 
+  docker-verification:
+    name: Docker Container Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Bullet API Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.api
+          push: false
+          tags: bullet-api:ci-test
+
+      - name: Build Bullet Web Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.web
+          push: false
+          tags: bullet-web:ci-test
+
   release-desktop:
     name: Package & Release Desktop Executable
-    needs: [lint-and-format, e2e-click-through-tests]
+    needs: [lint-and-format, e2e-click-through-tests, docker-verification]
     if: ((github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true') || startsWith(github.ref, 'refs/tags/v')) && github.actor == 'VishalViswanathan03'
     runs-on: windows-latest
     permissions:

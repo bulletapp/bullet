@@ -48,19 +48,27 @@ async function ensureBackendRunning() {
 
   console.log('[E2E Setup] Starting backend server via dotnet run...');
   const repoRoot = path.resolve('..', '..');
-  const serverProc = spawn('dotnet', ['run', '--project', 'src/Bullet.Api', '--', '--urls', APP_URL], {
-    cwd: repoRoot,
-    stdio: 'inherit',
-  });
+  const serverProc = spawn(
+    'dotnet',
+    ['run', '--project', 'src/Bullet.Api', '-c', 'Release', '--no-launch-profile', '--', '--urls', 'http://127.0.0.1:5000;http://localhost:5000'],
+    {
+      cwd: repoRoot,
+      stdio: 'inherit',
+      env: { ...process.env, ASPNETCORE_ENVIRONMENT: 'Development' },
+    }
+  );
 
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 90; i++) {
     await new Promise((r) => setTimeout(r, 1000));
     if (await checkServerReady()) {
       console.log('[E2E Setup] Backend server is up and responsive!');
       return serverProc;
     }
+    if (i % 10 === 0 && i > 0) {
+      console.log(`[E2E Setup] Waiting for backend server... (${i}s elapsed)`);
+    }
   }
-  throw new Error('Backend failed to start within 30 seconds.');
+  throw new Error('Backend failed to start within 90 seconds.');
 }
 
 async function runFullTestSuite() {
