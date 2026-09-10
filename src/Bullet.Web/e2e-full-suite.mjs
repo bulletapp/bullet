@@ -50,7 +50,7 @@ async function ensureBackendRunning() {
   const repoRoot = path.resolve('..', '..');
   const serverProc = spawn(
     'dotnet',
-    ['run', '--project', 'src/Bullet.Api', '-c', 'Release', '--no-launch-profile', '--', '--urls', 'http://127.0.0.1:5000;http://localhost:5000'],
+    ['run', '--project', 'src/Bullet.Api', '-c', 'Release', '--no-launch-profile', '--no-build', '--', '--urls', APP_URL],
     {
       cwd: repoRoot,
       stdio: 'inherit',
