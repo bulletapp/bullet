@@ -10,6 +10,7 @@
     <Project Path="src/Bullet.Scripting/Bullet.Scripting.csproj" />
     <Project Path="src/Bullet.Security/Bullet.Security.csproj" />
     <Project Path="src/Bullet.Workers/Bullet.Workers.csproj" />
+    <Project Path="src/Bullet.Installer/Bullet.Installer.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Bullet.ExecutionTests/Bullet.ExecutionTests.csproj" />

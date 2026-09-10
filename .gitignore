@@ -2,6 +2,9 @@
 [Bb]in/
 [Oo]bj/
 publish/
+dist-installer/
+*.zip
+*.sha256
 *.user
 *.suo
 *.userosscache

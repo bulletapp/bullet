@@ -180,6 +180,18 @@ jobs:
           $hash = (Get-FileHash -Algorithm SHA256 Bullet-Desktop-Windows-x64.zip).Hash
           "$hash  Bullet-Desktop-Windows-x64.zip" | Out-File -Encoding utf8 Bullet-Desktop-Windows-x64.zip.sha256
 
+      - name: Install Inno Setup Compiler
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+
+      - name: Build Single-File Windows Setup Installer
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer/Bullet.iss
+          $hash = (Get-FileHash -Algorithm SHA256 dist-installer/Bullet-Setup.exe).Hash
+          "$hash  Bullet-Setup.exe" | Out-File -Encoding utf8 dist-installer/Bullet-Setup.exe.sha256
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -190,11 +202,13 @@ jobs:
           body: |
             ## BULLET: Load. Aim. API.
 
-            ### Desktop Release Artifacts
-            - **Platform**: Windows x64 (Native WinForms + WebView2 Engine)
-            - **Included**: Standalone `Bullet.exe`, embedded vector logo icon, immersive dark/light theme title bar matching, and full in-memory HTTP API test execution engine.
-            - **Checksum**: See `Bullet-Desktop-Windows-x64.zip.sha256`
+            ### Release Artifacts
+            - **Bullet-Setup.exe**: Recommended single-file Windows setup installer. Installs per-user (`%LOCALAPPDATA%\Programs\Bullet`), creates Start Menu and Desktop shortcuts, registers uninstaller, and launches automatically without admin elevation prompts.
+            - **Bullet-Desktop-Windows-x64.zip**: Portable zero-install package containing standalone executable and bundled assets.
+            - **Checksums**: Verifiable SHA256 hashes provided for all release artifacts.
           files: |
+            dist-installer/Bullet-Setup.exe
+            dist-installer/Bullet-Setup.exe.sha256
             Bullet-Desktop-Windows-x64.zip
             Bullet-Desktop-Windows-x64.zip.sha256
         env:
