@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: bullet-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bullet
+      POSTGRES_USER: bullet
+      POSTGRES_PASSWORD: bullet_secret_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - bullet_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bullet -d bullet"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  bullet-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: bullet-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=bullet;Username=bullet;Password=bullet_secret_password"
+      Bullet__MasterKey: "12345678901234567890123456789012"
+      Bullet__JwtSecret: "SuperSecretJwtSigningKeyWithSufficientLengthForSha256Security123!"
+    ports:
+      - "5000:5000"
+
+  bullet-web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.web
+    container_name: bullet-web
+    restart: unless-stopped
+    depends_on:
+      - bullet-api
+    ports:
+      - "3000:80"
+
+volumes:
+  bullet_pg_data:

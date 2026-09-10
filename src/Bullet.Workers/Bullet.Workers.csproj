@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bullet.Application\Bullet.Application.csproj" />
+    <ProjectReference Include="..\Bullet.Execution\Bullet.Execution.csproj" />
+    <ProjectReference Include="..\Bullet.Infrastructure\Bullet.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

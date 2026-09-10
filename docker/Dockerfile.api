@@ -1,0 +1,33 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /app
+
+# Copy solution and project definitions
+COPY Bullet.slnx ./
+COPY src/Bullet.Domain/Bullet.Domain.csproj src/Bullet.Domain/
+COPY src/Bullet.Scripting/Bullet.Scripting.csproj src/Bullet.Scripting/
+COPY src/Bullet.Security/Bullet.Security.csproj src/Bullet.Security/
+COPY src/Bullet.Execution/Bullet.Execution.csproj src/Bullet.Execution/
+COPY src/Bullet.Application/Bullet.Application.csproj src/Bullet.Application/
+COPY src/Bullet.Infrastructure/Bullet.Infrastructure.csproj src/Bullet.Infrastructure/
+COPY src/Bullet.Workers/Bullet.Workers.csproj src/Bullet.Workers/
+COPY src/Bullet.Api/Bullet.Api.csproj src/Bullet.Api/
+COPY src/Bullet.Cli/Bullet.Cli.csproj src/Bullet.Cli/
+
+RUN dotnet restore src/Bullet.Api/Bullet.Api.csproj
+
+# Copy all source files
+COPY src/ ./src/
+
+# Build and publish
+RUN dotnet publish src/Bullet.Api/Bullet.Api.csproj -c Release -o /out
+
+# Runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+COPY --from=build /out ./
+
+EXPOSE 5000
+ENV ASPNETCORE_URLS=http://+:5000
+ENV ASPNETCORE_ENVIRONMENT=Production
+
+ENTRYPOINT ["dotnet", "Bullet.Api.dll"]

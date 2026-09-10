@@ -1,0 +1,33 @@
+{
+  "bulletVersion": "1.0",
+  "exportedAtUtc": "2026-09-09T18:00:00Z",
+  "arsenal": {
+    "name": "CLI Demo Arsenal",
+    "description": "Validation test arsenal for CLI execution",
+    "tags": ["cli", "demo"],
+    "shots": [
+      {
+        "name": "HTTPBin Status Check",
+        "method": "GET",
+        "url": "https://httpbin.org/status/200",
+        "headers": [
+          { "key": "User-Agent", "value": "Bullet-CLI/1.0", "enabled": true }
+        ],
+        "parameters": [],
+        "triggerScript": "bullet.console.log('Firing status check');",
+        "verifierScript": "bullet.test('Status is 200', function() {\n  bullet.expect(bullet.response.status).toBe(200);\n});"
+      },
+      {
+        "name": "HTTPBin Get Echo",
+        "method": "GET",
+        "url": "https://httpbin.org/get?tag=cli-test",
+        "headers": [
+          { "key": "Accept", "value": "application/json", "enabled": true }
+        ],
+        "parameters": [],
+        "verifierScript": "bullet.test('Returns args', function() {\n  var data = bullet.response.json();\n  bullet.expect(data.args.tag).toBe('cli-test');\n});"
+      }
+    ],
+    "squads": []
+  }
+}

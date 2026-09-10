@@ -1,0 +1,68 @@
+## .NET & Visual Studio
+[Bb]in/
+[Oo]bj/
+publish/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+*.nupkg
+*.snupkg
+*.dll
+*.exe
+*.pdb
+!src/Bullet.Desktop/Bullet.ico
+!src/Bullet.Desktop/Bullet.png
+!src/Bullet.Web/public/Bullet.png
+
+## Database & Local Storage
+*.db
+*.db-shm
+*.db-wal
+bullet.db*
+*.sqlite
+*.sqlite3
+
+## Node.js & Web
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dist/
+dist-ssr/
+*.local
+.vite/
+src/Bullet.Web/dist/
+src/Bullet.Api/wwwroot/assets/
+src/Bullet.Api/wwwroot/index.html
+!src/Bullet.Api/wwwroot/favicon.svg
+!src/Bullet.Api/wwwroot/Bullet.png
+!src/Bullet.Api/wwwroot/icons.svg
+
+## Logs & Diagnostics
+*.log
+desktop-startup.log
+npm-debug.log
+
+## Test Artifacts & Screenshots (regenerated in CI/local runs)
+e2e-screenshots/
+*.png
+!src/Bullet.Desktop/Bullet.png
+!src/Bullet.Web/public/Bullet.png
+!src/Bullet.Web/public/favicon.svg
+!src/Bullet.Desktop/Bullet.ico
+
+## OS & Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+*.tmp
+temp/
+
+results.xml
+browser-test-logs.txt

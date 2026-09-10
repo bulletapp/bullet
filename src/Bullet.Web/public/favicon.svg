@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bulletBody" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="bulletTip" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef3c7" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d131f" />
+      <stop offset="100%" stop-color="#080c14" />
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0" />
+    </linearGradient>
+    <filter id="bulletGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Dark Rounded Container -->
+  <rect width="128" height="128" rx="28" fill="url(#bgGrad)" stroke="#23304b" stroke-width="2.5" />
+
+  <!-- Outer Ambient Glow -->
+  <circle cx="64" cy="64" r="44" fill="url(#glowGrad)" />
+
+  <!-- Precision Crosshair Rings -->
+  <circle cx="64" cy="64" r="46" fill="none" stroke="#23304b" stroke-width="1.5" stroke-dasharray="6 6" opacity="0.7" />
+  <circle cx="64" cy="64" r="34" fill="none" stroke="#f59e0b" stroke-width="1.2" opacity="0.3" />
+
+  <!-- Targeting Reticle Notches -->
+  <line x1="64" y1="14" x2="64" y2="24" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" />
+  <line x1="64" y1="104" x2="64" y2="114" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" />
+  <line x1="14" y1="64" x2="24" y2="64" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" />
+  <line x1="104" y1="64" x2="114" y2="64" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" />
+
+  <!-- Supersonic Shockwave Chevrons -->
+  <path d="M40 82 L64 56 L88 82" fill="none" stroke="#06b6d4" stroke-width="2" opacity="0.5" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M46 92 L64 72 L82 92" fill="none" stroke="#f59e0b" stroke-width="1.5" opacity="0.3" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- The Bullet Core Projectile -->
+  <g filter="url(#bulletGlow)">
+    <!-- Aerodynamic Ogive / Nosecone -->
+    <path d="M64 26 C57 38 52 50 52 64 L52 88 C52 90 54 92 56 92 L72 92 C74 92 76 90 76 88 L76 64 C76 50 71 38 64 26 Z" fill="url(#bulletBody)" stroke="#fef3c7" stroke-width="1" />
+    
+    <!-- Bullet Tip Highlight -->
+    <path d="M64 26 C60 33 57 40 56 46 L72 46 C71 40 68 33 64 26 Z" fill="url(#bulletTip)" />
+    
+    <!-- Central Kinetic Spine -->
+    <line x1="64" y1="30" x2="64" y2="90" stroke="#fef3c7" stroke-width="1.5" opacity="0.7" stroke-linecap="round" />
+
+    <!-- Primer / Base Grooves -->
+    <line x1="53" y1="76" x2="75" y2="76" stroke="#b45309" stroke-width="1.5" />
+    <line x1="53" y1="84" x2="75" y2="84" stroke="#b45309" stroke-width="1.5" />
+  </g>
+</svg>

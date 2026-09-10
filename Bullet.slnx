@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Bullet.Api/Bullet.Api.csproj" />
+    <Project Path="src/Bullet.Application/Bullet.Application.csproj" />
+    <Project Path="src/Bullet.Cli/Bullet.Cli.csproj" />
+    <Project Path="src/Bullet.Desktop/Bullet.Desktop.csproj" />
+    <Project Path="src/Bullet.Domain/Bullet.Domain.csproj" />
+    <Project Path="src/Bullet.Execution/Bullet.Execution.csproj" />
+    <Project Path="src/Bullet.Infrastructure/Bullet.Infrastructure.csproj" />
+    <Project Path="src/Bullet.Scripting/Bullet.Scripting.csproj" />
+    <Project Path="src/Bullet.Security/Bullet.Security.csproj" />
+    <Project Path="src/Bullet.Workers/Bullet.Workers.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Bullet.ExecutionTests/Bullet.ExecutionTests.csproj" />
+    <Project Path="tests/Bullet.IntegrationTests/Bullet.IntegrationTests.csproj" />
+    <Project Path="tests/Bullet.SecurityTests/Bullet.SecurityTests.csproj" />
+    <Project Path="tests/Bullet.UnitTests/Bullet.UnitTests.csproj" />
+  </Folder>
+</Solution>

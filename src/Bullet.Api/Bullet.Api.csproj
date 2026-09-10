@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bullet.Application\Bullet.Application.csproj" />
+    <ProjectReference Include="..\Bullet.Infrastructure\Bullet.Infrastructure.csproj" />
+    <ProjectReference Include="..\Bullet.Execution\Bullet.Execution.csproj" />
+    <ProjectReference Include="..\Bullet.Scripting\Bullet.Scripting.csproj" />
+    <ProjectReference Include="..\Bullet.Security\Bullet.Security.csproj" />
+    <ProjectReference Include="..\Bullet.Workers\Bullet.Workers.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>
