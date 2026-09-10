@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using Bullet.Domain.Entities;
+using Bullet.Domain.ValueObjects;
 using Bullet.Execution;
 using Bullet.Execution.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -68,6 +69,12 @@ public class EndToEndWorkflowTests : IClassFixture<WebApplicationFactory<Program
         Assert.Contains("bob", usersJson);
     }
 
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+    };
+
     [Fact]
     public async Task CompleteVerticalWorkflow_FromRangesToFiringRuns()
     {
@@ -85,22 +92,32 @@ public class EndToEndWorkflowTests : IClassFixture<WebApplicationFactory<Program
         // Step 2: Fetch detailed Range with Arsenals & Squads
         var rangeDetailRes = await client.GetAsync($"/api/ranges/{demoRangeId}");
         rangeDetailRes.EnsureSuccessStatusCode();
-        var rangeDetail = await rangeDetailRes.Content.ReadFromJsonAsync<Range>();
+        var rangeDetail = await rangeDetailRes.Content.ReadFromJsonAsync<Range>(JsonOptions);
         Assert.NotNull(rangeDetail);
         Assert.NotEmpty(rangeDetail.Arsenals);
 
         var arsenal = rangeDetail.Arsenals[0];
-        Assert.Equal("User API", arsenal.Name);
+        Assert.Equal("My Collection", arsenal.Name);
 
-        // Step 3: Find the Health Check Shot
-        var healthShot = arsenal.Squads.SelectMany(s => s.Shots).FirstOrDefault(s => s.Name == "Health Check");
+        // Step 3: Create Health Check Shot in the collection
+        var createShotRes = await client.PostAsJsonAsync("/api/shots", new
+        {
+            arsenalId = arsenal.Id,
+            name = "Health Check",
+            method = "GET",
+            url = "http://localhost:5000/api/test-api/health",
+            verifierScript = "bullet.test(\"System is healthy\", () => { bullet.expect(bullet.response.status).toBe(200); });",
+            settings = new ShotSettings { BypassSsrfProtection = true }
+        });
+        createShotRes.EnsureSuccessStatusCode();
+        var healthShot = await createShotRes.Content.ReadFromJsonAsync<Shot>(JsonOptions);
         Assert.NotNull(healthShot);
 
         // Step 4: Fire Shot against Test API
         var fireRes = await client.PostAsync($"/api/shots/{healthShot.Id}/fire", null);
         fireRes.EnsureSuccessStatusCode();
 
-        var impact = await fireRes.Content.ReadFromJsonAsync<Impact>();
+        var impact = await fireRes.Content.ReadFromJsonAsync<Impact>(JsonOptions);
         Assert.NotNull(impact);
         Assert.Equal(200, impact.StatusCode);
         Assert.True(impact.DurationMs > 0);
@@ -116,18 +133,17 @@ public class EndToEndWorkflowTests : IClassFixture<WebApplicationFactory<Program
         var logsJson = await logsRes.Content.ReadAsStringAsync();
         Assert.Contains("Health Check", logsJson);
 
-        // Step 6: Trigger Firing Run for the Diagnostics Squad
-        var diagSquad = arsenal.Squads.First(s => s.Name == "Diagnostics");
+        // Step 6: Trigger Firing Run for the Collection
         var runRes = await client.PostAsJsonAsync("/api/firing-runs", new
         {
             rangeId = demoRangeId,
-            squadId = diagSquad.Id,
-            name = "Automated CI Diagnostics Run",
+            arsenalId = arsenal.Id,
+            name = "Automated CI Run",
             iterations = 1
         });
 
         runRes.EnsureSuccessStatusCode();
-        var runResult = await runRes.Content.ReadFromJsonAsync<FiringRun>();
+        var runResult = await runRes.Content.ReadFromJsonAsync<FiringRun>(JsonOptions);
         Assert.NotNull(runResult);
         Assert.True(runResult.TotalShots > 0);
         Assert.True(runResult.PassedShots > 0);
