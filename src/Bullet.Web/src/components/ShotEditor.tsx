@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
 import { 
-  ShieldAlert, Sparkles, Plus, Trash2, Code2, 
+  ShieldAlert, ShieldCheck, Sparkles, Plus, Trash2, Code2, 
   HelpCircle, Eye, EyeOff, CheckSquare, Square,
   Lock, AlertTriangle, Radio, FileCode, CheckCircle2,
   RefreshCw, Copy, Check, Terminal, Play, X, Zap
 } from 'lucide-react';
-import { Shot, KeyValuePair, ArmorConfig, PayloadConfig, ShotSettings } from '../types/bullet';
+import { Shot, KeyValuePair, ArmorConfig, PayloadConfig, ShotSettings, TLSProfile } from '../types/bullet';
 import { bulletApi } from '../api/bulletApi';
 
 interface ShotEditorProps {
   shot: Shot;
   onChange: (updated: Shot) => void;
+  tlsProfiles?: TLSProfile[];
+  onOpenTlsProfiles?: () => void;
 }
 
 type EditorTab = 'params' | 'headers' | 'armor' | 'payload' | 'triggers' | 'verifiers' | 'settings';
 
-export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange }) => {
+export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfiles, onOpenTlsProfiles }) => {
   const [activeTab, setActiveTab] = useState<EditorTab>(shot.method === 'GRPC' ? 'payload' : 'params');
   const [bulkMode, setBulkMode] = useState<Record<string, boolean>>({});
   const [bulkText, setBulkText] = useState<Record<string, string>>({});
@@ -1726,6 +1728,49 @@ bullet.test('Body contains token', function() {
                 }
                 className="rounded bg-slate-900 border-slate-700 text-amber-500 cursor-pointer"
               />
+            </div>
+
+            {/* TLS Profile / Client Certificate Selection */}
+            <div className="flex items-center justify-between p-3 bg-bullet-surface border border-bullet-border rounded">
+              <div>
+                <div className="text-xs font-medium text-slate-200 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Client Certificate (TLS Profile)</span>
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  Attach mTLS client identity (PEM/PFX) or custom CA bundle to this shot
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  data-testid="shot-tls-profile-select"
+                  value={shot.tlsProfileId || ''}
+                  onChange={(e) =>
+                    onChange({
+                      ...shot,
+                      tlsProfileId: e.target.value || undefined,
+                    })
+                  }
+                  className="p-1.5 bg-bullet-bg border border-bullet-border rounded font-mono text-xs text-slate-200 outline-none focus:border-emerald-400 max-w-[200px]"
+                >
+                  <option value="">None (Auto by Host)</option>
+                  {tlsProfiles?.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} {p.hostPattern ? `(${p.hostPattern})` : ''}
+                    </option>
+                  ))}
+                </select>
+                {onOpenTlsProfiles && (
+                  <button
+                    type="button"
+                    onClick={onOpenTlsProfiles}
+                    className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded border border-bullet-border cursor-pointer"
+                    title="Manage Certificates in Bulletproof TLS View"
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* SSRF Guard Bypass toggle */}

@@ -357,6 +357,7 @@ export function App() {
           grpcMethod: targetShot.grpcMethod,
           grpcProto: targetShot.grpcProto,
           grpcUseTls: targetShot.grpcUseTls,
+          tlsProfileId: targetShot.tlsProfileId,
         });
       } else {
         res = await bulletApi.fireAdHoc(
@@ -364,7 +365,8 @@ export function App() {
             ...targetShot,
             settings: effectiveSettings,
           },
-          selectedLoadout?.id
+          selectedLoadout?.id,
+          targetShot.tlsProfileId
         );
       }
       setImpact(res);
@@ -700,6 +702,8 @@ export function App() {
                     <ShotEditor
                       shot={selectedShot}
                       onChange={setSelectedShot}
+                      tlsProfiles={tlsProfiles}
+                      onOpenTlsProfiles={() => setActiveSidebarTab('tls')}
                     />
                   </div>
 

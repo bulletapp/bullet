@@ -54,6 +54,7 @@ export interface Shot {
   grpcProto?: string;
   grpcUseReflection?: boolean;
   grpcUseTls?: boolean;
+  tlsProfileId?: string;
 }
 
 export interface KeyValuePair {
@@ -143,6 +144,7 @@ export interface TLSProfile {
   id: string;
   rangeId: string;
   name: string;
+  hostPattern?: string;
   clientCertificatePem?: string;
   clientKeyPem?: string;
   certificateAuthorityPem?: string;
