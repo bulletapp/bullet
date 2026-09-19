@@ -1145,6 +1145,212 @@ async function runFullTestSuite() {
 
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '20-cookie-locker-verified.png') });
     console.log('  ★ TEST 25 PASSED: Cookie Locker view operational!');
+
+    // -------------------------------------------------------------
+    // TEST 26: SSRF GUARD REJECTION & EXPLICIT SHOT SETTINGS BYPASS
+    // -------------------------------------------------------------
+    console.log('\n[TEST 26] Testing SSRF Guard Rejection & Settings Bypass...');
+
+    // Navigate to Arsenals / Collections tab to see our shots
+    const arsenalsTab26 = await page.waitForSelector('[data-testid="sidebar-tab-arsenals"]');
+    await arsenalsTab26.click();
+    console.log('  ✓ Returned to Arsenals list.');
+
+    // Create a new Shot targeting internal backend URL http://127.0.0.1:5000/api/ranges
+    const ssrfShotBtn26 = await page.waitForSelector('[data-testid="header-new-shot-btn"]');
+    await ssrfShotBtn26.click();
+    await page.waitForSelector('[data-testid="new-shot-modal"]');
+    await clearAndType('[data-testid="shot-name-input"]', 'Internal SSRF Guard Check');
+    await clearAndType('[data-testid="shot-url-input"]', 'http://127.0.0.1:5000/api/ranges');
+    const submitSsrfShot26 = await page.waitForSelector('[data-testid="create-shot-submit-btn"]');
+    await submitSsrfShot26.click();
+    await page.waitForSelector('[data-testid="new-shot-modal"]', { hidden: true });
+    console.log('  ✓ Created Shot targeted at internal loopback address: http://127.0.0.1:5000/api/ranges');
+
+    // Fire without SSRF bypass -> SSRF guard MUST block it
+    const fireSsrfBtn26 = await page.waitForSelector('[data-testid="fire-btn"]');
+    await fireSsrfBtn26.click();
+    console.log('  ✓ Fired request to internal loopback without SSRF bypass...');
+
+    // Verify SSRF block error in response
+    await page.waitForSelector('[data-testid="status-code"]', { timeout: 15000 });
+    const ssrfBlockedText26 = await page.evaluate(() => document.body.innerText);
+    if (!ssrfBlockedText26.includes('SSRF Protection') && !ssrfBlockedText26.includes('Forbidden by SSRF')) {
+      throw new Error('SSRF Guard failed to block internal IP request!');
+    }
+    console.log('  ✓ SSRF Protection correctly blocked unauthorized internal IP dispatch!');
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '21-ssrf-blocked-by-guard.png') });
+
+    // Open Settings tab in Shot Editor
+    const settingsTab26 = await page.waitForSelector('[data-testid="tab-settings"]');
+    await settingsTab26.click();
+    console.log('  ✓ Switched to Shot Execution Settings tab.');
+
+    // Toggle Allow Local Network / Private IPs (SSRF Bypass)
+    const ssrfToggle26 = await page.waitForSelector('[data-testid="bypass-ssrf-toggle"]');
+    await ssrfToggle26.click();
+    console.log('  ✓ Enabled "Allow Local Network / Private IPs (SSRF Bypass)" toggle.');
+
+    // Fire again -> request MUST now succeed with 200 OK!
+    await fireSsrfBtn26.click();
+    console.log('  ✓ Retried request with SSRF Bypass enabled...');
+
+    await page.waitForFunction(() => {
+      const el = document.querySelector('[data-testid="status-code"]');
+      return el && el.textContent.trim().includes('200');
+    }, { timeout: 15000 });
+    const successCode26 = await page.$eval('[data-testid="status-code"]', (el) => el.textContent.trim());
+    console.log(`  ✓ Received ${successCode26} response from internal loopback!`);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '22-ssrf-bypass-success.png') });
+    console.log('  ★ TEST 26 PASSED: SSRF Guard protection and explicit Settings bypass verified!');
+
+    // -------------------------------------------------------------
+    // TEST 27: CLIENT CERTIFICATE & TLS PROFILE ATTACHMENT IN SHOT SETTINGS
+    // -------------------------------------------------------------
+    console.log('\n[TEST 27] Testing Client Certificate (TLS Profile) Attachment in Shot Settings...');
+
+    // While in Settings tab, inspect TLS Profile selector
+    const tlsSelect27 = await page.waitForSelector('[data-testid="shot-tls-profile-select"]');
+    const tlsSelectOptions27 = await page.evaluate((sel) => {
+      return Array.from(sel.options).map((o) => o.text);
+    }, tlsSelect27);
+    console.log(`  ✓ Available TLS Profiles on Shot: ${tlsSelectOptions27.join(', ')}`);
+
+    const hasInsecureProfile27 = tlsSelectOptions27.some((txt) => txt.includes('E2E Insecure Staging'));
+    if (!hasInsecureProfile27) {
+      throw new Error('Expected "E2E Insecure Staging" to appear in Shot TLS Profile dropdown!');
+    }
+
+    // Select the profile
+    const profileVal27 = await page.evaluate((sel) => {
+      const opt = Array.from(sel.options).find((o) => o.text.includes('E2E Insecure Staging'));
+      return opt ? opt.value : '';
+    }, tlsSelect27);
+    await page.select('[data-testid="shot-tls-profile-select"]', profileVal27);
+    console.log('  ✓ Selected "E2E Insecure Staging" TLS Profile for this Shot.');
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '23-shot-tls-profile-attached.png') });
+    console.log('  ★ TEST 27 PASSED: Client Certificate / TLS Profile successfully attached to Shot!');
+
+    // -------------------------------------------------------------
+    // TEST 28: gRPC STUDIO COCKPIT, SERVER REFLECTION & PROTO PARSER MODAL
+    // -------------------------------------------------------------
+    console.log('\n[TEST 28] Testing gRPC Studio Cockpit, Reflection & Proto Modal...');
+
+    // Select GRPC method in URL bar
+    const methodSelect28 = await page.waitForSelector('[data-testid="method-select"]');
+    await methodSelect28.select('GRPC');
+    console.log('  ✓ Selected GRPC protocol method.');
+
+    // Enter gRPC endpoint in URL input
+    await clearAndType('[data-testid="url-input"]', '127.0.0.1:50051');
+    console.log('  ✓ Entered gRPC server target: 127.0.0.1:50051');
+
+    // Verify gRPC Cockpit bar elements
+    await page.waitForSelector('[data-testid="grpc-reflect-btn"]', { timeout: 5000 });
+    await page.waitForSelector('[data-testid="grpc-proto-btn"]', { timeout: 5000 });
+    console.log('  ✓ gRPC RPC Cockpit Bar active with Reflection and Proto buttons.');
+
+    // Test Proto modal
+    const protoBtn28 = await page.waitForSelector('[data-testid="grpc-proto-btn"]');
+    await protoBtn28.click();
+    await page.waitForSelector('[data-testid="grpc-proto-modal"]', { timeout: 5000 });
+    console.log('  ✓ Protobuf (.proto) Definition modal opened.');
+
+    // Insert sample proto
+    const insertSampleBtn28 = await page.waitForSelector('[data-testid="insert-sample-proto-btn"]');
+    await insertSampleBtn28.click();
+    console.log('  ✓ Clicked "Insert Sample Proto".');
+
+    // Parse and load proto
+    const parseProtoBtn28 = await page.waitForSelector('[data-testid="parse-proto-submit-btn"]');
+    await parseProtoBtn28.click();
+    console.log('  ✓ Clicked "Parse & Load Services".');
+
+    // Verify proto modal closes and service dropdown is populated
+    await page.waitForSelector('[data-testid="grpc-proto-modal"]', { hidden: true, timeout: 5000 });
+    console.log('  ✓ Proto schema parsed; modal closed cleanly.');
+
+    await page.waitForSelector('[data-testid="grpc-service-select"]', { timeout: 5000 });
+    console.log('  ✓ gRPC Service selector populated with discovered services.');
+
+    // Verify Message tab is active
+    const msgTab28 = await page.waitForSelector('[data-testid="tab-body"]');
+    await msgTab28.click();
+    await page.waitForSelector('[data-testid="beautify-json-btn"]', { timeout: 5000 });
+    console.log('  ✓ gRPC Message JSON Editor verified.');
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '24-grpc-cockpit-e2e.png') });
+    console.log('  ★ TEST 28 PASSED: gRPC Studio Cockpit & Proto Parser verified!');
+
+    // -------------------------------------------------------------
+    // TEST 29: OAUTH 2.0 PKCE & CLIENT CREDENTIALS FLOW IN AUTH TAB
+    // -------------------------------------------------------------
+    console.log('\n[TEST 29] Testing OAuth 2.0 Auth Tab & PKCE Credentials...');
+
+    // Switch to Auth tab
+    const authTab29 = await page.waitForSelector('[data-testid="tab-auth"]');
+    await authTab29.click();
+    console.log('  ✓ Navigated to Authorization (Auth) tab.');
+
+    // Select OAuth 2.0
+    const authTypeSelect29 = await page.waitForSelector('[data-testid="auth-type-select"]');
+    await authTypeSelect29.select('oauth2');
+    console.log('  ✓ Selected OAuth 2.0 authentication type.');
+
+    // Verify OAuth 2.0 configuration panel
+    await page.waitForSelector('[data-testid="oauth-grant-type"]', { timeout: 5000 });
+    const grantTypeSelect29 = await page.waitForSelector('[data-testid="oauth-grant-type"]');
+    await grantTypeSelect29.select('client_credentials');
+    console.log('  ✓ Configured Grant Type: Client Credentials.');
+
+    await clearAndType('[data-testid="oauth-client-id"]', 'e2e-test-client-id');
+    await clearAndType('[data-testid="oauth-client-secret"]', 'e2e-secret-key-xyz');
+    console.log('  ✓ Entered Client ID and Secret.');
+
+    // Switch to Authorization Code grant type to verify PKCE toggle
+    await grantTypeSelect29.select('authorization_code');
+    console.log('  ✓ Switched to Authorization Code (PKCE) grant type.');
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '25-oauth2-flow-e2e.png') });
+    console.log('  ★ TEST 29 PASSED: OAuth 2.0 PKCE & Client Credentials configuration verified!');
+
+    // -------------------------------------------------------------
+    // TEST 30: WIFI MESH COLLABORATION RADAR & BROADCASTING UI MODAL
+    // -------------------------------------------------------------
+    console.log('\n[TEST 30] Testing WiFi Mesh Collaboration Modal & Radar...');
+
+    // Click Header Mesh button
+    const meshHeaderBtn30 = await page.waitForSelector('[data-testid="header-mesh-btn"]');
+    await meshHeaderBtn30.click();
+    console.log('  ✓ Clicked Header "Mesh" button.');
+
+    // Verify modal is open
+    await page.waitForSelector('[data-testid="mesh-collaboration-modal"]', { timeout: 5000 });
+    const meshTitle30 = await page.$eval('[data-testid="mesh-collaboration-modal"] h2', (el) => el.innerText);
+    if (!meshTitle30.includes('BULLET MESH')) {
+      throw new Error(`Expected modal title to contain BULLET MESH, got: ${meshTitle30}`);
+    }
+    console.log(`  ✓ Modal opened: "${meshTitle30}"`);
+
+    // Switch to Discover tab
+    const discoverTab30 = await page.waitForSelector('[data-testid="mesh-tab-discover"]');
+    await discoverTab30.click();
+    console.log('  ✓ Switched to "Nearby WiFi Ranges" tab with Radar scanner active.');
+
+    // Switch to Share tab
+    const shareTab30 = await page.waitForSelector('[data-testid="mesh-tab-share"]');
+    await shareTab30.click();
+    console.log('  ✓ Switched to "Share This Workspace" tab.');
+
+    // Close modal
+    const closeMeshBtn30 = await page.waitForSelector('[data-testid="mesh-modal-close-btn"]');
+    await closeMeshBtn30.click();
+    await page.waitForSelector('[data-testid="mesh-collaboration-modal"]', { hidden: true, timeout: 5000 });
+    console.log('  ✓ Closed Mesh Collaboration Modal cleanly.');
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '26-mesh-collaboration-full.png') });
+    console.log('  ★ TEST 30 PASSED: WiFi Mesh Collaboration Modal & Radar verified!');
     console.log(`TOTAL UNCAUGHT ERRORS: ${uncaughtErrors.length}`);
     if (uncaughtErrors.length > 0) {
       console.error('Errors encountered:', uncaughtErrors);

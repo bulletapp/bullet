@@ -1786,6 +1786,7 @@ bullet.test('Body contains token', function() {
                 </div>
                 <input
                   type="checkbox"
+                  data-testid="bypass-ssrf-toggle"
                   checked={shot.settings?.bypassSsrfGuard ?? shot.settings?.bypassSsrfProtection ?? false}
                   onChange={(e) =>
                     onChange({
@@ -1810,14 +1811,14 @@ bullet.test('Body contains token', function() {
 
       {/* Proto Definition Import Modal */}
       {protoModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div data-testid="grpc-proto-modal" className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-bullet-panel border border-bullet-border rounded-lg max-w-2xl w-full p-4 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-bullet-border pb-2">
               <div className="flex items-center gap-2">
                 <FileCode className="w-4 h-4 text-cyan-400" />
                 <h3 className="text-sm font-bold text-slate-100 font-mono">Protobuf (.proto) Definition</h3>
               </div>
-              <button onClick={() => setProtoModalOpen(false)} className="text-slate-400 hover:text-white cursor-pointer">
+              <button data-testid="close-proto-modal-btn" onClick={() => setProtoModalOpen(false)} className="text-slate-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1843,6 +1844,7 @@ bullet.test('Body contains token', function() {
             <div className="flex items-center justify-between pt-2 border-t border-bullet-border">
               <button
                 type="button"
+                data-testid="insert-sample-proto-btn"
                 onClick={() =>
                   setProtoInput(
                     `syntax = "proto3";\npackage bullet.v1;\n\nservice BulletTestService {\n  rpc Ping (PingRequest) returns (PingResponse);\n}\n\nmessage PingRequest {\n  string name = 1;\n}\n\nmessage PingResponse {\n  string message = 1;\n}`

@@ -12,6 +12,7 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
   const [selectedProfile, setSelectedProfile] = useState<TLSProfile | null>(null);
 
   const [name, setName] = useState('');
+  const [hostPattern, setHostPattern] = useState('');
   const [clientCert, setClientCert] = useState('');
   const [clientKey, setClientKey] = useState('');
   const [caBundle, setCaBundle] = useState('');
@@ -42,14 +43,18 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
       const created = await bulletApi.createTlsProfile({
         rangeId,
         name,
+        hostPattern: hostPattern || undefined,
+        clientCertPem: clientCert || undefined,
         clientCertificatePem: clientCert || undefined,
         clientKeyPem: clientKey || undefined,
+        caBundlePem: caBundle || undefined,
         certificateAuthorityPem: caBundle || undefined,
         insecureSkipVerify: skipVerify,
         minTlsVersion: minTls,
         maxTlsVersion: maxTls,
       });
       setName('');
+      setHostPattern('');
       setClientCert('');
       setClientKey('');
       setCaBundle('');
@@ -138,10 +143,23 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
               />
             </div>
 
+            <div>
+              <label className="text-slate-400 block mb-1">Host Pattern (Optional, e.g. *.internal.net or api.example.com)</label>
+              <input
+                type="text"
+                data-testid="tls-host-pattern-input"
+                placeholder="e.g. *.internal.net:443"
+                value={hostPattern}
+                onChange={(e) => setHostPattern(e.target.value)}
+                className="w-full p-2 bg-bullet-bg border border-bullet-border rounded text-slate-200 outline-none focus:border-emerald-500"
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-slate-400 block mb-1">Client Certificate (PEM)</label>
                 <textarea
+                  data-testid="tls-client-cert-textarea"
                   placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"
                   value={clientCert}
                   onChange={(e) => setClientCert(e.target.value)}
@@ -152,6 +170,7 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
               <div>
                 <label className="text-slate-400 block mb-1">Client Private Key (PEM)</label>
                 <textarea
+                  data-testid="tls-client-key-textarea"
                   placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;...&#10;-----END RSA PRIVATE KEY-----"
                   value={clientKey}
                   onChange={(e) => setClientKey(e.target.value)}
@@ -163,6 +182,7 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
             <div>
               <label className="text-slate-400 block mb-1">Custom Root CA Bundle (PEM)</label>
               <textarea
+                data-testid="tls-ca-bundle-textarea"
                 placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"
                 value={caBundle}
                 onChange={(e) => setCaBundle(e.target.value)}

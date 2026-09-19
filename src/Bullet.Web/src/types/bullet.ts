@@ -146,12 +146,15 @@ export interface TLSProfile {
   name: string;
   hostPattern?: string;
   clientCertificatePem?: string;
+  clientCertPem?: string;
   clientKeyPem?: string;
   certificateAuthorityPem?: string;
+  caBundlePem?: string;
   minTlsVersion?: string;
   maxTlsVersion?: string;
   cipherSuites?: string[];
   insecureSkipVerify: boolean;
+  allowSelfSigned?: boolean;
 }
 
 export interface TargetRange {

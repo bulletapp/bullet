@@ -58,7 +58,7 @@ jobs:
         run: npm run build
 
   e2e-click-through-tests:
-    name: 25-Phase Automated E2E Browser Suite
+    name: 30-Phase Automated E2E Browser Suite
     needs: lint-and-format
     runs-on: windows-latest
 
@@ -93,7 +93,7 @@ jobs:
         run: |
           dotnet build Bullet.slnx --configuration Release
 
-      - name: Execute Full 25-Phase E2E Browser Suite
+      - name: Execute Full 30-Phase E2E Browser Suite
         working-directory: src/Bullet.Web
         shell: pwsh
         run: |

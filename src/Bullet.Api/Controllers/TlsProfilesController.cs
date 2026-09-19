@@ -113,8 +113,11 @@ public class CreateTlsProfileRequest
     public string? ClientCertPfxBase64 { get; set; }
     public string? ClientCertPassword { get; set; }
     public string? ClientCertPem { get; set; }
+    public string? ClientCertificatePem { get => ClientCertPem; set => ClientCertPem = value; }
     public string? ClientKeyPem { get; set; }
     public string? CaBundlePem { get; set; }
+    public string? CertificateAuthorityPem { get => CaBundlePem; set => CaBundlePem = value; }
     public bool VerifyHostName { get; set; } = true;
     public bool AllowSelfSigned { get; set; } = false;
+    public bool InsecureSkipVerify { get => AllowSelfSigned; set => AllowSelfSigned = value; }
 }

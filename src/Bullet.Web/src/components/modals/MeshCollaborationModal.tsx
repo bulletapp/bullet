@@ -150,6 +150,7 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
       <div
+        data-testid="mesh-collaboration-modal"
         className="bg-[#0a0e14] border border-slate-700/60 rounded-lg shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
@@ -167,7 +168,11 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
               <p className="text-[10px] text-slate-400 font-mono">WiFi Workspace Collaboration</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-slate-200 transition">
+          <button
+            data-testid="mesh-modal-close-btn"
+            onClick={onClose}
+            className="p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-slate-200 transition cursor-pointer"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -175,8 +180,9 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
         {/* Tabs */}
         <div className="flex border-b border-slate-700/40">
           <button
+            data-testid="mesh-tab-share"
             onClick={() => setActiveTab('share')}
-            className={`flex-1 py-2.5 text-xs font-mono font-medium transition border-b-2 ${
+            className={`flex-1 py-2.5 text-xs font-mono font-medium transition border-b-2 cursor-pointer ${
               activeTab === 'share'
                 ? 'text-amber-400 border-amber-400 bg-amber-500/5'
                 : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-800/50'
@@ -186,8 +192,9 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
             Share This Workspace
           </button>
           <button
+            data-testid="mesh-tab-discover"
             onClick={() => setActiveTab('discover')}
-            className={`flex-1 py-2.5 text-xs font-mono font-medium transition border-b-2 ${
+            className={`flex-1 py-2.5 text-xs font-mono font-medium transition border-b-2 cursor-pointer ${
               activeTab === 'discover'
                 ? 'text-cyan-400 border-cyan-400 bg-cyan-500/5'
                 : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-800/50'
