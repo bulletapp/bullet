@@ -155,5 +155,27 @@ When downloading newly released open-source executables from the internet, Windo
 
 ---
 
+## macOS Installation & Launching
+
+BULLET supports macOS natively on both **Apple Silicon (M1/M2/M3/M4)** and **Intel x64**:
+
+1. **Download**: Download the release package for your Mac architecture:
+   - **Apple Silicon**: `Bullet-macOS-AppleSilicon-arm64.zip`
+   - **Intel Macs**: `Bullet-macOS-Intel-x64.zip`
+2. **Extract & Launch**:
+   - Double-click the downloaded `.zip` file to extract.
+   - Double-click **`Bullet.command`** in Finder to start the BULLET Engine and launch the UI in your default browser.
+   - Or launch from Terminal:
+     ```bash
+     chmod +x run-mac.sh
+     ./run-mac.sh
+     ```
+3. **Run from Source on macOS**:
+   ```bash
+   dotnet run --project src/Bullet.Api
+   ```
+
+---
+
 ## License
 MIT License. Built with precision for developers.

@@ -31,6 +31,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Non-elevated per-user installation to `%LOCALAPPDATA%\Programs\Bullet`.
   - Automatic Start Menu and Desktop shortcuts with uninstaller registration.
   - Release zip archive `Bullet-Desktop-Windows-x64.zip` for portable zero-install execution.
+- **Native macOS Support (Apple Silicon & Intel)**:
+  - Full cross-platform support for macOS running on Apple Silicon (`osx-arm64`: M1, M2, M3, M4) and Intel (`osx-x64`).
+  - Added double-clickable Finder command launcher `Bullet.command` and `run-mac.sh`.
+  - Automated CI release packaging generating `Bullet-macOS-AppleSilicon-arm64.zip` and `Bullet-macOS-Intel-x64.zip` with SHA256 checksums.
 - **25-Phase Automated E2E Browser Test Suite**:
   - Complete end-to-end browser test suite in Puppeteer (`e2e-full-suite.mjs`) covering:
     1. Create Shot & URL Bar

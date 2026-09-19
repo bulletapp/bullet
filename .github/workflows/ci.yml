@@ -251,6 +251,40 @@ jobs:
           $hash = (Get-FileHash -Algorithm SHA256 dist-installer/Bullet-Setup.exe).Hash
           "$hash  Bullet-Setup.exe" | Out-File -Encoding utf8 dist-installer/Bullet-Setup.exe.sha256
 
+      - name: Package Native macOS Application Bundles
+        shell: pwsh
+        run: |
+          Write-Host "Publishing native macOS engine and application bundles..."
+          
+          # 1. Publish for Apple Silicon (macOS ARM64: M1, M2, M3, M4)
+          $armAppDir = "publish/mac-arm64/Bullet.app/Contents"
+          New-Item -ItemType Directory -Force -Path "$armAppDir/MacOS", "$armAppDir/Resources/app" | Out-Null
+          dotnet publish src/Bullet.Api/Bullet.Api.csproj -c Release -r osx-arm64 --self-contained false -o "$armAppDir/Resources/app"
+          
+          Copy-Item -Path "src/Bullet.Api/wwwroot" -Destination "$armAppDir/Resources/app" -Recurse -Force
+          Copy-Item -Path "scripts/run-mac.sh" -Destination "$armAppDir/MacOS/Bullet" -Force
+          Copy-Item -Path "scripts/run-mac.sh" -Destination "publish/mac-arm64/run-mac.sh" -Force
+          Copy-Item -Path "scripts/Bullet.command" -Destination "publish/mac-arm64/Bullet.command" -Force
+          
+          # 2. Publish for Intel Macs (macOS x64)
+          $x64AppDir = "publish/mac-x64/Bullet.app/Contents"
+          New-Item -ItemType Directory -Force -Path "$x64AppDir/MacOS", "$x64AppDir/Resources/app" | Out-Null
+          dotnet publish src/Bullet.Api/Bullet.Api.csproj -c Release -r osx-x64 --self-contained false -o "$x64AppDir/Resources/app"
+          
+          Copy-Item -Path "src/Bullet.Api/wwwroot" -Destination "$x64AppDir/Resources/app" -Recurse -Force
+          Copy-Item -Path "scripts/run-mac.sh" -Destination "$x64AppDir/MacOS/Bullet" -Force
+          Copy-Item -Path "scripts/run-mac.sh" -Destination "publish/mac-x64/run-mac.sh" -Force
+          Copy-Item -Path "scripts/Bullet.command" -Destination "publish/mac-x64/Bullet.command" -Force
+
+          # Create archives and hashes
+          Compress-Archive -Path "publish/mac-arm64/*" -DestinationPath Bullet-macOS-AppleSilicon-arm64.zip -Force
+          $hashArm = (Get-FileHash -Algorithm SHA256 Bullet-macOS-AppleSilicon-arm64.zip).Hash
+          "$hashArm  Bullet-macOS-AppleSilicon-arm64.zip" | Out-File -Encoding utf8 Bullet-macOS-AppleSilicon-arm64.zip.sha256
+
+          Compress-Archive -Path "publish/mac-x64/*" -DestinationPath Bullet-macOS-Intel-x64.zip -Force
+          $hashX64 = (Get-FileHash -Algorithm SHA256 Bullet-macOS-Intel-x64.zip).Hash
+          "$hashX64  Bullet-macOS-Intel-x64.zip" | Out-File -Encoding utf8 Bullet-macOS-Intel-x64.zip.sha256
+
       - name: Generate Release Notes & Changelog
         shell: pwsh
         run: |
@@ -302,6 +336,16 @@ jobs:
             $zipHash = (Get-Content "Bullet-Desktop-Windows-x64.zip.sha256" -Raw).Trim()
           }
 
+          $macArmHash = ""
+          if (Test-Path "Bullet-macOS-AppleSilicon-arm64.zip.sha256") {
+            $macArmHash = (Get-Content "Bullet-macOS-AppleSilicon-arm64.zip.sha256" -Raw).Trim()
+          }
+
+          $macX64Hash = ""
+          if (Test-Path "Bullet-macOS-Intel-x64.zip.sha256") {
+            $macX64Hash = (Get-Content "Bullet-macOS-Intel-x64.zip.sha256" -Raw).Trim()
+          }
+
           $lines = @(
             "## 🚀 BULLET Release $ver",
             "*Load. Aim. API.*",
@@ -315,16 +359,20 @@ jobs:
             "",
             "### 📦 Release Packages & Checksums",
             "",
-            "| Package | Type | Description |",
+            "| Package | OS / Platform | Description |",
             "|---|---|---|",
-            "| **[Bullet-Setup.exe](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Setup.exe)** | Setup Installer | Single-file Windows installer (per-user install, desktop + start menu shortcuts, automatic launch) |",
-            "| **[Bullet-Desktop-Windows-x64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Desktop-Windows-x64.zip)** | Portable Zip | Zero-install standalone archive with executable and assets |",
-            "| **[Bullet-Release.cer](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Release.cer)** | Public Certificate | Authenticode public certificate for publisher identity verification |",
+            "| **[Bullet-Setup.exe](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Setup.exe)** | Windows x64 (Setup) | Single-file Windows setup installer with desktop shortcuts and auto-launch |",
+            "| **[Bullet-Desktop-Windows-x64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Desktop-Windows-x64.zip)** | Windows x64 (Portable) | Portable zero-install package containing standalone executable and bundled assets |",
+            "| **[Bullet-macOS-AppleSilicon-arm64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-macOS-AppleSilicon-arm64.zip)** | macOS (Apple Silicon M1/M2/M3/M4) | Native Apple Silicon bundle with double-clickable `Bullet.command` launcher |",
+            "| **[Bullet-macOS-Intel-x64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-macOS-Intel-x64.zip)** | macOS (Intel x64) | Native Intel Mac bundle with double-clickable `Bullet.command` launcher |",
+            "| **[Bullet-Release.cer](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Release.cer)** | All | Authenticode public certificate for publisher identity verification |",
             "",
             "#### 🔐 SHA256 Verification Hashes",
             '```text',
             $installerHash,
             $zipHash,
+            $macArmHash,
+            $macX64Hash,
             '```'
           )
 
@@ -347,6 +395,10 @@ jobs:
             dist-installer/Bullet-Setup.exe.sha256
             Bullet-Desktop-Windows-x64.zip
             Bullet-Desktop-Windows-x64.zip.sha256
+            Bullet-macOS-AppleSilicon-arm64.zip
+            Bullet-macOS-AppleSilicon-arm64.zip.sha256
+            Bullet-macOS-Intel-x64.zip
+            Bullet-macOS-Intel-x64.zip.sha256
             dist-installer/Bullet-Release.cer
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
