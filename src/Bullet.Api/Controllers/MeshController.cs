@@ -1,4 +1,4 @@
-﻿using Bullet.Api.Hubs;
+using Bullet.Api.Hubs;
 using Bullet.Application.Mesh;
 using Bullet.Domain.Entities;
 using Bullet.Domain.ValueObjects;
@@ -88,27 +88,80 @@ public class MeshController : ControllerBase
             return Unauthorized(new { error = "Invalid or missing mesh collaboration ticket." });
         }
 
-        // Apply mutation to database if ShotUpdated
+        // Check Read-Only mode
+        if (!_meshService.CanWrite(evt.RangeId, ticket))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "This workspace is shared in Read-Only mode. Changes cannot be saved." });
+        }
+
+        var jsonOpts = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+        };
+
+        // Apply mutation to database
         if (evt.EventType == "ShotUpdated" && !string.IsNullOrEmpty(evt.PayloadJson))
         {
             try
             {
+                var incoming = JsonSerializer.Deserialize<Shot>(evt.PayloadJson, jsonOpts);
+                if (incoming != null && incoming.Id != Guid.Empty)
+                {
+                    var shot = await _db.Shots.FirstOrDefaultAsync(s => s.Id == incoming.Id, cancellationToken);
+                    if (shot != null)
+                    {
+                        shot.Name = incoming.Name ?? shot.Name;
+                        shot.Method = incoming.Method ?? shot.Method;
+                        shot.Url = incoming.Url ?? shot.Url;
+                        if (!string.IsNullOrEmpty(incoming.Description)) shot.Description = incoming.Description;
+                        if (incoming.Parameters != null && incoming.Parameters.Count > 0) shot.Parameters = incoming.Parameters;
+                        if (incoming.Headers != null && incoming.Headers.Count > 0) shot.Headers = incoming.Headers;
+                        if (incoming.Payload != null) shot.Payload = incoming.Payload;
+                        if (incoming.Armor != null) shot.Armor = incoming.Armor;
+                        if (incoming.Settings != null) shot.Settings = incoming.Settings;
+                        shot.GrpcService = incoming.GrpcService ?? shot.GrpcService;
+                        shot.GrpcMethod = incoming.GrpcMethod ?? shot.GrpcMethod;
+                        shot.GrpcProto = incoming.GrpcProto ?? shot.GrpcProto;
+                        shot.GrpcUseTls = incoming.GrpcUseTls;
+                        shot.TriggerScript = incoming.TriggerScript ?? shot.TriggerScript;
+                        shot.VerifierScript = incoming.VerifierScript ?? shot.VerifierScript;
+
+                        shot.UpdatedAtUtc = DateTime.UtcNow;
+                        shot.Version++;
+                        await _db.SaveChangesAsync(cancellationToken);
+                    }
+                }
+            }
+            catch { }
+        }
+        else if (evt.EventType == "ShotCreated" && !string.IsNullOrEmpty(evt.PayloadJson))
+        {
+            try
+            {
+                var incoming = JsonSerializer.Deserialize<Shot>(evt.PayloadJson, jsonOpts);
+                if (incoming != null && incoming.ArsenalId != Guid.Empty)
+                {
+                    if (incoming.Id == Guid.Empty) incoming.Id = Guid.NewGuid();
+                    incoming.CreatedAtUtc = DateTime.UtcNow;
+                    incoming.UpdatedAtUtc = DateTime.UtcNow;
+                    _db.Shots.Add(incoming);
+                    await _db.SaveChangesAsync(cancellationToken);
+                }
+            }
+            catch { }
+        }
+        else if (evt.EventType == "ShotDeleted" && !string.IsNullOrEmpty(evt.PayloadJson))
+        {
+            try
+            {
                 var doc = JsonDocument.Parse(evt.PayloadJson);
-                var root = doc.RootElement;
-                if (root.TryGetProperty("id", out var idProp) && Guid.TryParse(idProp.GetString(), out var shotId))
+                if (doc.RootElement.TryGetProperty("id", out var idProp) && Guid.TryParse(idProp.GetString(), out var shotId))
                 {
                     var shot = await _db.Shots.FirstOrDefaultAsync(s => s.Id == shotId, cancellationToken);
                     if (shot != null)
                     {
-                        if (root.TryGetProperty("name", out var n)) shot.Name = n.GetString() ?? shot.Name;
-                        if (root.TryGetProperty("method", out var m)) shot.Method = m.GetString() ?? shot.Method;
-                        if (root.TryGetProperty("url", out var u)) shot.Url = u.GetString() ?? shot.Url;
-                        if (root.TryGetProperty("grpcService", out var gs)) shot.GrpcService = gs.GetString();
-                        if (root.TryGetProperty("grpcMethod", out var gm)) shot.GrpcMethod = gm.GetString();
-                        if (root.TryGetProperty("triggerScript", out var ts)) shot.TriggerScript = ts.GetString();
-                        if (root.TryGetProperty("verifierScript", out var vs)) shot.VerifierScript = vs.GetString();
-
-                        shot.UpdatedAtUtc = DateTime.UtcNow;
+                        _db.Shots.Remove(shot);
                         await _db.SaveChangesAsync(cancellationToken);
                     }
                 }

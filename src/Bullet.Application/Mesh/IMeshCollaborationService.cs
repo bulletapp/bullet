@@ -1,4 +1,4 @@
-﻿namespace Bullet.Application.Mesh;
+namespace Bullet.Application.Mesh;
 
 public interface IMeshCollaborationService
 {
@@ -9,6 +9,7 @@ public interface IMeshCollaborationService
     Task<bool> StopSharingAsync(Guid rangeId, CancellationToken cancellationToken = default);
     Task<MeshJoinResponse> AuthenticateAndJoinAsync(JoinRangeRequest request, string clientIp, CancellationToken cancellationToken = default);
     bool ValidateTicket(Guid rangeId, string ticket);
+    bool CanWrite(Guid rangeId, string ticket);
     Task RegisterPeerConnectionAsync(Guid rangeId, string connectionId, string peerName, string clientIp);
     Task UnregisterPeerConnectionAsync(string connectionId);
     List<MeshBeacon> GetActiveBeaconsToBroadcast();

@@ -8,6 +8,7 @@ interface MeshCollaborationModalProps {
   onClose: () => void;
   selectedRangeId: string | null;
   selectedRangeName: string | null;
+  onJoinedWorkspace?: (response: MeshJoinResponse, hostEndpoint: string) => void;
 }
 
 type TabId = 'share' | 'discover';
@@ -23,6 +24,7 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
   onClose,
   selectedRangeId,
   selectedRangeName,
+  onJoinedWorkspace,
 }) => {
   const [activeTab, setActiveTab] = useState<TabId>('share');
   const [meshStatus, setMeshStatus] = useState<MeshStatus | null>(null);
@@ -117,6 +119,14 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
       );
       if (result.success) {
         setJoinStatus(prev => ({ ...prev, [rangeId]: { loading: false, ticket: result.ticket } }));
+        const found = discoveredRanges.find(r => r.rangeId === rangeId);
+        const endpoint = found?.endpoint || (found?.hostIp ? `http://${found.hostIp}:${found.hostPort || 5230}` : '');
+        if (onJoinedWorkspace) {
+          setTimeout(() => {
+            onJoinedWorkspace(result, endpoint);
+            onClose();
+          }, 600);
+        }
       } else {
         setJoinStatus(prev => ({ ...prev, [rangeId]: { loading: false, error: result.errorMessage || 'Join failed' } }));
       }

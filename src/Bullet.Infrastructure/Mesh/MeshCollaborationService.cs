@@ -217,6 +217,13 @@ public class MeshCollaborationService : IMeshCollaborationService
         return false;
     }
 
+    public bool CanWrite(Guid rangeId, string ticket)
+    {
+        if (!ValidateTicket(rangeId, ticket)) return false;
+        if (!_activeShares.TryGetValue(rangeId, out var share)) return false;
+        return !string.Equals(share.AccessMode, "ReadOnly", StringComparison.OrdinalIgnoreCase);
+    }
+
     public Task RegisterPeerConnectionAsync(Guid rangeId, string connectionId, string peerName, string clientIp)
     {
         if (_activeShares.TryGetValue(rangeId, out var share))

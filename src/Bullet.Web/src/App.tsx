@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Upload } from 'lucide-react';
 import { 
   Range, Arsenal, Squad, Shot, Loadout, TLSProfile, 
-  Impact, TrajectoryLogEntry 
+  Impact, TrajectoryLogEntry, MeshJoinResponse 
 } from './types/bullet';
-import { bulletApi, createExecutionHubConnection } from './api/bulletApi';
+import { bulletApi, createExecutionHubConnection, createMeshHubConnection } from './api/bulletApi';
 import { playFireSound, playImpactSuccessSound, playImpactErrorSound } from './utils/audioFx';
 
 // Components
@@ -74,6 +74,15 @@ export function App() {
   const [newShotTarget, setNewShotTarget] = useState<{ arsenalId?: string; squadId?: string }>({});
   const [meshCollabOpen, setMeshCollabOpen] = useState(false);
   const [isMeshBroadcasting, setIsMeshBroadcasting] = useState(false);
+  const [meshSession, setMeshSession] = useState<{
+    isConnected: boolean;
+    isHost: boolean;
+    rangeId: string;
+    rangeName: string;
+    accessMode: string;
+    ticket: string;
+    hostEndpoint: string;
+  } | null>(null);
 
   // 1. Fetch Ranges on Mount
   useEffect(() => {
@@ -92,12 +101,115 @@ export function App() {
     }
   };
 
+  const handleJoinedMeshWorkspace = (joinRes: MeshJoinResponse, hostEndpoint: string) => {
+    if (!joinRes.rangeSnapshot || !joinRes.rangeId) return;
+
+    setMeshSession({
+      isConnected: true,
+      isHost: false,
+      rangeId: joinRes.rangeId,
+      rangeName: joinRes.rangeName || joinRes.rangeSnapshot.name,
+      accessMode: joinRes.accessMode || 'ReadWrite',
+      ticket: joinRes.ticket || '',
+      hostEndpoint,
+    });
+
+    const snapshot = joinRes.rangeSnapshot;
+    setSelectedRange(snapshot);
+    setArsenals(snapshot.arsenals || []);
+    setLoadouts(snapshot.loadouts || []);
+    if (snapshot.loadouts && snapshot.loadouts.length > 0) {
+      setSelectedLoadout(snapshot.loadouts[0]);
+    }
+    const firstShot = snapshot.arsenals?.[0]?.shots?.[0] || snapshot.arsenals?.[0]?.squads?.[0]?.shots?.[0];
+    if (firstShot) {
+      setSelectedShot(firstShot);
+    }
+
+    setTrajectoryLogs((prev) => [
+      {
+        timestamp: new Date().toLocaleTimeString(),
+        type: 'response',
+        message: `[WiFi Mesh] Connected to "${joinRes.rangeName || snapshot.name}" (${joinRes.accessMode || 'ReadWrite'} mode). You can now collaborate in real-time!`
+      },
+      ...prev
+    ]);
+  };
+
+  const handleDisconnectMesh = () => {
+    setMeshSession(null);
+    loadRanges();
+    setTrajectoryLogs((prev) => [
+      {
+        timestamp: new Date().toLocaleTimeString(),
+        type: 'request',
+        message: '[WiFi Mesh] Disconnected from shared workspace. Returned to local ranges.'
+      },
+      ...prev
+    ]);
+  };
+
+  // Real-Time Mesh SignalR Sync when connected to a peer workspace
+  useEffect(() => {
+    if (!meshSession?.isConnected || !meshSession?.ticket) return;
+
+    const hub = createMeshHubConnection();
+
+    hub.on('OnSyncEvent', (evt: any) => {
+      if (evt.eventType === 'ShotUpdated' && evt.payloadJson) {
+        try {
+          const updated = JSON.parse(evt.payloadJson);
+          setArsenals((prev) =>
+            prev.map((a) => ({
+              ...a,
+              shots: a.shots?.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)) || [],
+              squads: a.squads?.map((sq) => ({
+                ...sq,
+                shots: sq.shots?.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)) || []
+              })) || []
+            }))
+          );
+          setSelectedShot((prev) => (prev && prev.id === updated.id ? { ...prev, ...updated } : prev));
+
+          setTrajectoryLogs((logs) => [
+            {
+              timestamp: new Date().toLocaleTimeString(),
+              type: 'response',
+              message: `[WiFi Mesh] Synced: Shot "${updated.name || updated.id}" updated by ${evt.authorPeerName || 'peer'}`
+            },
+            ...logs
+          ]);
+        } catch {}
+      }
+    });
+
+    hub.on('OnShotFiredByPeer', (summary: any) => {
+      setTrajectoryLogs((logs) => [
+        {
+          timestamp: new Date().toLocaleTimeString(),
+          type: 'impact',
+          message: `[WiFi Mesh] Peer fired: ${summary.shotName || summary.shotId || 'Shot'} (${summary.statusCode || 200})`
+        },
+        ...logs
+      ]);
+    });
+
+    hub.start().then(() => {
+      hub.invoke('JoinMesh', meshSession.rangeId, meshSession.ticket, 'BULLET Peer Contributor').catch(() => {});
+    }).catch(() => {});
+
+    return () => {
+      hub.invoke('LeaveMesh', meshSession.rangeId).catch(() => {});
+      hub.stop().catch(() => {});
+    };
+  }, [meshSession?.isConnected, meshSession?.rangeId, meshSession?.ticket]);
+
   // 2. Fetch Range Children when active Range changes
   useEffect(() => {
-    if (selectedRange) {
+    if (selectedRange && (!meshSession?.isConnected || meshSession.isHost)) {
       loadRangeData(selectedRange.id);
     }
-  }, [selectedRange]);
+  }, [selectedRange, meshSession?.isConnected]);
 
   const loadRangeData = async (rangeId: string) => {
     try {
@@ -314,6 +426,41 @@ export function App() {
 
   const handleSaveShot = async () => {
     if (!selectedShot) return;
+
+    // If connected to a remote peer workspace over WiFi Mesh
+    if (meshSession?.isConnected) {
+      if (meshSession.accessMode === 'ReadOnly') {
+        alert('This workspace is shared in Read-Only mode. Changes cannot be saved.');
+        return;
+      }
+      try {
+        await bulletApi.syncMeshEvent(meshSession.rangeId, 'ShotUpdated', JSON.stringify(selectedShot), meshSession.ticket);
+        setSelectedShot({ ...selectedShot });
+        setArsenals((prev) =>
+          prev.map((a) => ({
+            ...a,
+            shots: a.shots?.map((s) => (s.id === selectedShot.id ? { ...selectedShot } : s)) || [],
+            squads: a.squads?.map((sq) => ({
+              ...sq,
+              shots: sq.shots?.map((s) => (s.id === selectedShot.id ? { ...selectedShot } : s)) || []
+            })) || []
+          }))
+        );
+        setTrajectoryLogs((logs) => [
+          {
+            timestamp: new Date().toLocaleTimeString(),
+            type: 'response',
+            message: `[WiFi Mesh] Saved and synced shot "${selectedShot.name}" to host workspace.`
+          },
+          ...logs
+        ]);
+        return;
+      } catch (err: any) {
+        alert(err.message || 'Failed to sync changes to host workspace.');
+        return;
+      }
+    }
+
     try {
       const updated = await bulletApi.updateShot(selectedShot.id, selectedShot);
       setSelectedShot(updated);
@@ -471,6 +618,8 @@ export function App() {
         consoleLogCount={trajectoryLogs.length}
         onOpenMeshCollab={() => setMeshCollabOpen(true)}
         isMeshBroadcasting={isMeshBroadcasting}
+        meshSession={meshSession}
+        onDisconnectMesh={handleDisconnectMesh}
       />
 
       {/* 2. Main Workspace Layout */}
@@ -745,6 +894,7 @@ export function App() {
         onClose={() => setMeshCollabOpen(false)}
         selectedRangeId={selectedRange?.id || null}
         selectedRangeName={selectedRange?.name || null}
+        onJoinedWorkspace={handleJoinedMeshWorkspace}
       />
     </div>
   );

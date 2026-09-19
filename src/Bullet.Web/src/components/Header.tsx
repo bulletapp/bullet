@@ -25,6 +25,13 @@ interface HeaderProps {
   consoleLogCount: number;
   onOpenMeshCollab?: () => void;
   isMeshBroadcasting?: boolean;
+  meshSession?: {
+    isConnected: boolean;
+    isHost: boolean;
+    rangeName: string;
+    accessMode: string;
+  } | null;
+  onDisconnectMesh?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -44,6 +51,8 @@ export const Header: React.FC<HeaderProps> = ({
   consoleLogCount,
   onOpenMeshCollab,
   isMeshBroadcasting,
+  meshSession,
+  onDisconnectMesh,
 }) => {
   const [soundActive, setSoundActive] = React.useState<boolean>(isSoundEnabled);
 
@@ -125,33 +134,57 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Range Selector */}
-        <div className="flex items-center gap-1.5 bg-bullet-surface border border-bullet-border rounded px-2 py-1 text-xs">
-          <Layers className="w-3.5 h-3.5 text-slate-400" />
-          <span className="text-slate-400 font-mono text-[11px]">Range:</span>
-          <select
-            data-testid="header-range-select"
-            className="bg-transparent text-slate-200 outline-none cursor-pointer text-xs font-medium"
-            value={selectedRange?.id || ''}
-            onChange={(e) => {
-              if (e.target.value === '__new__') {
-                onOpenNewRange();
-              } else {
-                const found = ranges.find((r) => r.id === e.target.value);
-                if (found) onSelectRange(found);
-              }
-            }}
-          >
-            {ranges.map((r) => (
-              <option key={r.id} value={r.id} className="bg-slate-900 text-slate-200">
-                {r.name}
+        {/* Range Selector or Collaborative Remote Session Indicator */}
+        {meshSession?.isConnected ? (
+          <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-cyan-950/60 border border-cyan-500/50 text-xs font-mono">
+            <Wifi className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+            <span className="text-slate-400 text-[10px]">Mesh:</span>
+            <span className="text-cyan-300 font-bold max-w-[160px] truncate">{meshSession.rangeName}</span>
+            <span className={`text-[9px] px-1.5 py-0.5 rounded border ${
+              meshSession.accessMode === 'ReadOnly'
+                ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 font-medium'
+                : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold'
+            }`}>
+              {meshSession.accessMode === 'ReadOnly' ? '👁️ OBSERVER' : '✏️ CONTRIBUTOR'}
+            </span>
+            {onDisconnectMesh && (
+              <button
+                onClick={onDisconnectMesh}
+                className="text-[10px] text-slate-400 hover:text-red-400 ml-1 px-1 rounded hover:bg-red-500/10 transition"
+                title="Disconnect from shared WiFi workspace"
+              >
+                ✕ Leave
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 bg-bullet-surface border border-bullet-border rounded px-2 py-1 text-xs">
+            <Layers className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-slate-400 font-mono text-[11px]">Range:</span>
+            <select
+              data-testid="header-range-select"
+              className="bg-transparent text-slate-200 outline-none cursor-pointer text-xs font-medium"
+              value={selectedRange?.id || ''}
+              onChange={(e) => {
+                if (e.target.value === '__new__') {
+                  onOpenNewRange();
+                } else {
+                  const found = ranges.find((r) => r.id === e.target.value);
+                  if (found) onSelectRange(found);
+                }
+              }}
+            >
+              {ranges.map((r) => (
+                <option key={r.id} value={r.id} className="bg-slate-900 text-slate-200">
+                  {r.name}
+                </option>
+              ))}
+              <option value="__new__" className="bg-slate-900 text-amber-400 font-medium">
+                + New Range...
               </option>
-            ))}
-            <option value="__new__" className="bg-slate-900 text-amber-400 font-medium">
-              + New Range...
-            </option>
-          </select>
-        </div>
+            </select>
+          </div>
+        )}
 
         {/* Loadout Selector with Production Indicator */}
         <div className={`flex items-center gap-1.5 border rounded px-2 py-1 text-xs transition-colors ${
