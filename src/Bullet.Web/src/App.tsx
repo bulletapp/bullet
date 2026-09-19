@@ -146,8 +146,9 @@ export function App() {
 
     setTrajectoryLogs((prev) => [
       {
-        timestamp: new Date().toLocaleTimeString(),
-        type: 'response',
+        category: 'Mesh',
+        level: 'Info',
+        timestampUtc: new Date().toISOString(),
         message: `[WiFi Mesh] Connected to "${joinRes.rangeName || snapshot.name}" (${joinRes.accessMode || 'ReadWrite'} mode). You can now collaborate in real-time!`
       },
       ...prev
@@ -159,8 +160,9 @@ export function App() {
     loadRanges();
     setTrajectoryLogs((prev) => [
       {
-        timestamp: new Date().toLocaleTimeString(),
-        type: 'request',
+        category: 'Mesh',
+        level: 'Info',
+        timestampUtc: new Date().toISOString(),
         message: '[WiFi Mesh] Disconnected from shared workspace. Returned to local ranges.'
       },
       ...prev
@@ -191,8 +193,9 @@ export function App() {
 
           setTrajectoryLogs((logs) => [
             {
-              timestamp: new Date().toLocaleTimeString(),
-              type: 'response',
+              category: 'Mesh',
+              level: 'Info',
+              timestampUtc: new Date().toISOString(),
               message: `[WiFi Mesh] Synced: Shot "${updated.name || updated.id}" updated by ${evt.authorPeerName || 'peer'}`
             },
             ...logs
@@ -204,8 +207,9 @@ export function App() {
     hub.on('OnShotFiredByPeer', (summary: any) => {
       setTrajectoryLogs((logs) => [
         {
-          timestamp: new Date().toLocaleTimeString(),
-          type: 'impact',
+          category: 'Mesh',
+          level: 'Info',
+          timestampUtc: new Date().toISOString(),
           message: `[WiFi Mesh] Peer fired: ${summary.shotName || summary.shotId || 'Shot'} (${summary.statusCode || 200})`
         },
         ...logs
@@ -466,8 +470,9 @@ export function App() {
         );
         setTrajectoryLogs((logs) => [
           {
-            timestamp: new Date().toLocaleTimeString(),
-            type: 'response',
+            category: 'Mesh',
+            level: 'Info',
+            timestampUtc: new Date().toISOString(),
             message: `[WiFi Mesh] Saved and synced shot "${selectedShot.name}" to host workspace.`
           },
           ...logs

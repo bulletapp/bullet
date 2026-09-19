@@ -3,6 +3,8 @@ export interface Range {
   name: string;
   description?: string;
   createdAtUtc: string;
+  arsenals?: Arsenal[];
+  loadouts?: Loadout[];
 }
 
 export interface Arsenal {
