@@ -322,21 +322,44 @@ public class MeshTwoInstanceCollaborationEndToEndTests : IClassFixture<WebApplic
 
         try
         {
-            // Host creates a Range
+            // 1. Host creates a Range, Arsenal, and Shot
             var createRangeRes = await hostClient.PostAsJsonAsync("/api/ranges", new { name = "Production Audit Workspace" });
             createRangeRes.EnsureSuccessStatusCode();
             var rangeObj = await createRangeRes.Content.ReadFromJsonAsync<JsonElement>();
             var rangeId = Guid.Parse(rangeObj.GetProperty("id").GetString()!);
 
-            // Host shares as ReadOnly without a password
+            var createArsenalRes = await hostClient.PostAsJsonAsync("/api/arsenals", new
+            {
+                rangeId = rangeId,
+                name = "Audit Arsenal",
+                orderIndex = 0
+            });
+            createArsenalRes.EnsureSuccessStatusCode();
+            var arsenalObj = await createArsenalRes.Content.ReadFromJsonAsync<JsonElement>();
+            var arsenalId = Guid.Parse(arsenalObj.GetProperty("id").GetString()!);
+
+            var createShotRes = await hostClient.PostAsJsonAsync("/api/shots", new
+            {
+                arsenalId = arsenalId,
+                name = "Original Audit Shot",
+                method = "GET",
+                url = "https://audit.prod.internal/v1/health",
+                orderIndex = 0
+            });
+            createShotRes.EnsureSuccessStatusCode();
+            var shotObj = await createShotRes.Content.ReadFromJsonAsync<JsonElement>();
+            var shotId = Guid.Parse(shotObj.GetProperty("id").GetString()!);
+
+            // 2. Host shares as ReadOnly without a password
             var shareRes = await hostClient.PostAsJsonAsync("/api/mesh/share", new
             {
                 rangeId = rangeId,
-                accessMode = "ReadOnly"
+                accessMode = "ReadOnly",
+                peerName = "Host-Auditor"
             });
             shareRes.EnsureSuccessStatusCode();
 
-            // Peer joins
+            // 3. Peer joins and acquires a ReadOnly ticket
             var joinRes = await hostClient.PostAsJsonAsync("/api/mesh/join", new
             {
                 rangeId = rangeId,
@@ -348,13 +371,51 @@ public class MeshTwoInstanceCollaborationEndToEndTests : IClassFixture<WebApplic
             Assert.True(joinResult!.Success);
             Assert.Equal("ReadOnly", joinResult.AccessMode);
             Assert.NotNull(joinResult.Ticket);
+            var readOnlyTicket = joinResult.Ticket;
 
-            // Host status confirms ReadOnly configuration
+            // 4. Host status confirms ReadOnly configuration
             var hostStatusRes = await hostClient.GetAsync("/api/mesh/status");
             var hostStatus = await hostStatusRes.Content.ReadFromJsonAsync<MeshStatus>(JsonOpts);
             var share = hostStatus!.ActiveShares.First(s => s.RangeId == rangeId);
             Assert.Equal("ReadOnly", share.AccessMode);
             Assert.False(share.IsPasswordProtected);
+
+            // 5. Peer attempts to make a change (mutation) in ReadOnly mode
+            var attemptedMutation = new HttpRequestMessage(HttpMethod.Post, "/api/mesh/sync")
+            {
+                Content = JsonContent.Create(new MeshSyncEvent
+                {
+                    RangeId = rangeId,
+                    EventType = "ShotUpdated",
+                    AuthorPeerName = "Observer-Peer",
+                    PayloadJson = JsonSerializer.Serialize(new
+                    {
+                        id = shotId,
+                        name = "Tampered Shot Name",
+                        url = "https://malicious.example.com",
+                        method = "DELETE"
+                    })
+                })
+            };
+            attemptedMutation.Headers.Add("X-Mesh-Ticket", readOnlyTicket);
+
+            // 6. VERIFY: Host rejects mutation with 403 Forbidden
+            var mutationResponse = await hostClient.SendAsync(attemptedMutation);
+            Assert.Equal(HttpStatusCode.Forbidden, mutationResponse.StatusCode);
+
+            var errorContent = await mutationResponse.Content.ReadAsStringAsync();
+            Assert.Contains("Read-Only", errorContent);
+
+            // 7. VERIFY: Host database was NOT modified
+            using (var scope = hostFactory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<BulletDbContext>();
+                var shot = await db.Shots.FirstOrDefaultAsync(s => s.Id == shotId);
+                Assert.NotNull(shot);
+                Assert.Equal("Original Audit Shot", shot!.Name);
+                Assert.Equal("https://audit.prod.internal/v1/health", shot.Url);
+                Assert.Equal("GET", shot.Method);
+            }
         }
         finally
         {
