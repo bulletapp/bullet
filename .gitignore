@@ -63,6 +63,8 @@ e2e-screenshots/
 !src/Bullet.Api/wwwroot/apple-touch-icon.png
 !src/Bullet.Api/wwwroot/manifest.webmanifest
 !src/Bullet.Desktop/Bullet.ico
+!docs/assets/*.png
+!docs/assets/*.svg
 
 ## OS & Editor
 .DS_Store

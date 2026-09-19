@@ -45,6 +45,7 @@ public class Impact
 
     public Dictionary<string, string> ExportedRounds { get; set; } = new();
     public string? ErrorMessage { get; set; }
+    public GrpcImpactDetails? GrpcDetails { get; set; }
 }
 
 public class ImpactCookie

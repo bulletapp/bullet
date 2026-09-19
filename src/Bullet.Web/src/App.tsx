@@ -216,6 +216,10 @@ export function App() {
           settings: effectiveSettings,
           triggerScript: targetShot.triggerScript,
           verifierScript: targetShot.verifierScript,
+          grpcService: targetShot.grpcService,
+          grpcMethod: targetShot.grpcMethod,
+          grpcProto: targetShot.grpcProto,
+          grpcUseTls: targetShot.grpcUseTls,
         });
       } else {
         res = await bulletApi.fireAdHoc(

@@ -16,6 +16,8 @@ Bullet is a modern, developer-centric, high-performance alternative to tradition
 
 Bullet is **not** a UI mockup, **not** a prototype with placeholder buttons, and **not** a CRUD dashboard. It is a fully operational API platform capable of:
 - Executing real HTTP/REST requests with sub-millisecond connection timing diagnostics.
+- Full **gRPC Studio** support: Server Reflection auto-discovery, `.proto` schema parser, HTTP/2 binary framing, and metadata/trailers inspection.
+- Enterprise **OAuth 2.0** engine: Authorization Code (with PKCE `S256`), Client Credentials, Password, and Refresh Token flows with live token acquisition and injection.
 - Running sandboxed JavaScript pre-request triggers and test verifiers with strict memory and CPU boundaries.
 - Protecting systems against SSRF by blocking private ranges, loopback addresses, and cloud metadata APIs.
 - Managing mutual TLS (mTLS) client certificates, custom enterprise CA bundles, and cipher suites.

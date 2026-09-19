@@ -189,6 +189,10 @@ public class ShotsController : ControllerBase
             if (overrides.TriggerScript != null) shot.TriggerScript = overrides.TriggerScript;
             if (overrides.VerifierScript != null) shot.VerifierScript = overrides.VerifierScript;
             if (overrides.Settings != null) shot.Settings = overrides.Settings;
+            if (!string.IsNullOrEmpty(overrides.GrpcService)) shot.GrpcService = overrides.GrpcService;
+            if (!string.IsNullOrEmpty(overrides.GrpcMethod)) shot.GrpcMethod = overrides.GrpcMethod;
+            if (!string.IsNullOrEmpty(overrides.GrpcProto)) shot.GrpcProto = overrides.GrpcProto;
+            if (overrides.GrpcUseTls.HasValue) shot.GrpcUseTls = overrides.GrpcUseTls.Value;
         }
 
         var initialCookies = new Dictionary<string, string>();
@@ -265,7 +269,7 @@ public class ShotsController : ControllerBase
     [HttpPost("fire-ad-hoc")]
     public async Task<IActionResult> FireAdHoc([FromBody] AdHocFireRequest req, CancellationToken cancellationToken)
     {
-        var shot = new Shot
+        var shot = req.Shot ?? new Shot
         {
             Name = req.Name ?? "Ad-Hoc Shot",
             Method = req.Method,
@@ -276,8 +280,20 @@ public class ShotsController : ControllerBase
             Armor = req.Armor ?? new ArmorConfig(),
             Settings = req.Settings ?? new ShotSettings(),
             TriggerScript = req.TriggerScript,
-            VerifierScript = req.VerifierScript
+            VerifierScript = req.VerifierScript,
+            GrpcService = req.GrpcService,
+            GrpcMethod = req.GrpcMethod,
+            GrpcProto = req.GrpcProto,
+            GrpcUseTls = req.GrpcUseTls
         };
+
+        if (req.Shot != null)
+        {
+            if (!string.IsNullOrEmpty(req.GrpcService)) shot.GrpcService = req.GrpcService;
+            if (!string.IsNullOrEmpty(req.GrpcMethod)) shot.GrpcMethod = req.GrpcMethod;
+            if (!string.IsNullOrEmpty(req.GrpcProto)) shot.GrpcProto = req.GrpcProto;
+            if (req.GrpcUseTls) shot.GrpcUseTls = true;
+        }
 
         Loadout? loadout = null;
         if (req.LoadoutId.HasValue)
@@ -363,10 +379,18 @@ public class FireShotOverrideRequest
     public ShotSettings? Settings { get; set; }
     public string? TriggerScript { get; set; }
     public string? VerifierScript { get; set; }
+    public string? GrpcService { get; set; }
+    public string? GrpcMethod { get; set; }
+    public string? GrpcProto { get; set; }
+    public bool? GrpcUseTls { get; set; }
 }
 
 public class AdHocFireRequest
 {
+    // Support nested { shot: ... } from frontend bulletApi.ts
+    [Microsoft.AspNetCore.Mvc.ModelBinding.Validation.ValidateNever]
+    public Shot? Shot { get; set; }
+
     public Guid? RangeId { get; set; }
     public string? Name { get; set; }
     public string Method { get; set; } = "GET";
@@ -381,6 +405,10 @@ public class AdHocFireRequest
     public string? TriggerScript { get; set; }
     public string? VerifierScript { get; set; }
     public Dictionary<string, string>? AdHocRounds { get; set; }
+    public string? GrpcService { get; set; }
+    public string? GrpcMethod { get; set; }
+    public string? GrpcProto { get; set; }
+    public bool GrpcUseTls { get; set; }
 }
 
 public class MoveShotRequest

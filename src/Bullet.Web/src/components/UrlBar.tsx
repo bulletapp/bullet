@@ -13,7 +13,7 @@ interface UrlBarProps {
   activeLoadout: Loadout | null;
 }
 
-const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
+const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'GRPC'];
 
 const methodColors: Record<string, string> = {
   GET: 'text-emerald-400',
@@ -23,6 +23,7 @@ const methodColors: Record<string, string> = {
   DELETE: 'text-rose-400',
   HEAD: 'text-slate-400',
   OPTIONS: 'text-cyan-400',
+  GRPC: 'text-purple-400 font-black tracking-wider',
 };
 
 export const UrlBar: React.FC<UrlBarProps> = ({
@@ -209,7 +210,11 @@ export const UrlBar: React.FC<UrlBarProps> = ({
                 onFire();
               }
             }}
-            placeholder="Enter request URL, {{round}} token, or paste cURL command..."
+            placeholder={
+              shot.method === 'GRPC'
+                ? "Enter gRPC target (e.g. localhost:50051 or grpc://...)"
+                : "Enter request URL, {{round}} token, or paste cURL command..."
+            }
             className="w-full h-9 bg-bullet-surface border border-bullet-border rounded px-3 text-xs font-mono text-slate-100 placeholder-slate-500 outline-none focus:border-amber-500 transition shadow-inner pr-24"
           />
 

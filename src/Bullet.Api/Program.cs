@@ -16,6 +16,8 @@ using Bullet.Security.Masking;
 using Bullet.Security.Secrets;
 using Bullet.Security.Ssrf;
 using Bullet.Workers;
+using Bullet.Application.OAuth;
+using Bullet.Execution.Grpc;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -94,6 +96,10 @@ public static class BulletServer
         builder.Services.AddSingleton<ICodeShotService, CodeShotService>();
         builder.Services.AddSingleton<IFieldManualService, FieldManualService>();
         builder.Services.AddSingleton<ITargetRangeEngine, TargetRangeEngine>();
+        builder.Services.AddSingleton<IOAuthService, OAuthService>();
+        builder.Services.AddSingleton<IProtoParserService, ProtoParserService>();
+        builder.Services.AddSingleton<IGrpcReflectionService, GrpcReflectionService>();
+        builder.Services.AddSingleton<IGrpcShotExecutor, GrpcShotExecutor>();
 
         // Background Worker for Sentinels
         builder.Services.AddHostedService<SentinelWorker>();

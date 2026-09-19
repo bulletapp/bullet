@@ -119,6 +119,10 @@ export const bulletApi = {
       settings?: any;
       triggerScript?: string;
       verifierScript?: string;
+      grpcService?: string;
+      grpcMethod?: string;
+      grpcProto?: string;
+      grpcUseTls?: boolean;
     }
   ) => {
     const validId = id && id !== 'undefined' ? id : (options as any)?.id;
@@ -216,6 +220,62 @@ export const bulletApi = {
   getCookies: (domain?: string) => request<CookieRecord[]>(`/cookies${domain ? `?domain=${domain}` : ''}`),
   clearCookies: (domain?: string) => request<void>(`/cookies/clear${domain ? `?domain=${domain}` : ''}`, { method: 'POST' }),
   deleteCookie: (id: string) => request<void>(`/cookies/${id}`, { method: 'DELETE' }),
+
+  // OAuth 2.0
+  requestOAuthToken: (data: any) =>
+    request<any>('/oauth/token', { method: 'POST', body: JSON.stringify(data) }),
+  generatePkce: () =>
+    request<{ codeVerifier: string; codeChallenge: string; codeChallengeMethod: string }>('/oauth/pkce', { method: 'POST' }),
+
+  // gRPC
+  grpcReflect: async (serverUrl: string, useTls: boolean = false) => {
+    const raw = await request<any>('/grpc/reflect', {
+      method: 'POST',
+      body: JSON.stringify({ serverUrl, useTls }),
+    });
+    return {
+      success: raw.success ?? true,
+      isSuccess: raw.success ?? true,
+      services: (raw.services || []).map((s: any) => ({
+        name: s.serviceName || s.name || '',
+        serviceName: s.serviceName || s.name || '',
+        methods: (s.methods || []).map((m: any) => ({
+          name: m.methodName || m.name || '',
+          methodName: m.methodName || m.name || '',
+          fullPath: m.fullPath || '',
+          callType: m.callType || 'Unary',
+          inputType: m.inputType || '',
+          outputType: m.outputType || '',
+          samplePayloadJson: m.samplePayloadJson || '{}',
+        })),
+      })),
+      errorMessage: raw.errorMessage,
+    };
+  },
+  grpcParseProto: async (protoContent: string, fileName?: string) => {
+    const raw = await request<any>('/grpc/parse-proto', {
+      method: 'POST',
+      body: JSON.stringify({ protoContent, fileName }),
+    });
+    return {
+      success: raw.success ?? true,
+      isSuccess: raw.success ?? true,
+      services: (raw.services || []).map((s: any) => ({
+        name: s.serviceName || s.name || '',
+        serviceName: s.serviceName || s.name || '',
+        methods: (s.methods || []).map((m: any) => ({
+          name: m.methodName || m.name || '',
+          methodName: m.methodName || m.name || '',
+          fullPath: m.fullPath || '',
+          callType: m.callType || 'Unary',
+          inputType: m.inputType || '',
+          outputType: m.outputType || '',
+          samplePayloadJson: m.samplePayloadJson || '{}',
+        })),
+      })),
+      errorMessage: raw.errorMessage,
+    };
+  },
 };
 
 // SignalR Hub Connection helpers

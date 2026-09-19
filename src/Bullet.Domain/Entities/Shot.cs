@@ -6,7 +6,7 @@ public class Shot
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid ArsenalId { get; set; }
-    public Arsenal Arsenal { get; set; } = null!;
+    public Arsenal? Arsenal { get; set; }
     public Guid? SquadId { get; set; }
     public Squad? Squad { get; set; }
     public string Name { get; set; } = string.Empty;
@@ -26,6 +26,11 @@ public class Shot
     public string? TriggerScript { get; set; }
     public string? VerifierScript { get; set; }
 
+    public string? GrpcService { get; set; }
+    public string? GrpcMethod { get; set; }
+    public string? GrpcProto { get; set; }
+    public bool GrpcUseTls { get; set; }
+
     public int Version { get; set; } = 1;
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
@@ -37,7 +42,7 @@ public class ShotVersion
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid ShotId { get; set; }
-    public Shot Shot { get; set; } = null!;
+    public Shot? Shot { get; set; }
     public int VersionNumber { get; set; }
     public string SnapshotJson { get; set; } = string.Empty;
     public string? Comment { get; set; }

@@ -47,6 +47,11 @@ export interface Shot {
   verifierScript?: string;
   settings: ShotSettings;
   orderIndex: number;
+  grpcService?: string;
+  grpcMethod?: string;
+  grpcProto?: string;
+  grpcUseReflection?: boolean;
+  grpcUseTls?: boolean;
 }
 
 export interface KeyValuePair {
@@ -77,6 +82,29 @@ export interface ArmorConfig {
   awsSecretKey?: string;
   awsRegion?: string;
   awsService?: string;
+  
+  // OAuth 2.0 properties
+  grantType?: string;
+  accessTokenUrl?: string;
+  authUrl?: string;
+  clientId?: string;
+  clientSecret?: string;
+  scope?: string;
+  state?: string;
+  redirectUri?: string;
+  clientAuth?: 'header' | 'body';
+  usePkce?: boolean;
+  codeVerifier?: string;
+  codeChallenge?: string;
+  codeChallengeMethod?: string;
+  token?: string;
+  tokenType?: string;
+  refreshToken?: string;
+  expiresAt?: string;
+  autoRefresh?: boolean;
+  headerPrefix?: string;
+  addTo?: 'header' | 'query';
+  
   properties?: Record<string, string>;
 }
 
@@ -229,12 +257,40 @@ export interface Impact {
   exportedRounds: Record<string, string>;
   errorMessage?: string;
   tlsDiagnostics?: TlsDiagnosticReport;
+  grpcDetails?: GrpcImpactDetails;
 
   // Compatibility aliases
   responseSizeBytes?: number;
   bodyText?: string;
   headers?: Record<string, string>;
   telemetry?: TimingBreakdown;
+}
+
+export interface GrpcImpactDetails {
+  statusCode: number;
+  statusText: string;
+  statusMessage?: string;
+  service?: string;
+  method?: string;
+  initialMetadata?: Record<string, string>;
+  trailers?: Record<string, string>;
+  isStreaming?: boolean;
+  streamMessages?: string[];
+}
+
+export interface GrpcServiceInfo {
+  serviceName: string;
+  packageName?: string;
+  methods: GrpcMethodInfo[];
+}
+
+export interface GrpcMethodInfo {
+  methodName: string;
+  fullPath: string;
+  callType: string;
+  inputType: string;
+  outputType: string;
+  samplePayloadJson: string;
 }
 
 export interface FiringRun {

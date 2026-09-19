@@ -44,6 +44,93 @@ public class TestApiController : ControllerBase
         });
     }
 
+    [HttpPost("oauth/token")]
+    public async Task<IActionResult> MockOAuthToken()
+    {
+        string grantType = "client_credentials";
+        string clientId = "";
+        string clientSecret = "";
+        string scope = "read write fire";
+
+        if (Request.HasFormContentType)
+        {
+            var form = await Request.ReadFormAsync();
+            grantType = form["grant_type"].ToString();
+            clientId = form["client_id"].ToString();
+            clientSecret = form["client_secret"].ToString();
+            if (!string.IsNullOrEmpty(form["scope"])) scope = form["scope"].ToString();
+        }
+        else if (Request.ContentType != null && Request.ContentType.Contains("json"))
+        {
+            using var reader = new System.IO.StreamReader(Request.Body);
+            var jsonText = await reader.ReadToEndAsync();
+            try
+            {
+                var doc = JsonNode.Parse(jsonText);
+                grantType = doc?["grant_type"]?.ToString() ?? "client_credentials";
+                clientId = doc?["client_id"]?.ToString() ?? "";
+                clientSecret = doc?["client_secret"]?.ToString() ?? "";
+                if (doc?["scope"] != null) scope = doc["scope"]!.ToString();
+            }
+            catch { }
+        }
+
+        // Also check Authorization header for Basic auth
+        if (Request.Headers.TryGetValue("Authorization", out var authHeader) && authHeader.ToString().StartsWith("Basic ", StringComparison.OrdinalIgnoreCase))
+        {
+            var raw = authHeader.ToString().Substring("Basic ".Length).Trim();
+            try
+            {
+                var decoded = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(raw));
+                var parts = decoded.Split(':', 2);
+                if (parts.Length == 2)
+                {
+                    clientId = parts[0];
+                    clientSecret = parts[1];
+                }
+            }
+            catch { }
+        }
+
+        if (clientSecret == "invalid")
+        {
+            return BadRequest(new { error = "invalid_client", error_description = "Client authentication failed" });
+        }
+
+        var tokenBytes = System.Text.Encoding.UTF8.GetBytes($"{grantType}:{clientId}:{DateTime.UtcNow.Ticks}");
+        var accessToken = "bullet_oauth_" + Convert.ToBase64String(tokenBytes).TrimEnd('=');
+        var refreshToken = "bullet_refresh_" + Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)).TrimEnd('=');
+
+        return Ok(new
+        {
+            access_token = accessToken,
+            token_type = "Bearer",
+            expires_in = 3600,
+            refresh_token = refreshToken,
+            scope = scope
+        });
+    }
+
+    [HttpGet("oauth/authorize")]
+    public IActionResult MockOAuthAuthorize([FromQuery] string? response_type, [FromQuery] string? client_id, [FromQuery] string? redirect_uri, [FromQuery] string? scope, [FromQuery] string? state, [FromQuery] string? code_challenge)
+    {
+        var authCode = "bullet_auth_code_" + Guid.NewGuid().ToString("N").Substring(0, 12);
+        if (!string.IsNullOrEmpty(redirect_uri))
+        {
+            var sep = redirect_uri.Contains('?') ? "&" : "?";
+            var url = $"{redirect_uri}{sep}code={authCode}";
+            if (!string.IsNullOrEmpty(state)) url += $"&state={Uri.EscapeDataString(state)}";
+            return Redirect(url);
+        }
+
+        return Ok(new
+        {
+            status = "authorized",
+            code = authCode,
+            state = state
+        });
+    }
+
     [HttpGet("users")]
     public IActionResult GetUsers()
     {

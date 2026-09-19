@@ -13,7 +13,7 @@ interface ImpactViewerProps {
   onRetry?: () => void;
 }
 
-type ImpactTab = 'pretty' | 'raw' | 'preview' | 'headers' | 'cookies' | 'timing' | 'verifiers';
+type ImpactTab = 'pretty' | 'raw' | 'preview' | 'headers' | 'cookies' | 'timing' | 'verifiers' | 'trailers';
 
 export const ImpactViewer: React.FC<ImpactViewerProps> = ({ 
   impact, 
@@ -57,6 +57,10 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
   const bodyContent = impact.bodyPreview ?? impact.bodyText ?? '';
   const isExecutionError = impact.statusCode === 0 || (!impact.isSuccess && !bodyContent && Boolean(impact.errorMessage));
 
+  const isGrpc = Boolean(impact.grpcDetails);
+  const grpcCode = impact.grpcDetails?.statusCode ?? 0;
+  const isGrpcSuccess = isGrpc && grpcCode === 0;
+
   const isSslError = Boolean(
     impact.statusText === 'SSL Error' ||
     impact.errorMessage?.toLowerCase().includes('ssl') ||
@@ -73,7 +77,11 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
   const isRedirect = impact.statusCode >= 300 && impact.statusCode < 400;
   const isClientError = impact.statusCode >= 400 && impact.statusCode < 500;
 
-  const statusColor = isExecutionError
+  const statusColor = isGrpc
+    ? (isGrpcSuccess
+        ? 'text-purple-400 bg-purple-500/10 border-purple-500/30 shadow-purple-950/20'
+        : 'text-rose-400 bg-rose-500/10 border-rose-500/30 shadow-rose-950/20')
+    : isExecutionError
     ? 'text-rose-400 bg-rose-500/10 border-rose-500/30 shadow-rose-950/20'
     : isSuccess
     ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30 shadow-emerald-950/20'
@@ -205,11 +213,28 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
         <div className="flex items-center gap-3">
           {/* Status Pill */}
           <div data-testid="status-pill" className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border font-mono text-xs font-black shadow-sm ${statusColor}`}>
-            {isExecutionError && <XCircle className="w-3.5 h-3.5 text-rose-400" />}
-            {isSuccess && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
-            <span data-testid="status-code">{impact.statusCode > 0 ? impact.statusCode : (isSslError ? 'SSL Error' : 'Error')}</span>
-            <span data-testid="status-text">{impact.statusCode > 0 ? impact.statusText : (isSslError ? 'Certificate Invalid' : 'Could not get response')}</span>
+            {isGrpc ? (
+              <>
+                {isGrpcSuccess ? <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" /> : <XCircle className="w-3.5 h-3.5 text-rose-400" />}
+                <span data-testid="status-code">gRPC: {grpcCode}</span>
+                <span data-testid="status-text">{impact.grpcDetails?.statusMessage || (grpcCode === 0 ? 'OK' : 'ERROR')}</span>
+              </>
+            ) : (
+              <>
+                {isExecutionError && <XCircle className="w-3.5 h-3.5 text-rose-400" />}
+                {isSuccess && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                <span data-testid="status-code">{impact.statusCode > 0 ? impact.statusCode : (isSslError ? 'SSL Error' : 'Error')}</span>
+                <span data-testid="status-text">{impact.statusCode > 0 ? impact.statusText : (isSslError ? 'Certificate Invalid' : 'Could not get response')}</span>
+              </>
+            )}
           </div>
+
+          {/* gRPC Badge */}
+          {isGrpc && (
+            <div className="flex items-center gap-1 text-purple-400 font-mono text-xs bg-purple-950/30 px-2 py-0.5 rounded border border-purple-500/20">
+              <span className="font-bold">gRPC HTTP/2</span>
+            </div>
+          )}
 
           {/* Timing + Supersonic Speed Pill */}
           <div
@@ -335,6 +360,20 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
           >
             Timing
           </button>
+
+          {(isGrpc || (impact.grpcDetails?.trailers && Object.keys(impact.grpcDetails.trailers).length > 0)) && (
+            <button
+              data-testid="tab-trailers"
+              onClick={() => setActiveTab('trailers')}
+              className={`px-3 py-2 border-b-2 font-mono transition ${
+                activeTab === 'trailers'
+                  ? 'border-purple-400 text-purple-400 font-bold'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Trailers ({Object.keys(impact.grpcDetails?.trailers || {}).length})
+            </button>
+          )}
 
           {totalTests > 0 && (
             <button
@@ -725,6 +764,46 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* TRAILERS TAB (gRPC) */}
+        {activeTab === 'trailers' && (
+          <div className="space-y-4">
+            <div className="border border-bullet-border rounded overflow-hidden">
+              <div className="bg-bullet-bg px-3 py-1.5 border-b border-bullet-border text-slate-400 font-mono font-medium flex items-center justify-between">
+                <span className="text-purple-400 font-bold flex items-center gap-1.5">
+                  <span>gRPC Status & Trailers</span>
+                </span>
+                <span className="text-xs font-mono text-slate-300">
+                  Status: <code className="text-purple-400 font-bold">{grpcCode} ({impact.grpcDetails?.statusMessage || 'OK'})</code>
+                </span>
+              </div>
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-bullet-bg border-b border-bullet-border text-slate-400 font-mono">
+                    <th className="px-3 py-1.5 font-normal w-1/3">Trailer Name</th>
+                    <th className="px-3 py-1.5 font-normal">Trailer Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {!impact.grpcDetails?.trailers || Object.keys(impact.grpcDetails.trailers).length === 0 ? (
+                    <tr>
+                      <td colSpan={2} className="p-4 text-center text-slate-500 font-mono text-xs">
+                        No gRPC trailers received.
+                      </td>
+                    </tr>
+                  ) : (
+                    Object.entries(impact.grpcDetails.trailers).map(([key, val]) => (
+                      <tr key={key} className="border-b border-bullet-border/40 hover:bg-bullet-surface/50 font-mono">
+                        <td className="px-3 py-1 text-purple-400 font-medium">{key}</td>
+                        <td className="px-3 py-1 text-slate-200 select-text break-all">{val}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

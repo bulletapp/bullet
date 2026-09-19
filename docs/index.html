@@ -576,6 +576,38 @@
           <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-slate-400">Zero Rosetta Overhead</div>
         </div>
 
+        <!-- Weapon 9 -->
+        <div class="glass-panel p-6 relative group flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-5 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">gRPC Studio</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Server Reflection auto-discovery, .proto schema parser, HTTP/2 binary framing execution, JSON message payloads, and trailers diagnostics.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-purple-400">HTTP/2 Dynamic Framing</div>
+        </div>
+
+        <!-- Weapon 10 -->
+        <div class="glass-panel p-6 relative group flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-5 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Enterprise OAuth 2.0</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Authorization Code (with PKCE S256), Client Credentials, Password, and Refresh Token grant flows with live token acquisition and auto-injection.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-amber-400">PKCE S256 &amp; Token Lifecycle</div>
+        </div>
+
       </div>
 
     </div>
@@ -597,6 +629,8 @@
         <!-- Gallery Tabs -->
         <div class="flex items-center justify-center flex-wrap gap-2 mt-8">
           <button class="gallery-tab-btn active px-4 py-2 rounded-lg font-mono text-xs font-semibold border-b-2 border-amber-500 text-amber-400 bg-slate-900/60" data-gallery="editor">Shot Cockpit</button>
+          <button class="gallery-tab-btn px-4 py-2 rounded-lg font-mono text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 bg-slate-900/60" data-gallery="grpc">gRPC Studio</button>
+          <button class="gallery-tab-btn px-4 py-2 rounded-lg font-mono text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 bg-slate-900/60" data-gallery="oauth2">OAuth 2.0 Engine</button>
           <button class="gallery-tab-btn px-4 py-2 rounded-lg font-mono text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 bg-slate-900/60" data-gallery="telemetry">Microsecond Telemetry</button>
           <button class="gallery-tab-btn px-4 py-2 rounded-lg font-mono text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 bg-slate-900/60" data-gallery="tls">TLS & Cert Locker</button>
           <button class="gallery-tab-btn px-4 py-2 rounded-lg font-mono text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 bg-slate-900/60" data-gallery="runner">Multi-Shot Runner</button>
@@ -692,7 +726,21 @@
                 <td class="py-3.5 px-6 text-slate-400">Custom syntax</td>
               </tr>
               <tr class="hover:bg-slate-900/40 transition-colors">
-                <td class="py-3.5 px-6 font-sans font-medium text-slate-200">Open Source & License</td>
+                <td class="py-3.5 px-6 font-sans font-medium text-slate-200">gRPC &amp; Server Reflection</td>
+                <td class="py-3.5 px-6 font-bold text-purple-400 bg-amber-500/5 border-x border-amber-500/20">Full (.proto, Reflection, HTTP/2)</td>
+                <td class="py-3.5 px-6 text-slate-300">Supported (Cloud)</td>
+                <td class="py-3.5 px-6 text-slate-500">Plugin required</td>
+                <td class="py-3.5 px-6 text-rose-400">Limited / Roadmap</td>
+              </tr>
+              <tr class="hover:bg-slate-900/40 transition-colors">
+                <td class="py-3.5 px-6 font-sans font-medium text-slate-200">OAuth 2.0 &amp; PKCE Engine</td>
+                <td class="py-3.5 px-6 font-bold text-emerald-400 bg-amber-500/5 border-x border-amber-500/20">Full (PKCE S256, 4 Grants)</td>
+                <td class="py-3.5 px-6 text-slate-300">Supported</td>
+                <td class="py-3.5 px-6 text-slate-300">Supported</td>
+                <td class="py-3.5 px-6 text-slate-400">Basic</td>
+              </tr>
+              <tr class="hover:bg-slate-900/40 transition-colors">
+                <td class="py-3.5 px-6 font-sans font-medium text-slate-200">Open Source &amp; License</td>
                 <td class="py-3.5 px-6 font-bold text-amber-300 bg-amber-500/5 border-x border-amber-500/20">MIT (100% Free)</td>
                 <td class="py-3.5 px-6 text-rose-400">Proprietary Paid Tiers</td>
                 <td class="py-3.5 px-6 text-rose-400">Freemium Cloud</td>

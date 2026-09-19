@@ -1,4 +1,4 @@
-﻿// BULLET - Load. Aim. API. Interactive Engine
+// BULLET - Load. Aim. API. Interactive Engine
 
 document.addEventListener('DOMContentLoaded', () => {
   initShotSimulator();
@@ -425,6 +425,16 @@ const GALLERY_DATA = {
     src: "assets/preview-assertions.png",
     title: "Real-time Test Assertions (Jint ES6)",
     desc: "Execute Chai-compatible pm.test assertions in a locked-down JavaScript isolate with sub-millisecond overhead."
+  },
+  grpc: {
+    src: "assets/preview-grpc.png",
+    title: "gRPC Studio with Server Reflection & Protobuf Parser",
+    desc: "Discover RPC services dynamically with Server Reflection, parse .proto schemas, compose JSON payloads, and inspect HTTP/2 binary framing & trailers."
+  },
+  oauth2: {
+    src: "assets/preview-oauth2.png",
+    title: "OAuth 2.0 Engine with PKCE & Token Lifecycle",
+    desc: "Execute Authorization Code with PKCE (S256), Client Credentials, Password, and Refresh Token grants with one-click token acquisition and auto-injection."
   }
 };
 

@@ -14,6 +14,12 @@ public static class DatabaseSeeder
     {
         await db.Database.EnsureCreatedAsync();
 
+        // Safely migrate SQLite schema for new gRPC columns if missing
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Shots ADD COLUMN GrpcService TEXT;"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Shots ADD COLUMN GrpcMethod TEXT;"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Shots ADD COLUMN GrpcProto TEXT;"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Shots ADD COLUMN GrpcUseTls INTEGER NOT NULL DEFAULT 0;"); } catch { }
+
         if (await db.Ranges.AnyAsync())
         {
             var demoRange = await db.Ranges.FirstOrDefaultAsync(r => r.Name == "Bullet Demo Range");

@@ -67,12 +67,32 @@ public class ArmorResolver : IArmorResolver
             }
 
             case ArmorType.Bearer:
-            case ArmorType.OAuth2:
             {
                 var token = tokenResolver.Resolve(effectiveArmor.GetProperty("token") ?? "", resolvedRounds);
                 if (!string.IsNullOrWhiteSpace(token))
                 {
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                }
+                break;
+            }
+
+            case ArmorType.OAuth2:
+            {
+                var token = tokenResolver.Resolve(effectiveArmor.OAuthToken ?? effectiveArmor.GetProperty("token") ?? "", resolvedRounds);
+                var prefix = tokenResolver.Resolve(effectiveArmor.OAuthHeaderPrefix ?? "Bearer", resolvedRounds);
+                var addTo = effectiveArmor.OAuthAddTo ?? "header";
+
+                if (!string.IsNullOrWhiteSpace(token))
+                {
+                    if (addTo.Equals("Query", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var separator = url.Contains('?') ? "&" : "?";
+                        url = $"{url}{separator}access_token={Uri.EscapeDataString(token)}";
+                    }
+                    else
+                    {
+                        request.Headers.Authorization = new AuthenticationHeaderValue(prefix, token);
+                    }
                 }
                 break;
             }

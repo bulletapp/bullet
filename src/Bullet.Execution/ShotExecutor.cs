@@ -30,6 +30,7 @@ public class ShotExecutor : IShotExecutor
     private readonly ISsrfGuard _ssrfGuard;
     private readonly IScriptSandbox _sandbox;
     private readonly ISecretMasker _secretMasker;
+    private readonly Bullet.Execution.Grpc.IGrpcShotExecutor _grpcExecutor;
 
     public ShotExecutor(
         ITokenResolver tokenResolver,
@@ -38,7 +39,8 @@ public class ShotExecutor : IShotExecutor
         ISsrfGuard ssrfGuard,
         IScriptSandbox sandbox,
         ISecretMasker secretMasker,
-        IHttpMessageHandlerProvider? handlerProvider = null)
+        IHttpMessageHandlerProvider? handlerProvider = null,
+        Bullet.Execution.Grpc.IGrpcShotExecutor? grpcExecutor = null)
     {
         _tokenResolver = tokenResolver;
         _armorResolver = armorResolver;
@@ -47,11 +49,19 @@ public class ShotExecutor : IShotExecutor
         _sandbox = sandbox;
         _secretMasker = secretMasker;
         _handlerProvider = handlerProvider ?? new DefaultHttpMessageHandlerProvider(tlsManager);
+        _grpcExecutor = grpcExecutor ?? new Bullet.Execution.Grpc.GrpcShotExecutor(tokenResolver, armorResolver, tlsManager, ssrfGuard, secretMasker);
     }
 
     public async Task<Impact> FireAsync(ShotExecutionRequest request, CancellationToken cancellationToken = default)
     {
         var shot = request.Shot;
+
+        // Route gRPC protocol execution
+        if (string.Equals(shot.Method, "GRPC", StringComparison.OrdinalIgnoreCase))
+        {
+            return await _grpcExecutor.ExecuteAsync(request, cancellationToken);
+        }
+
         var impact = new Impact
         {
             ShotId = shot.Id,
