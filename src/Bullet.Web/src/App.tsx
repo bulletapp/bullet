@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Upload } from 'lucide-react';
 import { 
   Range, Arsenal, Squad, Shot, Loadout, TLSProfile, 
   Impact, TrajectoryLogEntry 
@@ -55,6 +56,9 @@ export function App() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [firingRunOpen, setFiringRunOpen] = useState(false);
   const [armoryTransferOpen, setArmoryTransferOpen] = useState(false);
+  const [initialImportContent, setInitialImportContent] = useState('');
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const dragCounter = useRef(0);
   const [codeShotOpen, setCodeShotOpen] = useState(false);
   const [newRangeOpen, setNewRangeOpen] = useState(false);
   const [newArsenalOpen, setNewArsenalOpen] = useState(false);
@@ -337,8 +341,93 @@ export function App() {
     }
   };
 
+  const handleMoveShot = async (shotId: string, squadId: string | null, arsenalId?: string) => {
+    try {
+      await bulletApi.moveShot(shotId, squadId, arsenalId);
+      if (selectedRange) {
+        await loadRangeData(selectedRange.id);
+      }
+    } catch (err: any) {
+      console.error('Failed to move shot:', err);
+      alert(err.message || 'Failed to move shot');
+    }
+  };
+
+  // Window Drag and Drop for Collection/Environment Import
+  const handleWindowDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer?.types && Array.from(e.dataTransfer.types).includes('Files')) {
+      dragCounter.current += 1;
+      setIsDraggingFile(true);
+    }
+  };
+
+  const handleWindowDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current -= 1;
+    if (dragCounter.current <= 0) {
+      dragCounter.current = 0;
+      setIsDraggingFile(false);
+    }
+  };
+
+  const handleWindowDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleWindowDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current = 0;
+    setIsDraggingFile(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target?.result as string;
+        if (content) {
+          setInitialImportContent(content);
+          setArmoryTransferOpen(true);
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
   return (
-    <div className="flex flex-col h-screen w-screen bg-bullet-bg text-slate-100 overflow-hidden select-none">
+    <div
+      className="flex flex-col h-screen w-screen bg-bullet-bg text-slate-100 overflow-hidden select-none relative"
+      onDragEnter={handleWindowDragEnter}
+      onDragLeave={handleWindowDragLeave}
+      onDragOver={handleWindowDragOver}
+      onDrop={handleWindowDrop}
+    >
+      {/* Global Drag & Drop Overlay */}
+      {isDraggingFile && (
+        <div
+          data-testid="global-drag-overlay"
+          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center border-4 border-dashed border-amber-500 pointer-events-none animate-in fade-in duration-150"
+        >
+          <div className="flex flex-col items-center space-y-4 p-8 rounded-2xl bg-slate-900/90 border border-amber-500/40 shadow-2xl text-center max-w-md">
+            <div className="p-4 rounded-full bg-amber-500/20 text-amber-400">
+              <Upload className="w-12 h-12 animate-bounce" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-100 font-mono tracking-wide">
+                Drop to Import into Bullet
+              </h2>
+              <p className="text-sm text-slate-400 mt-1">
+                Release Postman Collection, Environment, or OpenAPI file to import
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 1. Header Bar */}
       <Header
         ranges={ranges}
@@ -374,6 +463,7 @@ export function App() {
           selectedShotId={selectedShot?.id || null}
           onSelectShot={(shot) => {
             setSelectedShot(shot);
+            setImpact(null);
             setActiveSidebarTab('arsenals');
           }}
           onOpenNewArsenal={() => setNewArsenalOpen(true)}
@@ -391,6 +481,7 @@ export function App() {
           onRunArsenal={() => setFiringRunOpen(true)}
           onExportArsenal={() => setArmoryTransferOpen(true)}
           onOpenImport={() => setArmoryTransferOpen(true)}
+          onMoveShot={handleMoveShot}
         />
 
         {/* Center Canvas */}
@@ -535,9 +626,13 @@ export function App() {
       {selectedRange && (
         <ArmoryTransferModal
           isOpen={armoryTransferOpen}
-          onClose={() => setArmoryTransferOpen(false)}
+          onClose={() => {
+            setArmoryTransferOpen(false);
+            setInitialImportContent('');
+          }}
           rangeId={selectedRange.id}
           arsenals={arsenals}
+          initialContent={initialImportContent}
           onImportSuccess={() => loadRangeData(selectedRange.id)}
         />
       )}

@@ -9,6 +9,7 @@ interface ArmoryTransferModalProps {
   rangeId: string;
   arsenals: Arsenal[];
   onImportSuccess: () => void;
+  initialContent?: string;
 }
 
 export const ArmoryTransferModal: React.FC<ArmoryTransferModalProps> = ({
@@ -17,11 +18,13 @@ export const ArmoryTransferModal: React.FC<ArmoryTransferModalProps> = ({
   rangeId,
   arsenals,
   onImportSuccess,
+  initialContent,
 }) => {
   const [tab, setTab] = useState<'import' | 'export'>('import');
   const [importFormat, setImportFormat] = useState<'postman' | 'postman-env' | 'openapi' | 'curl' | 'native'>('postman');
   const [importContent, setImportContent] = useState('');
   const [autoDetected, setAutoDetected] = useState<string | null>(null);
+  const [isHoveringDropzone, setIsHoveringDropzone] = useState(false);
   const [exportArsenalId, setExportArsenalId] = useState(arsenals[0]?.id || '');
   const [exportFormat, setExportFormat] = useState<'native' | 'openapi'>('native');
   const [includeSecrets, setIncludeSecrets] = useState(false);
@@ -36,6 +39,12 @@ export const ArmoryTransferModal: React.FC<ArmoryTransferModalProps> = ({
       }
     }
   }, [isOpen, arsenals]);
+
+  React.useEffect(() => {
+    if (isOpen && initialContent) {
+      handleContentChange(initialContent);
+    }
+  }, [isOpen, initialContent]);
 
   if (!isOpen) return null;
 
@@ -268,13 +277,39 @@ export const ArmoryTransferModal: React.FC<ArmoryTransferModalProps> = ({
                 </div>
               )}
 
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-slate-400">Paste JSON/content or choose file:</span>
-                <label className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 cursor-pointer text-[11px] flex items-center gap-1">
-                  <Upload className="w-3 h-3" />
-                  Choose File (.json / .yaml)
-                  <input type="file" accept=".json,.yaml,.yml,.txt" onChange={handleFileUpload} className="hidden" />
-                </label>
+              {/* Drag and Drop Zone */}
+              <div
+                data-testid="import-dropzone"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsHoveringDropzone(true);
+                }}
+                onDragLeave={() => setIsHoveringDropzone(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsHoveringDropzone(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      handleContentChange((ev.target?.result as string) || '');
+                    };
+                    reader.readAsText(file);
+                  }
+                }}
+                className={`border-2 border-dashed rounded-lg p-3 text-center transition cursor-pointer ${
+                  isHoveringDropzone
+                    ? 'border-amber-400 bg-amber-500/15 text-amber-300'
+                    : 'border-bullet-border hover:border-slate-600 bg-bullet-bg/40 text-slate-400'
+                }`}
+              >
+                <Upload className="w-5 h-5 mx-auto mb-1 text-amber-400" />
+                <div className="text-xs font-medium text-slate-200">
+                  Drag & drop Postman Collection (.json) or Environment file here
+                </div>
+                <div className="text-[10px] text-slate-500 mt-0.5">
+                  or choose a file / paste JSON into the editor below
+                </div>
               </div>
 
               <textarea

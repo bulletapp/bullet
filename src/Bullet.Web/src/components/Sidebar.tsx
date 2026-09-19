@@ -32,6 +32,7 @@ interface SidebarProps {
   onRunArsenal: (arsenalId: string) => void;
   onExportArsenal: (arsenalId: string) => void;
   onOpenImport?: () => void;
+  onMoveShot?: (shotId: string, targetSquadId: string | null, targetArsenalId?: string) => void;
 }
 
 const methodColors: Record<string, string> = {
@@ -59,7 +60,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onRunArsenal,
   onExportArsenal,
   onOpenImport,
+  onMoveShot,
 }) => {
+  const [draggedShotId, setDraggedShotId] = useState<string | null>(null);
+  const [dragOverTarget, setDragOverTarget] = useState<{ type: 'squad' | 'arsenal'; id: string } | null>(null);
   const [expandedArsenals, setExpandedArsenals] = useState<Record<string, boolean>>({
     // Pre-expand all by default
     ...arsenals.reduce((acc, a) => ({ ...acc, [a.id]: true }), {}),
@@ -269,7 +273,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 return (
                   <div key={arsenal.id} className="group/arsenal">
                     {/* Arsenal Item */}
-                    <div className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-bullet-surface text-slate-200 cursor-pointer">
+                    <div
+                      data-testid={`arsenal-item-${arsenal.id}`}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        if (dragOverTarget?.id !== arsenal.id) {
+                          setDragOverTarget({ type: 'arsenal', id: arsenal.id });
+                        }
+                      }}
+                      onDragLeave={() => {
+                        if (dragOverTarget?.id === arsenal.id) {
+                          setDragOverTarget(null);
+                        }
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const shotId = e.dataTransfer.getData('application/bullet-shot-id') || e.dataTransfer.getData('text/plain');
+                        if (shotId && onMoveShot) {
+                          onMoveShot(shotId, null, arsenal.id);
+                        }
+                        setDragOverTarget(null);
+                        setDraggedShotId(null);
+                      }}
+                      className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer transition ${
+                        dragOverTarget?.id === arsenal.id && dragOverTarget?.type === 'arsenal'
+                          ? 'bg-amber-500/20 border border-amber-400/60 ring-1 ring-amber-400/50'
+                          : 'hover:bg-bullet-surface text-slate-200'
+                      }`}
+                    >
                       <div
                         className="flex items-center gap-1.5 flex-1 min-w-0"
                         onClick={() => toggleArsenal(arsenal.id)}
@@ -303,6 +335,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           <Plus className="w-3 h-3" />
                         </button>
                         <button
+                          data-testid={`add-squad-arsenal-${arsenal.id}`}
                           onClick={() => onOpenNewSquad(arsenal.id)}
                           className="p-1 hover:text-cyan-400 text-slate-400"
                           title="Add Squad (Folder)"
@@ -332,9 +365,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         {/* Squads */}
                         {arsenal.squads?.map((squad) => {
                           const squadExpanded = expandedSquads[squad.id] ?? true;
+                          const isSquadDropTarget = dragOverTarget?.id === squad.id && dragOverTarget?.type === 'squad';
                           return (
                             <div key={squad.id} className="group/squad">
-                              <div className="flex items-center justify-between px-1.5 py-1 rounded hover:bg-bullet-surface text-slate-300 cursor-pointer">
+                              <div
+                                data-testid={`squad-item-${squad.id}`}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  e.dataTransfer.dropEffect = 'move';
+                                  if (dragOverTarget?.id !== squad.id) {
+                                    setDragOverTarget({ type: 'squad', id: squad.id });
+                                  }
+                                }}
+                                onDragLeave={(e) => {
+                                  e.stopPropagation();
+                                  if (dragOverTarget?.id === squad.id) {
+                                    setDragOverTarget(null);
+                                  }
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const shotId = e.dataTransfer.getData('application/bullet-shot-id') || e.dataTransfer.getData('text/plain');
+                                  if (shotId && onMoveShot) {
+                                    onMoveShot(shotId, squad.id, arsenal.id);
+                                  }
+                                  setDragOverTarget(null);
+                                  setDraggedShotId(null);
+                                }}
+                                className={`flex items-center justify-between px-1.5 py-1 rounded cursor-pointer transition ${
+                                  isSquadDropTarget
+                                    ? 'bg-amber-500/25 border border-amber-400 text-amber-200 shadow-sm ring-1 ring-amber-400/50'
+                                    : 'hover:bg-bullet-surface text-slate-300'
+                                }`}
+                              >
                                 <div
                                   className="flex items-center gap-1.5 flex-1 min-w-0"
                                   onClick={() => toggleSquad(squad.id)}
@@ -344,7 +409,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                   ) : (
                                     <ChevronRight className="w-3 h-3 text-slate-500" />
                                   )}
-                                  <span className="truncate text-[11px] font-medium text-slate-300">
+                                  <span className="truncate text-[11px] font-medium">
                                     {squad.name}
                                   </span>
                                 </div>
@@ -370,11 +435,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 <div className="pl-3 border-l border-bullet-border ml-2 mt-0.5 space-y-0.5">
                                   {squad.shots?.map((shot) => {
                                     const isSelected = selectedShotId === shot.id;
+                                    const isDragging = draggedShotId === shot.id;
                                     return (
                                       <div
                                         key={shot.id}
+                                        data-testid={`shot-item-${shot.id}`}
+                                        draggable={true}
+                                        onDragStart={(e) => {
+                                          e.dataTransfer.setData('text/plain', shot.id);
+                                          e.dataTransfer.setData('application/bullet-shot-id', shot.id);
+                                          e.dataTransfer.effectAllowed = 'move';
+                                          setDraggedShotId(shot.id);
+                                        }}
+                                        onDragEnd={() => {
+                                          setDraggedShotId(null);
+                                          setDragOverTarget(null);
+                                        }}
                                         onClick={() => onSelectShot(shot)}
-                                        className={`group/shot flex items-center justify-between px-1.5 py-1 rounded cursor-pointer transition ${
+                                        className={`group/shot flex items-center justify-between px-1.5 py-1 rounded cursor-grab active:cursor-grabbing transition ${
+                                          isDragging ? 'opacity-40 border-dashed border border-amber-500/50' : ''
+                                        } ${
                                           isSelected
                                             ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
                                             : 'hover:bg-bullet-surface text-slate-300'
@@ -424,12 +504,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         {/* Direct Shots */}
                         {arsenal.shots?.map((shot) => {
                           const isSelected = selectedShotId === shot.id;
+                          const isDragging = draggedShotId === shot.id;
                           return (
                             <div
                               key={shot.id}
                               data-testid={`shot-item-${shot.id}`}
+                              draggable={true}
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData('text/plain', shot.id);
+                                e.dataTransfer.setData('application/bullet-shot-id', shot.id);
+                                e.dataTransfer.effectAllowed = 'move';
+                                setDraggedShotId(shot.id);
+                              }}
+                              onDragEnd={() => {
+                                setDraggedShotId(null);
+                                setDragOverTarget(null);
+                              }}
                               onClick={() => onSelectShot(shot)}
-                              className={`group/shot flex items-center justify-between px-1.5 py-1 rounded cursor-pointer transition ${
+                              className={`group/shot flex items-center justify-between px-1.5 py-1 rounded cursor-grab active:cursor-grabbing transition ${
+                                isDragging ? 'opacity-40 border-dashed border border-amber-500/50' : ''
+                              } ${
                                 isSelected
                                   ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
                                   : 'hover:bg-bullet-surface text-slate-300'

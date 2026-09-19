@@ -100,6 +100,11 @@ export const bulletApi = {
     };
   },
   deleteShot: (id: string) => request<void>(`/shots/${id}`, { method: 'DELETE' }),
+  moveShot: (id: string, squadId: string | null, arsenalId?: string, orderIndex?: number) =>
+    request<Shot>(`/shots/${id}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ squadId, arsenalId, orderIndex }),
+    }),
   fireShot: (
     id: string,
     options?: {

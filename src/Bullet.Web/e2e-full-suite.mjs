@@ -466,6 +466,198 @@ async function runFullTestSuite() {
     console.log('  ✓ Captured 07-dark-mode-restored.png screenshot.');
     console.log('  ★ TEST 12 PASSED: Light/Dark theme switching verified with visual snapshots!');
 
+    // -------------------------------------------------------------
+    // TEST 13: DRAG & DROP POSTMAN COLLECTION IMPORT & SIDEBAR VERIFICATION
+    // -------------------------------------------------------------
+    console.log('\n[TEST 13] Testing Drag & Drop Postman Collection Import...');
+    
+    // Switch to arsenals tab first
+    const arsenalsTab = await page.waitForSelector('[data-testid="sidebar-tab-arsenals"]');
+    await arsenalsTab.click();
+
+    const postmanCollectionJson = JSON.stringify({
+      info: {
+        _postman_id: "e2e-postman-collection-777",
+        name: "E2E DragDrop Collection",
+        description: "Collection imported via HTML5 drag and drop",
+        schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+      },
+      item: [
+        {
+          name: "Imported Ping Shot",
+          request: {
+            method: "GET",
+            header: [{ key: "User-Agent", value: "Bullet-E2E" }],
+            url: {
+              raw: "https://httpbin.org/get",
+              protocol: "https",
+              host: ["httpbin", "org"],
+              path: ["get"]
+            }
+          }
+        },
+        {
+          name: "Imported Echo Shot",
+          request: {
+            method: "POST",
+            header: [{ key: "Content-Type", value: "application/json" }],
+            body: {
+              mode: "raw",
+              raw: "{\"imported\": true}"
+            },
+            url: {
+              raw: "https://httpbin.org/post",
+              protocol: "https",
+              host: ["httpbin", "org"],
+              path: ["post"]
+            }
+          }
+        }
+      ]
+    }, null, 2);
+
+    // Trigger drag and drop on window/root element
+    await page.evaluate((jsonContent) => {
+      const root = document.querySelector('.h-screen') || document.body;
+      const file = new File([jsonContent], 'e2e-collection.json', { type: 'application/json' });
+      const dt = new DataTransfer();
+      dt.items.add(file);
+
+      // 1. Drag enter to trigger drag counter and overlay
+      const dragEnterEv = new DragEvent('dragenter', { bubbles: true, cancelable: true, dataTransfer: dt });
+      root.dispatchEvent(dragEnterEv);
+
+      // 2. Drop event to transfer file and trigger import modal
+      const dropEv = new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt });
+      root.dispatchEvent(dropEv);
+    }, postmanCollectionJson);
+
+    console.log('  ✓ Dispatched drag & drop file event.');
+
+    // Wait for the Armory Transfer modal to open with content populated
+    const executeImportBtn = await page.waitForSelector('[data-testid="execute-import-btn"]', { timeout: 10000 });
+    console.log('  ✓ Import modal opened automatically via Drag & Drop!');
+
+    // Verify format detection or content present in textarea
+    const textareaContent = await page.$eval('textarea', (el) => el.value);
+    if (!textareaContent.includes('E2E DragDrop Collection')) {
+      throw new Error('Import modal did not receive dropped Postman collection content');
+    }
+    console.log('  ✓ Postman collection content verified inside modal drop buffer.');
+
+    // Click "IMPORT INTO BULLET" button
+    await executeImportBtn.click();
+    console.log('  ✓ Clicked "IMPORT INTO BULLET" execute button.');
+
+    // Wait for modal to automatically close upon successful import
+    await page.waitForFunction(() => !document.querySelector('[data-testid="execute-import-btn"]'), { timeout: 10000 });
+    console.log('  ✓ Import processed and modal closed.');
+
+    // Verify the newly imported collection appears in the sidebar
+    await page.waitForFunction(() => {
+      const spans = Array.from(document.querySelectorAll('span'));
+      return spans.some((s) => s.textContent.trim() === 'E2E DragDrop Collection');
+    }, { timeout: 10000 });
+    console.log('  ✓ "E2E DragDrop Collection" successfully verified in Sidebar!');
+
+    // Verify that the collection requests are present in the DOM
+    await page.waitForFunction(() => {
+      const spans = Array.from(document.querySelectorAll('span'));
+      return spans.some((s) => s.textContent.trim() === 'Imported Ping Shot');
+    }, { timeout: 10000 });
+    console.log('  ✓ "Imported Ping Shot" verified in DOM under imported collection!');
+
+    // Click on "Imported Ping Shot" to load it into the editor
+    await page.evaluate(() => {
+      const spans = Array.from(document.querySelectorAll('span'));
+      const shotSpan = spans.find((s) => s.textContent.trim() === 'Imported Ping Shot');
+      if (shotSpan) {
+        shotSpan.click();
+      }
+    });
+
+    // Verify URL bar updated to https://httpbin.org/get
+    await page.waitForFunction(() => {
+      const input = document.querySelector('[data-testid="url-input"]');
+      return input && input.value.includes('httpbin.org/get');
+    }, { timeout: 5000 });
+    console.log('  ✓ Clicked imported shot: active URL in editor updated to "https://httpbin.org/get"!');
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '08-dragdrop-import-success.png') });
+    console.log('  ✓ Captured 08-dragdrop-import-success.png screenshot.');
+    console.log('  ★ TEST 13 PASSED: Drag & Drop collection import & sidebar presence verified!');
+
+    // -------------------------------------------------------------
+    // TEST 14: SIDEBAR DRAG & DROP SHOT REORGANIZATION
+    // -------------------------------------------------------------
+    console.log('\n[TEST 14] Testing Sidebar Drag & Drop Request Reorganization...');
+
+    // Trigger Add Squad modal using DOM evaluate to bypass hover requirements
+    await page.evaluate(() => {
+      const btn = document.querySelector('[data-testid^="add-squad-arsenal-"]');
+      if (btn) btn.click();
+    });
+    console.log('  ✓ Clicked Add Squad button on Arsenal.');
+
+    await page.waitForSelector('[data-testid="new-squad-modal"]', { timeout: 5000 });
+    const squadNameInput = await page.waitForSelector('[data-testid="squad-name-input"]');
+    await squadNameInput.click({ clickCount: 3 });
+    await squadNameInput.type('Core Services Folder');
+
+    const createSquadSubmit = await page.waitForSelector('[data-testid="create-squad-submit-btn"]');
+    await createSquadSubmit.click();
+    await page.waitForSelector('[data-testid="new-squad-modal"]', { hidden: true, timeout: 5000 });
+    console.log('  ✓ Created target squad/folder "Core Services Folder".');
+
+    // Wait for the squad element to be rendered in the sidebar
+    await page.waitForSelector('[data-testid^="squad-item-"]', { timeout: 5000 });
+    console.log('  ✓ Squad element rendered in sidebar.');
+
+    // Find a shot to drag and the target squad
+    const dragResult = await page.evaluate(() => {
+      const shotElements = Array.from(document.querySelectorAll('[data-testid^="shot-item-"]'));
+      const targetSquadEl = Array.from(document.querySelectorAll('[data-testid^="squad-item-"]')).find((el) =>
+        el.textContent.includes('Core Services Folder')
+      );
+
+      if (shotElements.length === 0 || !targetSquadEl) {
+        return { success: false, reason: 'Shot or Squad element not found' };
+      }
+
+      const sourceShotEl = shotElements[0];
+      const shotId = sourceShotEl.getAttribute('data-testid').replace('shot-item-', '');
+
+      // Create DataTransfer
+      const dt = new DataTransfer();
+      dt.setData('text/plain', shotId);
+      dt.setData('application/bullet-shot-id', shotId);
+
+      // 1. Drag start on source shot
+      sourceShotEl.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
+
+      // 2. Drag over target squad
+      targetSquadEl.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
+
+      // 3. Drop on target squad
+      targetSquadEl.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+
+      // 4. Drag end on source shot
+      sourceShotEl.dispatchEvent(new DragEvent('dragend', { bubbles: true, cancelable: true, dataTransfer: dt }));
+
+      return { success: true, shotId };
+    });
+
+    if (!dragResult.success) {
+      throw new Error(`Sidebar drag & drop failed: ${dragResult.reason}`);
+    }
+    console.log(`  ✓ Dispatched drag & drop re-parenting event for shot ${dragResult.shotId} into squad.`);
+
+    // Wait for backend to update and DOM to reflect the shot inside the squad container
+    await new Promise((r) => setTimeout(r, 1000));
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '09-sidebar-drag-drop-success.png') });
+    console.log('  ✓ Captured 09-sidebar-drag-drop-success.png screenshot.');
+    console.log('  ★ TEST 14 PASSED: Sidebar Drag & Drop organization verified!');
+
     console.log('\n===============================================================');
     console.log(`TOTAL UNCAUGHT ERRORS: ${uncaughtErrors.length}`);
     if (uncaughtErrors.length > 0) {

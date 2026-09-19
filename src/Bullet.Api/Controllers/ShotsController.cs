@@ -92,10 +92,11 @@ public class ShotsController : ControllerBase
         });
 
         shot.Version++;
-        shot.Name = req.Name;
-        shot.Description = req.Description;
-        shot.Method = req.Method;
-        shot.Url = req.Url;
+        if (!string.IsNullOrEmpty(req.Name)) shot.Name = req.Name;
+        if (req.Description != null) shot.Description = req.Description;
+        if (!string.IsNullOrEmpty(req.Method)) shot.Method = req.Method;
+        if (!string.IsNullOrEmpty(req.Url)) shot.Url = req.Url;
+        if (req.ArsenalId != Guid.Empty) shot.ArsenalId = req.ArsenalId;
         shot.SquadId = req.SquadId;
         shot.OrderIndex = req.OrderIndex;
         shot.Parameters = req.Parameters ?? shot.Parameters;
@@ -103,12 +104,32 @@ public class ShotsController : ControllerBase
         shot.Payload = req.Payload ?? shot.Payload;
         shot.Armor = req.Armor ?? shot.Armor;
         shot.Settings = req.Settings ?? shot.Settings;
-        shot.LoadoutId = req.LoadoutId;
-        shot.TLSProfileId = req.TLSProfileId;
-        shot.TriggerScript = req.TriggerScript;
-        shot.VerifierScript = req.VerifierScript;
+        shot.LoadoutId = req.LoadoutId ?? shot.LoadoutId;
+        shot.TLSProfileId = req.TLSProfileId ?? shot.TLSProfileId;
+        shot.TriggerScript = req.TriggerScript ?? shot.TriggerScript;
+        shot.VerifierScript = req.VerifierScript ?? shot.VerifierScript;
         shot.UpdatedAtUtc = DateTime.UtcNow;
 
+        await _db.SaveChangesAsync();
+        return Ok(shot);
+    }
+
+    [HttpPost("{id:guid}/move")]
+    public async Task<IActionResult> MoveShot(Guid id, [FromBody] MoveShotRequest req)
+    {
+        var shot = await _db.Shots.FindAsync(id);
+        if (shot == null) return NotFound();
+
+        shot.SquadId = req.SquadId;
+        if (req.ArsenalId.HasValue && req.ArsenalId.Value != Guid.Empty)
+        {
+            shot.ArsenalId = req.ArsenalId.Value;
+        }
+        if (req.OrderIndex.HasValue)
+        {
+            shot.OrderIndex = req.OrderIndex.Value;
+        }
+        shot.UpdatedAtUtc = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         return Ok(shot);
     }
@@ -360,4 +381,11 @@ public class AdHocFireRequest
     public string? TriggerScript { get; set; }
     public string? VerifierScript { get; set; }
     public Dictionary<string, string>? AdHocRounds { get; set; }
+}
+
+public class MoveShotRequest
+{
+    public Guid? SquadId { get; set; }
+    public Guid? ArsenalId { get; set; }
+    public int? OrderIndex { get; set; }
 }
