@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Crosshair, Zap, Check } from 'lucide-react';
 import { playSonicBoom } from '../utils/audioFx';
+import { BulletLogo } from './BulletLogo';
 
 interface BulletIntroSplashProps {
   onFinish: () => void;
@@ -342,18 +343,8 @@ export const BulletIntroSplash: React.FC<BulletIntroSplashProps> = ({ onFinish }
           <div className="flex flex-col items-center animate-in zoom-in-95 fade-in duration-300">
             {/* Illuminated Bullet Logo Badge */}
             <div className="relative mb-3">
-              <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-amber-500/50 flex items-center justify-center shadow-[0_0_40px_rgba(245,158,11,0.35)] ring-1 ring-amber-400/40">
-                <svg viewBox="0 0 32 32" className="w-10 h-10 drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]">
-                  <path
-                    d="M16 2 C18.5 6 22 12 22 20 C22 25 19.3 29 16 29 C12.7 29 10 25 10 20 C10 12 13.5 6 16 2 Z"
-                    fill="#f59e0b"
-                  />
-                  <path
-                    d="M16 4 C17.8 7.5 20.5 12.5 20.5 19 C20.5 21 20 23 19 24.5 C17.5 21 16 15 16 4 Z"
-                    fill="#fef08a"
-                    opacity="0.85"
-                  />
-                </svg>
+              <div className="flex items-center justify-center shadow-[0_0_50px_rgba(245,158,11,0.4)] rounded-3xl">
+                <BulletLogo size={72} className="drop-shadow-[0_0_20px_rgba(245,158,11,0.8)]" />
               </div>
             </div>
 
