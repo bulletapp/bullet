@@ -276,6 +276,36 @@ jobs:
           Copy-Item -Path "scripts/run-mac.sh" -Destination "publish/mac-x64/run-mac.sh" -Force
           Copy-Item -Path "scripts/Bullet.command" -Destination "publish/mac-x64/Bullet.command" -Force
 
+          # 3. Add macOS Application Bundle Info.plist
+          $plistLines = @(
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">',
+            '<plist version="1.0">',
+            '<dict>',
+            '    <key>CFBundleExecutable</key>',
+            '    <string>Bullet</string>',
+            '    <key>CFBundleIdentifier</key>',
+            '    <string>com.bullet.api</string>',
+            '    <key>CFBundleName</key>',
+            '    <string>BULLET</string>',
+            '    <key>CFBundleDisplayName</key>',
+            '    <string>BULLET</string>',
+            '    <key>CFBundlePackageType</key>',
+            '    <string>APPL</string>',
+            '    <key>CFBundleShortVersionString</key>',
+            '    <string>1.0.0</string>',
+            '    <key>CFBundleVersion</key>',
+            '    <string>1.0.0</string>',
+            '    <key>LSMinimumSystemVersion</key>',
+            '    <string>11.0</string>',
+            '    <key>NSHighResolutionCapable</key>',
+            '    <true/>',
+            '</dict>',
+            '</plist>'
+          )
+          [System.IO.File]::WriteAllText("$armAppDir/Info.plist", ($plistLines -join "`n"))
+          [System.IO.File]::WriteAllText("$x64AppDir/Info.plist", ($plistLines -join "`n"))
+
           # Create archives and hashes
           Compress-Archive -Path "publish/mac-arm64/*" -DestinationPath Bullet-macOS-AppleSilicon-arm64.zip -Force
           $hashArm = (Get-FileHash -Algorithm SHA256 Bullet-macOS-AppleSilicon-arm64.zip).Hash
