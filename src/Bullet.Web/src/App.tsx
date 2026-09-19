@@ -101,6 +101,24 @@ export function App() {
     }
   };
 
+  useEffect(() => {
+    const handleTestSession = (e: any) => {
+      if (e.detail) {
+        setMeshSession({
+          isConnected: true,
+          isHost: false,
+          rangeId: e.detail.rangeId || 'test-collab-id',
+          rangeName: e.detail.rangeName || 'Remote Mesh Workspace',
+          accessMode: e.detail.accessMode || 'ReadWrite',
+          ticket: 'mesh_ticket_test',
+          hostEndpoint: 'http://127.0.0.1:5230'
+        });
+      }
+    };
+    window.addEventListener('bullet_test_mesh_session', handleTestSession);
+    return () => window.removeEventListener('bullet_test_mesh_session', handleTestSession);
+  }, []);
+
   const handleJoinedMeshWorkspace = (joinRes: MeshJoinResponse, hostEndpoint: string) => {
     if (!joinRes.rangeSnapshot || !joinRes.rangeId) return;
 
