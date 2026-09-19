@@ -24,8 +24,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Interactive drag-and-drop reordering of collection folders and requests within the sidebar hierarchy.
 - **Smart cURL Auto-Detection**:
   - Automatically recognizes pasted cURL commands into the URL bar and provides an instant one-click import banner.
-- **Single-File Windows Setup Installer**:
+- **Single-File Windows Setup Installer & Code Signing**:
   - Inno Setup compiler integration creating `Bullet-Setup.exe`.
+  - Automated Authenticode digital code signing in CI workflow for `Bullet.exe` and `Bullet-Setup.exe` with RFC 3161 DigiCert timestamping.
+  - Generates verifiable public certificate `Bullet-Release.cer` as an official release asset.
   - Non-elevated per-user installation to `%LOCALAPPDATA%\Programs\Bullet`.
   - Automatic Start Menu and Desktop shortcuts with uninstaller registration.
   - Release zip archive `Bullet-Desktop-Windows-x64.zip` for portable zero-install execution.

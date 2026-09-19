@@ -131,5 +131,29 @@ Spins up PostgreSQL, Bullet API, and Bullet Web frontend in isolated containers.
 
 ---
 
+## Windows Installation & Code Signing Verification
+
+All official release binaries (`Bullet-Setup.exe` and `Bullet.exe`) are built directly in GitHub Actions and cryptographically signed with Authenticode digital signatures identifying `VishalViswanathan03 - BULLET Open Source Project` alongside a DigiCert RFC 3161 timestamp.
+
+### Why Windows SmartScreen / Smart App Control Flags New Releases
+When downloading newly released open-source executables from the internet, Windows marks them with the **Mark of the Web (Zone.Identifier = 3)**. Because new version hashes do not yet have historical telemetry in Microsoft's cloud reputation database:
+- **SmartScreen**: Click **"More info"** $\rightarrow$ **"Run anyway"**.
+- **Windows 11 Smart App Control**: If Smart App Control blocks execution, simply unblock the file:
+  1. Right-click `Bullet-Setup.exe` $\rightarrow$ **Properties**.
+  2. In the **General** tab at the bottom, check **☑ Unblock** $\rightarrow$ **Apply** $\rightarrow$ **OK**.
+  3. Or run via PowerShell:
+     ```powershell
+     Unblock-File -Path .\Bullet-Setup.exe
+     ```
+
+### Verifying Authenticode Signature & SHA256 Checksums
+1. **Digital Signature**: Right-click `Bullet-Setup.exe` $\rightarrow$ **Properties** $\rightarrow$ **Digital Signatures** tab to inspect the publisher certificate and DigiCert timestamp.
+2. **SHA256 Checksum**: Verify the package integrity against the published `.sha256` checksums in the release:
+   ```powershell
+   Get-FileHash -Algorithm SHA256 .\Bullet-Setup.exe
+   ```
+
+---
+
 ## License
 MIT License. Built with precision for developers.

@@ -176,6 +176,47 @@ jobs:
         run: |
           dotnet publish src/Bullet.Desktop/Bullet.Desktop.csproj -c Release -r win-x64 --self-contained false -o publish/desktop
 
+      - name: Authenticode Sign Desktop Executable
+        shell: pwsh
+        run: |
+          Write-Host "Configuring Authenticode Code Signing..."
+          
+          $cert = $null
+          if ($env:CODE_SIGNING_PFX) {
+            Write-Host "Found CODE_SIGNING_PFX secret. Importing production certificate..."
+            $pfxBytes = [System.Convert]::FromBase64String($env:CODE_SIGNING_PFX)
+            $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
+              $pfxBytes,
+              $env:CODE_SIGNING_PASSWORD,
+              [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable
+            )
+          } else {
+            Write-Host "Generating project Authenticode code-signing certificate for VishalViswanathan03..."
+            $cert = New-SelfSignedCertificate `
+              -Type CodeSigningCert `
+              -Subject "CN=VishalViswanathan03, O=BULLET Open Source Project, OU=Release Signing" `
+              -CertStoreLocation "Cert:\CurrentUser\My" `
+              -HashAlgorithm SHA256 `
+              -NotAfter (Get-Date).AddYears(5)
+          }
+
+          New-Item -ItemType Directory -Force -Path "dist-installer" | Out-Null
+          Export-Certificate -Cert $cert -FilePath "dist-installer/Bullet-Release.cer" -Force
+          Copy-Item "dist-installer/Bullet-Release.cer" -Destination "publish/desktop/Bullet-Release.cer" -Force
+
+          if (Test-Path "publish/desktop/Bullet.exe") {
+            Write-Host "Signing publish/desktop/Bullet.exe with DigiCert timestamp..."
+            $sig = Set-AuthenticodeSignature `
+              -FilePath "publish/desktop/Bullet.exe" `
+              -Certificate $cert `
+              -TimestampServer "http://timestamp.digicert.com" `
+              -HashAlgorithm SHA256
+            Write-Host "Desktop signature status: $($sig.Status)"
+          }
+        env:
+          CODE_SIGNING_PFX: ${{ secrets.CODE_SIGNING_PFX }}
+          CODE_SIGNING_PASSWORD: ${{ secrets.CODE_SIGNING_PASSWORD }}
+
       - name: Create Release Zip Archive
         shell: pwsh
         run: |
@@ -192,6 +233,21 @@ jobs:
         shell: pwsh
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer/Bullet.iss
+
+      - name: Authenticode Sign Setup Installer
+        shell: pwsh
+        run: |
+          $cert = (Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Subject -like "*BULLET Open Source Project*" -or $_.Subject -like "*VishalViswanathan03*" } | Select-Object -First 1)
+          if ($cert -and (Test-Path "dist-installer/Bullet-Setup.exe")) {
+            Write-Host "Signing dist-installer/Bullet-Setup.exe with DigiCert timestamp..."
+            $sig = Set-AuthenticodeSignature `
+              -FilePath "dist-installer/Bullet-Setup.exe" `
+              -Certificate $cert `
+              -TimestampServer "http://timestamp.digicert.com" `
+              -HashAlgorithm SHA256
+            Write-Host "Installer signature status: $($sig.Status)"
+          }
+          
           $hash = (Get-FileHash -Algorithm SHA256 dist-installer/Bullet-Setup.exe).Hash
           "$hash  Bullet-Setup.exe" | Out-File -Encoding utf8 dist-installer/Bullet-Setup.exe.sha256
 
@@ -263,6 +319,7 @@ jobs:
             "|---|---|---|",
             "| **[Bullet-Setup.exe](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Setup.exe)** | Setup Installer | Single-file Windows installer (per-user install, desktop + start menu shortcuts, automatic launch) |",
             "| **[Bullet-Desktop-Windows-x64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Desktop-Windows-x64.zip)** | Portable Zip | Zero-install standalone archive with executable and assets |",
+            "| **[Bullet-Release.cer](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Release.cer)** | Public Certificate | Authenticode public certificate for publisher identity verification |",
             "",
             "#### 🔐 SHA256 Verification Hashes",
             '```text',
@@ -290,5 +347,6 @@ jobs:
             dist-installer/Bullet-Setup.exe.sha256
             Bullet-Desktop-Windows-x64.zip
             Bullet-Desktop-Windows-x64.zip.sha256
+            dist-installer/Bullet-Release.cer
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
