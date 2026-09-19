@@ -38,6 +38,16 @@ public class ShotSettings
     public bool EnableRetries { get; set; } = false;
     public int MaxRetries { get; set; } = 3;
     public int RetryDelayMs { get; set; } = 500;
+
+    [System.Text.Json.Serialization.JsonPropertyName("bypassSsrfProtection")]
     public bool BypassSsrfProtection { get; set; } = false;
+
+    [System.Text.Json.Serialization.JsonPropertyName("bypassSsrfGuard")]
+    public bool BypassSsrfGuard
+    {
+        get => BypassSsrfProtection;
+        set => BypassSsrfProtection = value;
+    }
+
     public string? ProxyUrl { get; set; }
 }
