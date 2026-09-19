@@ -390,6 +390,7 @@ export function App() {
           onDeleteShot={handleDeleteShot}
           onRunArsenal={() => setFiringRunOpen(true)}
           onExportArsenal={() => setArmoryTransferOpen(true)}
+          onOpenImport={() => setArmoryTransferOpen(true)}
         />
 
         {/* Center Canvas */}

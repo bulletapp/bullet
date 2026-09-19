@@ -38,6 +38,16 @@ public class ArmoryTransferController : ControllerBase
         return Ok(arsenal);
     }
 
+    [HttpPost("import-postman-environment")]
+    public async Task<IActionResult> ImportPostmanEnvironment([FromQuery] Guid rangeId, [FromBody] ImportRawRequest req)
+    {
+        var loadout = _transferService.ImportPostmanEnvironment(req.Content, rangeId);
+        _db.Loadouts.Add(loadout);
+        await _db.SaveChangesAsync();
+
+        return Ok(loadout);
+    }
+
     [HttpPost("import-curl")]
     public async Task<IActionResult> ImportCurl([FromQuery] Guid arsenalId, [FromBody] ImportRawRequest req)
     {

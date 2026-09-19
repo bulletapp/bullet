@@ -366,10 +366,10 @@ async function runFullTestSuite() {
     // TEST 7: ARMORY TRANSFER MODAL (IMPORT / EXPORT)
     // -------------------------------------------------------------
     console.log('\n[TEST 7] Testing Armory Transfer Modal (Import/Export)...');
-    const transferBtn = await page.waitForSelector('[data-testid="header-transfer-btn"]');
+    const transferBtn = await page.waitForSelector('[data-testid="header-import-btn"], [data-testid="header-transfer-btn"]');
     await transferBtn.click();
-    await page.waitForFunction(() => document.body.innerText.includes('Armory Transfer'));
-    console.log('  ✓ Armory Transfer modal opened.');
+    await page.waitForFunction(() => document.body.innerText.includes('Import & Export') || document.body.innerText.includes('Armory Transfer'));
+    console.log('  ✓ Import & Export modal opened.');
 
     const closeTransferBtn = await page.evaluateHandle(() => {
       const btns = Array.from(document.querySelectorAll('button'));

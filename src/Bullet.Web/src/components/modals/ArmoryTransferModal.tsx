@@ -19,8 +19,9 @@ export const ArmoryTransferModal: React.FC<ArmoryTransferModalProps> = ({
   onImportSuccess,
 }) => {
   const [tab, setTab] = useState<'import' | 'export'>('import');
-  const [importFormat, setImportFormat] = useState<'native' | 'postman' | 'openapi' | 'curl'>('native');
+  const [importFormat, setImportFormat] = useState<'postman' | 'postman-env' | 'openapi' | 'curl' | 'native'>('postman');
   const [importContent, setImportContent] = useState('');
+  const [autoDetected, setAutoDetected] = useState<string | null>(null);
   const [exportArsenalId, setExportArsenalId] = useState(arsenals[0]?.id || '');
   const [exportFormat, setExportFormat] = useState<'native' | 'openapi'>('native');
   const [includeSecrets, setIncludeSecrets] = useState(false);
@@ -38,12 +39,58 @@ export const ArmoryTransferModal: React.FC<ArmoryTransferModalProps> = ({
 
   if (!isOpen) return null;
 
+  const detectFormat = (content: string): 'postman' | 'postman-env' | 'openapi' | 'curl' | 'native' | null => {
+    const trimmed = content.trim();
+    if (trimmed.startsWith('curl ') || trimmed.startsWith('curl\n') || trimmed.startsWith('curl\r\n')) {
+      return 'curl';
+    }
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed._postman_variable_scope === 'environment' || (parsed.values && Array.isArray(parsed.values) && parsed.name)) {
+        return 'postman-env';
+      }
+      if (parsed.info?.schema?.includes('postman') || (parsed.info && parsed.item)) {
+        return 'postman';
+      }
+      if (parsed.openapi || parsed.swagger) {
+        return 'openapi';
+      }
+      if (parsed.arsenal || parsed.shots) {
+        return 'native';
+      }
+    } catch {
+      if (trimmed.includes('openapi:') || trimmed.includes('swagger:')) {
+        return 'openapi';
+      }
+    }
+    return null;
+  };
+
+  const handleContentChange = (content: string) => {
+    setImportContent(content);
+    const detected = detectFormat(content);
+    if (detected) {
+      setImportFormat(detected);
+      const labels: Record<string, string> = {
+        postman: 'Postman Collection v2.1',
+        'postman-env': 'Postman Environment',
+        openapi: 'OpenAPI Specification',
+        curl: 'cURL Command',
+        native: 'Native Bullet Format',
+      };
+      setAutoDetected(labels[detected] || null);
+    } else {
+      setAutoDetected(null);
+    }
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setImportContent((ev.target?.result as string) || '');
+      const text = (ev.target?.result as string) || '';
+      handleContentChange(text);
     };
     reader.readAsText(file);
   };
@@ -59,18 +106,24 @@ export const ArmoryTransferModal: React.FC<ArmoryTransferModalProps> = ({
     try {
       if (importFormat === 'native') {
         await bulletApi.importNative(rangeId, importContent);
+        setStatusMsg({ type: 'success', text: 'Native collection imported successfully!' });
       } else if (importFormat === 'postman') {
         await bulletApi.importPostman(rangeId, importContent);
+        setStatusMsg({ type: 'success', text: 'Postman collection imported successfully!' });
+      } else if (importFormat === 'postman-env') {
+        await bulletApi.importPostmanEnvironment(rangeId, importContent);
+        setStatusMsg({ type: 'success', text: 'Postman environment imported successfully into Loadouts!' });
       } else if (importFormat === 'openapi') {
         await bulletApi.importOpenApi(rangeId, importContent);
+        setStatusMsg({ type: 'success', text: 'OpenAPI specification imported successfully!' });
       } else if (importFormat === 'curl') {
         if (!exportArsenalId) {
           throw new Error('Please select an Arsenal to import the cURL command into.');
         }
         await bulletApi.importCurl(exportArsenalId, importContent);
+        setStatusMsg({ type: 'success', text: 'cURL command imported successfully into Arsenal!' });
       }
 
-      setStatusMsg({ type: 'success', text: 'Armory transfer import successful!' });
       onImportSuccess();
       setTimeout(() => onClose(), 1200);
     } catch (err: any) {
@@ -116,10 +169,10 @@ export const ArmoryTransferModal: React.FC<ArmoryTransferModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-bullet-border bg-bullet-bg">
           <div className="flex items-center gap-2">
-            <Download className="w-4 h-4 text-cyan-400" />
-            <span className="font-mono text-sm font-bold text-slate-100">Armory Transfer</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 uppercase">
-              Import & Export
+            <Upload className="w-4 h-4 text-amber-400" />
+            <span className="font-mono text-sm font-bold text-slate-100">Import & Export</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
+              Postman • OpenAPI • cURL • Native
             </span>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-200 p-1 rounded hover:bg-slate-800">
@@ -137,7 +190,7 @@ export const ArmoryTransferModal: React.FC<ArmoryTransferModalProps> = ({
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            Import Into Range
+            Import Into Bullet
           </button>
           <button
             onClick={() => { setTab('export'); setStatusMsg(null); }}
@@ -166,14 +219,22 @@ export const ArmoryTransferModal: React.FC<ArmoryTransferModalProps> = ({
 
           {tab === 'import' ? (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Import Format:</span>
-                <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400">Import Format:</span>
+                  {autoDetected && (
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      ✓ Auto-detected: {autoDetected}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 flex-wrap">
                   {[
-                    { id: 'native', label: 'Native .bullet.json' },
-                    { id: 'postman', label: 'Postman v2.1' },
+                    { id: 'postman', label: 'Postman Collection v2.1' },
+                    { id: 'postman-env', label: 'Postman Environment' },
                     { id: 'openapi', label: 'OpenAPI 3.0' },
                     { id: 'curl', label: 'cURL Command' },
+                    { id: 'native', label: 'Native .bullet.json' },
                   ].map((f) => (
                     <label key={f.id} className="flex items-center gap-1 cursor-pointer">
                       <input
@@ -184,7 +245,7 @@ export const ArmoryTransferModal: React.FC<ArmoryTransferModalProps> = ({
                         onChange={() => setImportFormat(f.id as any)}
                         className="text-amber-500"
                       />
-                      <span className={importFormat === f.id ? 'text-amber-400' : 'text-slate-400'}>
+                      <span className={importFormat === f.id ? 'text-amber-400 font-medium' : 'text-slate-400'}>
                         {f.label}
                       </span>
                     </label>
@@ -208,20 +269,23 @@ export const ArmoryTransferModal: React.FC<ArmoryTransferModalProps> = ({
               )}
 
               <div className="flex items-center justify-between pt-1">
-                <span className="text-slate-400">Paste definition or upload file:</span>
-                <label className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 cursor-pointer text-[11px]">
-                  Upload File
+                <span className="text-slate-400">Paste JSON/content or choose file:</span>
+                <label className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 cursor-pointer text-[11px] flex items-center gap-1">
+                  <Upload className="w-3 h-3" />
+                  Choose File (.json / .yaml)
                   <input type="file" accept=".json,.yaml,.yml,.txt" onChange={handleFileUpload} className="hidden" />
                 </label>
               </div>
 
               <textarea
                 value={importContent}
-                onChange={(e) => setImportContent(e.target.value)}
+                onChange={(e) => handleContentChange(e.target.value)}
                 placeholder={
                   importFormat === 'curl'
                     ? "curl -X POST https://api.example.com/data -H 'Content-Type: application/json' -d '{\"foo\":\"bar\"}'"
-                    : "Paste JSON/YAML content here..."
+                    : importFormat === 'postman-env'
+                    ? "Paste Postman Environment JSON here..."
+                    : "Paste Postman Collection v2.1, OpenAPI JSON/YAML, or Bullet JSON here..."
                 }
                 className="w-full h-56 bg-bullet-surface border border-bullet-border rounded p-3 text-slate-200 outline-none focus:border-amber-500 font-mono text-xs leading-relaxed"
               />
@@ -331,11 +395,12 @@ export const ArmoryTransferModal: React.FC<ArmoryTransferModalProps> = ({
 
           {tab === 'import' && (
             <button
+              data-testid="execute-import-btn"
               onClick={handleImport}
               disabled={isProcessing || !importContent.trim()}
-              className="px-5 py-1.5 rounded bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-mono font-bold text-xs shadow-md shadow-amber-500/10"
+              className="px-5 py-1.5 rounded bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-mono font-bold text-xs shadow-md shadow-amber-500/10 cursor-pointer"
             >
-              {isProcessing ? 'IMPORTING...' : 'IMPORT TO ARMORY'}
+              {isProcessing ? 'IMPORTING...' : 'IMPORT INTO BULLET'}
             </button>
           )}
         </div>

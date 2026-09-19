@@ -12,6 +12,7 @@ public interface IArmoryTransferService
 {
     Arsenal ImportNative(string jsonContent, Guid rangeId);
     Arsenal ImportPostmanCollection(string jsonContent, Guid rangeId);
+    Loadout ImportPostmanEnvironment(string jsonContent, Guid rangeId);
     Shot ImportCurl(string curlCommand, Guid arsenalId);
     Arsenal ImportOpenApi(string jsonContent, Guid rangeId);
 
@@ -109,17 +110,35 @@ public class ArmoryTransferService : IArmoryTransferService
         var root = doc.RootElement;
 
         var name = "Imported Postman Collection";
-        if (root.TryGetProperty("info", out var info) && info.TryGetProperty("name", out var n))
+        var description = "Imported from Postman Collection v2.1";
+        if (root.TryGetProperty("info", out var info))
         {
-            name = n.GetString() ?? name;
+            if (info.TryGetProperty("name", out var n) && !string.IsNullOrWhiteSpace(n.GetString()))
+                name = n.GetString()!;
+            if (info.TryGetProperty("description", out var d) && !string.IsNullOrWhiteSpace(d.GetString()))
+                description = d.GetString()!;
         }
 
         var arsenal = new Arsenal
         {
             RangeId = rangeId,
             Name = name,
-            Description = "Imported from Postman Collection v2.1"
+            Description = description
         };
+
+        // Collection-level Auth (Default Armor)
+        if (root.TryGetProperty("auth", out var collAuth))
+        {
+            arsenal.DefaultArmor = ParsePostmanAuth(collAuth);
+        }
+
+        // Collection-level Events (Pre-request & Test scripts)
+        if (root.TryGetProperty("event", out var collEvents) && collEvents.ValueKind == JsonValueKind.Array)
+        {
+            ParsePostmanEvents(collEvents, out var pre, out var test);
+            arsenal.TriggerScript = pre;
+            arsenal.VerifierScript = test;
+        }
 
         if (root.TryGetProperty("item", out var items) && items.ValueKind == JsonValueKind.Array)
         {
@@ -132,9 +151,57 @@ public class ArmoryTransferService : IArmoryTransferService
         return arsenal;
     }
 
+    public Loadout ImportPostmanEnvironment(string jsonContent, Guid rangeId)
+    {
+        using var doc = JsonDocument.Parse(jsonContent);
+        var root = doc.RootElement;
+
+        var name = "Imported Postman Environment";
+        if (root.TryGetProperty("name", out var n) && !string.IsNullOrWhiteSpace(n.GetString()))
+        {
+            name = n.GetString()!;
+        }
+
+        bool isProd = name.Contains("prod", StringComparison.OrdinalIgnoreCase);
+
+        var loadout = new Loadout
+        {
+            RangeId = rangeId,
+            Name = name,
+            Description = "Imported from Postman Environment",
+            IsProduction = isProd
+        };
+
+        if (root.TryGetProperty("values", out var values) && values.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var val in values.EnumerateArray())
+            {
+                var key = val.TryGetProperty("key", out var k) ? k.GetString() : "";
+                if (string.IsNullOrWhiteSpace(key)) continue;
+
+                var value = val.TryGetProperty("value", out var v) ? v.GetString() ?? "" : "";
+                var enabled = !val.TryGetProperty("enabled", out var en) || en.GetBoolean();
+                var typeStr = val.TryGetProperty("type", out var t) ? t.GetString() : "default";
+                bool isSecret = string.Equals(typeStr, "secret", StringComparison.OrdinalIgnoreCase);
+
+                loadout.Rounds.Add(new Round
+                {
+                    Name = key,
+                    Value = value,
+                    Type = RoundType.String,
+                    IsSecret = isSecret,
+                    IsEnabled = enabled
+                });
+            }
+        }
+
+        return loadout;
+    }
+
     private void ProcessPostmanItem(JsonElement item, Arsenal arsenal, Squad? parentSquad)
     {
         var name = item.TryGetProperty("name", out var n) ? n.GetString() ?? "Unnamed" : "Unnamed";
+        var description = item.TryGetProperty("description", out var desc) ? desc.GetString() : null;
 
         // Check if folder (Squad)
         if (item.TryGetProperty("item", out var children) && children.ValueKind == JsonValueKind.Array)
@@ -143,8 +210,23 @@ public class ArmoryTransferService : IArmoryTransferService
             {
                 ArsenalId = arsenal.Id,
                 ParentSquadId = parentSquad?.Id,
-                Name = name
+                Name = name,
+                Description = description
             };
+
+            // Folder-level Auth
+            if (item.TryGetProperty("auth", out var squadAuth))
+            {
+                squad.Armor = ParsePostmanAuth(squadAuth);
+            }
+
+            // Folder-level Events
+            if (item.TryGetProperty("event", out var squadEvents) && squadEvents.ValueKind == JsonValueKind.Array)
+            {
+                ParsePostmanEvents(squadEvents, out var pre, out var test);
+                squad.TriggerScript = pre;
+                squad.VerifierScript = test;
+            }
 
             arsenal.Squads.Add(squad);
 
@@ -159,79 +241,129 @@ public class ArmoryTransferService : IArmoryTransferService
             {
                 ArsenalId = arsenal.Id,
                 SquadId = parentSquad?.Id,
-                Name = name
+                Name = name,
+                Description = description
             };
 
             if (request.ValueKind == JsonValueKind.String)
             {
                 shot.Url = request.GetString() ?? "";
                 shot.Method = "GET";
+                ParseQueryParamsFromRawUrl(shot.Url, shot);
             }
             else if (request.ValueKind == JsonValueKind.Object)
             {
                 if (request.TryGetProperty("method", out var m))
                     shot.Method = m.GetString() ?? "GET";
 
+                string rawUrl = "";
                 if (request.TryGetProperty("url", out var u))
                 {
                     if (u.ValueKind == JsonValueKind.String)
-                        shot.Url = u.GetString() ?? "";
-                    else if (u.TryGetProperty("raw", out var rawUrl))
-                        shot.Url = rawUrl.GetString() ?? "";
+                    {
+                        rawUrl = u.GetString() ?? "";
+                        shot.Url = rawUrl;
+                    }
+                    else if (u.ValueKind == JsonValueKind.Object)
+                    {
+                        if (u.TryGetProperty("raw", out var rawUrlEl))
+                            rawUrl = rawUrlEl.GetString() ?? "";
+                        shot.Url = rawUrl;
+
+                        // Query parameters
+                        if (u.TryGetProperty("query", out var queries) && queries.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var q in queries.EnumerateArray())
+                            {
+                                var qk = q.TryGetProperty("key", out var jk) ? jk.GetString() : "";
+                                var qv = q.TryGetProperty("value", out var jv) ? jv.GetString() : "";
+                                var dis = q.TryGetProperty("disabled", out var jd) && jd.GetBoolean();
+                                var qd = q.TryGetProperty("description", out var jdesc) ? jdesc.GetString() : null;
+                                if (!string.IsNullOrEmpty(qk))
+                                {
+                                    shot.Parameters.Add(new ShotParameter
+                                    {
+                                        Key = qk,
+                                        Value = qv ?? "",
+                                        Type = ParameterType.Query,
+                                        Enabled = !dis,
+                                        Description = qd
+                                    });
+                                }
+                            }
+                        }
+
+                        // Path variables (:param)
+                        if (u.TryGetProperty("variable", out var vars) && vars.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var v in vars.EnumerateArray())
+                            {
+                                var vk = v.TryGetProperty("key", out var jvk) ? jvk.GetString() : "";
+                                var vv = v.TryGetProperty("value", out var jvv) ? jvv.GetString() : "";
+                                var vd = v.TryGetProperty("description", out var jvd) ? jvd.GetString() : null;
+                                if (!string.IsNullOrEmpty(vk))
+                                {
+                                    shot.Parameters.Add(new ShotParameter
+                                    {
+                                        Key = vk,
+                                        Value = vv ?? "",
+                                        Type = ParameterType.Path,
+                                        Enabled = true,
+                                        Description = vd
+                                    });
+                                }
+                            }
+                        }
+                    }
                 }
 
+                // If no query parameters were parsed from query array, fallback to rawUrl query string
+                if (!shot.Parameters.Any(p => p.Type == ParameterType.Query) && !string.IsNullOrEmpty(rawUrl))
+                {
+                    ParseQueryParamsFromRawUrl(rawUrl, shot);
+                }
+
+                // Headers
                 if (request.TryGetProperty("header", out var headers) && headers.ValueKind == JsonValueKind.Array)
                 {
                     foreach (var h in headers.EnumerateArray())
                     {
                         var key = h.TryGetProperty("key", out var hk) ? hk.GetString() : "";
                         var val = h.TryGetProperty("value", out var hv) ? hv.GetString() : "";
+                        var dis = h.TryGetProperty("disabled", out var hd) && hd.GetBoolean();
+                        var hdesc = h.TryGetProperty("description", out var hdsc) ? hdsc.GetString() : null;
                         if (!string.IsNullOrEmpty(key))
                         {
-                            shot.Headers.Add(new ShotHeader { Key = key, Value = val ?? "", Enabled = true });
+                            shot.Headers.Add(new ShotHeader
+                            {
+                                Key = key,
+                                Value = val ?? "",
+                                Enabled = !dis,
+                                Description = hdesc
+                            });
                         }
                     }
                 }
 
+                // Request-level Auth
+                if (request.TryGetProperty("auth", out var reqAuth))
+                {
+                    shot.Armor = ParsePostmanAuth(reqAuth);
+                }
+
+                // Body
                 if (request.TryGetProperty("body", out var body) && body.ValueKind == JsonValueKind.Object)
                 {
-                    if (body.TryGetProperty("mode", out var mode) && mode.GetString() == "raw" &&
-                        body.TryGetProperty("raw", out var raw))
-                    {
-                        shot.Payload = new PayloadConfig
-                        {
-                            Type = PayloadType.Json,
-                            RawContent = raw.GetString()
-                        };
-                    }
+                    shot.Payload = ParsePostmanBody(body);
                 }
             }
 
             // Extract Postman tests and prerequests into Bullet Verifier & Trigger scripts
             if (item.TryGetProperty("event", out var events) && events.ValueKind == JsonValueKind.Array)
             {
-                foreach (var ev in events.EnumerateArray())
-                {
-                    var listen = ev.TryGetProperty("listen", out var l) ? l.GetString() : "";
-                    if (ev.TryGetProperty("script", out var script) && script.TryGetProperty("exec", out var exec) && exec.ValueKind == JsonValueKind.Array)
-                    {
-                        var lines = new List<string>();
-                        foreach (var line in exec.EnumerateArray())
-                            lines.Add(line.GetString() ?? "");
-
-                        var scriptContent = string.Join("\n", lines)
-                            .Replace("pm.test(", "bullet.test(")
-                            .Replace("pm.expect(", "bullet.expect(")
-                            .Replace("pm.response.to.have.status(", "bullet.expect(bullet.response.status).toBe(")
-                            .Replace("pm.environment.get(", "bullet.loadout.get(")
-                            .Replace("pm.environment.set(", "bullet.loadout.set(");
-
-                        if (listen == "prerequest")
-                            shot.TriggerScript = scriptContent;
-                        else if (listen == "test")
-                            shot.VerifierScript = scriptContent;
-                    }
-                }
+                ParsePostmanEvents(events, out var pre, out var test);
+                shot.TriggerScript = pre;
+                shot.VerifierScript = test;
             }
 
             if (parentSquad != null)
@@ -239,6 +371,264 @@ public class ArmoryTransferService : IArmoryTransferService
             else
                 arsenal.Shots.Add(shot);
         }
+    }
+
+    private static ArmorConfig ParsePostmanAuth(JsonElement auth)
+    {
+        if (auth.ValueKind != JsonValueKind.Object)
+            return new ArmorConfig { Type = ArmorType.Inherit };
+
+        var typeStr = auth.TryGetProperty("type", out var t) ? t.GetString()?.ToLowerInvariant() : "inherit";
+
+        return typeStr switch
+        {
+            "bearer" => ParseBearerAuth(auth),
+            "basic" => ParseBasicAuth(auth),
+            "apikey" => ParseApiKeyAuth(auth),
+            "noauth" => ArmorConfig.None(),
+            _ => new ArmorConfig { Type = ArmorType.Inherit }
+        };
+    }
+
+    private static ArmorConfig ParseBearerAuth(JsonElement auth)
+    {
+        var config = new ArmorConfig { Type = ArmorType.Bearer };
+        if (auth.TryGetProperty("bearer", out var bearerArr) && bearerArr.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in bearerArr.EnumerateArray())
+            {
+                var k = item.TryGetProperty("key", out var jk) ? jk.GetString() : "";
+                var v = item.TryGetProperty("value", out var jv) ? jv.GetString() : "";
+                if (string.Equals(k, "token", StringComparison.OrdinalIgnoreCase) && v != null)
+                {
+                    config.SetProperty("token", v);
+                }
+            }
+        }
+        return config;
+    }
+
+    private static ArmorConfig ParseBasicAuth(JsonElement auth)
+    {
+        var config = new ArmorConfig { Type = ArmorType.Basic };
+        if (auth.TryGetProperty("basic", out var basicArr) && basicArr.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in basicArr.EnumerateArray())
+            {
+                var k = item.TryGetProperty("key", out var jk) ? jk.GetString() : "";
+                var v = item.TryGetProperty("value", out var jv) ? jv.GetString() : "";
+                if (string.Equals(k, "username", StringComparison.OrdinalIgnoreCase) && v != null)
+                    config.SetProperty("username", v);
+                else if (string.Equals(k, "password", StringComparison.OrdinalIgnoreCase) && v != null)
+                    config.SetProperty("password", v);
+            }
+        }
+        return config;
+    }
+
+    private static ArmorConfig ParseApiKeyAuth(JsonElement auth)
+    {
+        var config = new ArmorConfig { Type = ArmorType.ApiKey };
+        string key = "", value = "", inLoc = "Header";
+        if (auth.TryGetProperty("apikey", out var apiArr) && apiArr.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in apiArr.EnumerateArray())
+            {
+                var k = item.TryGetProperty("key", out var jk) ? jk.GetString() : "";
+                var v = item.TryGetProperty("value", out var jv) ? jv.GetString() : "";
+                if (string.Equals(k, "key", StringComparison.OrdinalIgnoreCase)) key = v ?? "";
+                else if (string.Equals(k, "value", StringComparison.OrdinalIgnoreCase)) value = v ?? "";
+                else if (string.Equals(k, "in", StringComparison.OrdinalIgnoreCase)) inLoc = v ?? "Header";
+            }
+        }
+        config.SetProperty("key", key);
+        config.SetProperty("value", value);
+        config.SetProperty("addTo", inLoc);
+        return config;
+    }
+
+    private static PayloadConfig ParsePostmanBody(JsonElement body)
+    {
+        var config = new PayloadConfig { Type = PayloadType.None };
+        var mode = body.TryGetProperty("mode", out var m) ? m.GetString()?.ToLowerInvariant() : "";
+
+        if (mode == "raw")
+        {
+            var raw = body.TryGetProperty("raw", out var r) ? r.GetString() : "";
+            config.RawContent = raw;
+
+            string lang = "";
+            if (body.TryGetProperty("options", out var opts) &&
+                opts.TryGetProperty("raw", out var rawOpt) &&
+                rawOpt.TryGetProperty("language", out var langEl))
+            {
+                lang = langEl.GetString()?.ToLowerInvariant() ?? "";
+            }
+
+            config.Type = lang switch
+            {
+                "xml" => PayloadType.Xml,
+                "text" or "plain" => PayloadType.PlainText,
+                "json" => PayloadType.Json,
+                _ => (raw?.TrimStart().StartsWith('{') == true || raw?.TrimStart().StartsWith('[') == true)
+                    ? PayloadType.Json
+                    : PayloadType.PlainText
+            };
+        }
+        else if (mode == "urlencoded")
+        {
+            config.Type = PayloadType.FormUrlEncoded;
+            if (body.TryGetProperty("urlencoded", out var urlencoded) && urlencoded.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in urlencoded.EnumerateArray())
+                {
+                    var k = item.TryGetProperty("key", out var jk) ? jk.GetString() : "";
+                    var v = item.TryGetProperty("value", out var jv) ? jv.GetString() : "";
+                    var dis = item.TryGetProperty("disabled", out var jd) && jd.GetBoolean();
+                    var desc = item.TryGetProperty("description", out var jdesc) ? jdesc.GetString() : null;
+                    if (!string.IsNullOrEmpty(k))
+                    {
+                        config.FormData.Add(new FormDataItem
+                        {
+                            Key = k,
+                            Value = v ?? "",
+                            Enabled = !dis,
+                            Description = desc
+                        });
+                    }
+                }
+            }
+        }
+        else if (mode == "formdata")
+        {
+            config.Type = PayloadType.Multipart;
+            if (body.TryGetProperty("formdata", out var formdata) && formdata.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in formdata.EnumerateArray())
+                {
+                    var k = item.TryGetProperty("key", out var jk) ? jk.GetString() : "";
+                    var v = item.TryGetProperty("value", out var jv) ? jv.GetString() : "";
+                    var t = item.TryGetProperty("type", out var jt) ? jt.GetString() : "text";
+                    var src = item.TryGetProperty("src", out var js) ? js.GetString() : null;
+                    var dis = item.TryGetProperty("disabled", out var jd) && jd.GetBoolean();
+                    var desc = item.TryGetProperty("description", out var jdesc) ? jdesc.GetString() : null;
+                    if (!string.IsNullOrEmpty(k))
+                    {
+                        config.MultipartData.Add(new MultipartItem
+                        {
+                            Key = k,
+                            Value = v ?? "",
+                            IsFile = string.Equals(t, "file", StringComparison.OrdinalIgnoreCase),
+                            FileName = src,
+                            Enabled = !dis,
+                            Description = desc
+                        });
+                    }
+                }
+            }
+        }
+        else if (mode == "graphql")
+        {
+            config.Type = PayloadType.GraphQL;
+            if (body.TryGetProperty("graphql", out var gql))
+            {
+                config.GraphQLQuery = gql.TryGetProperty("query", out var q) ? q.GetString() : "";
+                config.GraphQLVariables = gql.TryGetProperty("variables", out var v) ? v.GetString() : "";
+            }
+        }
+
+        return config;
+    }
+
+    private static void ParseQueryParamsFromRawUrl(string rawUrl, Shot shot)
+    {
+        try
+        {
+            var queryIdx = rawUrl.IndexOf('?');
+            if (queryIdx >= 0 && queryIdx < rawUrl.Length - 1)
+            {
+                var queryString = rawUrl[(queryIdx + 1)..];
+                var hashIdx = queryString.IndexOf('#');
+                if (hashIdx >= 0) queryString = queryString[..hashIdx];
+
+                var pairs = queryString.Split('&', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var pair in pairs)
+                {
+                    var eqIdx = pair.IndexOf('=');
+                    string key, val;
+                    if (eqIdx >= 0)
+                    {
+                        key = Uri.UnescapeDataString(pair[..eqIdx]);
+                        val = Uri.UnescapeDataString(pair[(eqIdx + 1)..]);
+                    }
+                    else
+                    {
+                        key = Uri.UnescapeDataString(pair);
+                        val = "";
+                    }
+
+                    if (!string.IsNullOrEmpty(key) && !shot.Parameters.Any(p => p.Type == ParameterType.Query && p.Key == key))
+                    {
+                        shot.Parameters.Add(new ShotParameter
+                        {
+                            Key = key,
+                            Value = val,
+                            Type = ParameterType.Query,
+                            Enabled = true
+                        });
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Fallback gracefully if malformed URL
+        }
+    }
+
+    private static void ParsePostmanEvents(JsonElement events, out string? triggerScript, out string? verifierScript)
+    {
+        triggerScript = null;
+        verifierScript = null;
+
+        foreach (var ev in events.EnumerateArray())
+        {
+            var listen = ev.TryGetProperty("listen", out var l) ? l.GetString() : "";
+            if (ev.TryGetProperty("script", out var script) &&
+                script.TryGetProperty("exec", out var exec) &&
+                exec.ValueKind == JsonValueKind.Array)
+            {
+                var lines = new List<string>();
+                foreach (var line in exec.EnumerateArray())
+                    lines.Add(line.GetString() ?? "");
+
+                var content = TranslatePostmanScript(string.Join("\n", lines));
+                if (listen == "prerequest")
+                    triggerScript = content;
+                else if (listen == "test")
+                    verifierScript = content;
+            }
+        }
+    }
+
+    private static string TranslatePostmanScript(string postmanScript)
+    {
+        if (string.IsNullOrWhiteSpace(postmanScript)) return "";
+
+        return postmanScript
+            .Replace("pm.test(", "bullet.test(")
+            .Replace("pm.expect(", "bullet.expect(")
+            .Replace("pm.response.to.have.status(", "bullet.expect(bullet.response.status).toBe(")
+            .Replace("pm.response.json()", "bullet.response.json()")
+            .Replace("pm.response.text()", "bullet.response.text()")
+            .Replace("pm.environment.get(", "bullet.loadout.get(")
+            .Replace("pm.environment.set(", "bullet.loadout.set(")
+            .Replace("pm.variables.get(", "bullet.rounds.get(")
+            .Replace("pm.variables.set(", "bullet.rounds.set(")
+            .Replace("pm.collectionVariables.get(", "bullet.rounds.get(")
+            .Replace("pm.collectionVariables.set(", "bullet.rounds.set(")
+            .Replace("pm.globals.get(", "bullet.loadout.get(")
+            .Replace("pm.globals.set(", "bullet.loadout.set(");
     }
 
     public Shot ImportCurl(string curlCommand, Guid arsenalId)

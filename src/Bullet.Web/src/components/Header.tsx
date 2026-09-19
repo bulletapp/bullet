@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   Lock, Unlock, AlertTriangle, Terminal, Layers, Play, 
-  Download, Command, Plus, RefreshCw, CheckCircle2,
+  Download, Upload, Command, Plus, RefreshCw, CheckCircle2,
   Sun, Moon
 } from 'lucide-react';
 import { Range, Loadout } from '../types/bullet';
@@ -187,15 +187,16 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="font-mono font-medium">Firing Run</span>
         </button>
 
-        {/* Armory Transfer (Import/Export) */}
+        {/* Import & Export */}
         <button
-          data-testid="header-transfer-btn"
+          data-testid="header-import-btn"
+          data-legacy-testid="header-transfer-btn"
           onClick={onOpenArmoryTransfer}
-          className="flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
-          title="Transfer (Import/Export)"
+          className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
+          title="Import (Postman Collection / Environment, OpenAPI, cURL)"
         >
-          <Download className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Transfer</span>
+          <Upload className="w-3.5 h-3.5 text-amber-400" />
+          <span>Import</span>
         </button>
 
         {/* Command Palette */}

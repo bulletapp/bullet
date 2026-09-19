@@ -3,7 +3,7 @@ import {
   Folder, Sliders, Clock, ShieldCheck, Radio, 
   Activity, Cookie, BookOpen, ChevronRight, ChevronDown, 
   Plus, MoreVertical, Search, Trash2, Play, FileDown,
-  Lock, Key
+  Lock, Key, Upload
 } from 'lucide-react';
 import { Arsenal, Squad, Shot } from '../types/bullet';
 
@@ -31,6 +31,7 @@ interface SidebarProps {
   onDeleteShot: (id: string) => void;
   onRunArsenal: (arsenalId: string) => void;
   onExportArsenal: (arsenalId: string) => void;
+  onOpenImport?: () => void;
 }
 
 const methodColors: Record<string, string> = {
@@ -57,6 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onDeleteShot,
   onRunArsenal,
   onExportArsenal,
+  onOpenImport,
 }) => {
   const [expandedArsenals, setExpandedArsenals] = useState<Record<string, boolean>>({
     // Pre-expand all by default
@@ -226,6 +228,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
+            {onOpenImport && (
+              <button
+                data-testid="sidebar-import-btn"
+                onClick={onOpenImport}
+                className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 border border-slate-700 transition"
+                title="Import Postman Collection or OpenAPI"
+              >
+                <Upload className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Tree View */}
@@ -233,12 +245,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {filteredArsenals.length === 0 ? (
               <div className="p-4 text-center text-slate-500 font-mono text-[11px]">
                 No Arsenals found.<br />
-                <button
-                  onClick={onOpenNewArsenal}
-                  className="mt-2 px-2 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded hover:bg-amber-500/20"
-                >
-                  + Create Arsenal
-                </button>
+                <div className="mt-2.5 flex items-center justify-center gap-1.5">
+                  <button
+                    onClick={onOpenNewArsenal}
+                    className="px-2 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded hover:bg-amber-500/20"
+                  >
+                    + Create
+                  </button>
+                  {onOpenImport && (
+                    <button
+                      onClick={onOpenImport}
+                      className="px-2 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 rounded hover:bg-cyan-500/20 flex items-center gap-1"
+                    >
+                      <Upload className="w-3 h-3" />
+                      Import
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               filteredArsenals.map((arsenal) => {
