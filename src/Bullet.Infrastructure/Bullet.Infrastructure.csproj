@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Bullet.Domain\Bullet.Domain.csproj" />
     <ProjectReference Include="..\Bullet.Application\Bullet.Application.csproj" />
+    <ProjectReference Include="..\Bullet.Security\Bullet.Security.csproj" />
   </ItemGroup>
 
   <ItemGroup>

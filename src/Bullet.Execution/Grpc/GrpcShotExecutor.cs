@@ -33,7 +33,8 @@ public class GrpcShotExecutor : IGrpcShotExecutor
         IArmorResolver armorResolver,
         ITlsManager tlsManager,
         ISsrfGuard ssrfGuard,
-        ISecretMasker secretMasker)
+        ISecretMasker secretMasker,
+        IHttpMessageHandlerProvider? handlerProvider = null)
     {
         _tokenResolver = tokenResolver;
         _armorResolver = armorResolver;
@@ -41,16 +42,24 @@ public class GrpcShotExecutor : IGrpcShotExecutor
         _ssrfGuard = ssrfGuard;
         _secretMasker = secretMasker;
 
-        var handler = new SocketsHttpHandler
+        if (handlerProvider != null)
         {
-            EnableMultipleHttp2Connections = true,
-            PooledConnectionLifetime = TimeSpan.FromMinutes(2),
-            SslOptions = {
-                RemoteCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true // Permissive for local dev & self-signed test endpoints
-            }
-        };
+            var handler = handlerProvider.CreateHandler(null, true);
+            _httpClient = new HttpClient(handler, disposeHandler: false);
+        }
+        else
+        {
+            var handler = new SocketsHttpHandler
+            {
+                EnableMultipleHttp2Connections = true,
+                PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+                SslOptions = {
+                    RemoteCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true // Permissive for local dev & self-signed test endpoints
+                }
+            };
 
-        _httpClient = new HttpClient(handler);
+            _httpClient = new HttpClient(handler);
+        }
     }
 
     public async Task<Impact> ExecuteAsync(ShotExecutionRequest request, CancellationToken cancellationToken = default)

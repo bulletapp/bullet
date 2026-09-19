@@ -1,7 +1,8 @@
 import * as signalR from '@microsoft/signalr';
 import {
   Range, Arsenal, Squad, Shot, Loadout, Round, TLSProfile,
-  TargetRange, Sentinel, ShotLog, Impact, FiringRun, CookieRecord
+  TargetRange, Sentinel, ShotLog, Impact, FiringRun, CookieRecord,
+  MeshStatus, DiscoveredRange, MeshJoinResponse, ActiveShareInfo
 } from '../types/bullet';
 
 const BASE_URL = '/api';
@@ -276,6 +277,31 @@ export const bulletApi = {
       errorMessage: raw.errorMessage,
     };
   },
+
+  // Mesh WiFi Collaboration
+  getMeshStatus: () => request<MeshStatus>('/mesh/status'),
+  getDiscoveredRanges: () => request<DiscoveredRange[]>('/mesh/discovered'),
+  shareRange: (rangeId: string, password?: string, accessMode?: string) =>
+    request<ActiveShareInfo>('/mesh/share', {
+      method: 'POST',
+      body: JSON.stringify({ rangeId, password, accessMode: accessMode || 'ReadWrite' }),
+    }),
+  stopShareRange: (rangeId: string) =>
+    request<{ success: boolean }>('/mesh/stop-share', {
+      method: 'POST',
+      body: JSON.stringify({ rangeId }),
+    }),
+  joinMeshRange: (rangeId: string, password?: string, peerName?: string) =>
+    request<MeshJoinResponse>('/mesh/join', {
+      method: 'POST',
+      body: JSON.stringify({ rangeId, password, peerName: peerName || 'BULLET Peer' }),
+    }),
+  syncMeshEvent: (rangeId: string, eventType: string, payloadJson: string, ticket: string) =>
+    request<{ success: boolean }>('/mesh/sync', {
+      method: 'POST',
+      headers: { 'X-Mesh-Ticket': ticket },
+      body: JSON.stringify({ rangeId, eventType, payloadJson, authorPeerName: 'local', timestampUtc: new Date().toISOString() }),
+    }),
 };
 
 // SignalR Hub Connection helpers
@@ -289,6 +315,13 @@ export function createExecutionHubConnection(): signalR.HubConnection {
 export function createFiringRunHubConnection(): signalR.HubConnection {
   return new signalR.HubConnectionBuilder()
     .withUrl('/hubs/firing-run')
+    .withAutomaticReconnect()
+    .build();
+}
+
+export function createMeshHubConnection(): signalR.HubConnection {
+  return new signalR.HubConnectionBuilder()
+    .withUrl('/hubs/mesh')
     .withAutomaticReconnect()
     .build();
 }

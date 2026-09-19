@@ -17,6 +17,8 @@ using Bullet.Security.Secrets;
 using Bullet.Security.Ssrf;
 using Bullet.Workers;
 using Bullet.Application.OAuth;
+using Bullet.Application.Mesh;
+using Bullet.Infrastructure.Mesh;
 using Bullet.Execution.Grpc;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -100,9 +102,11 @@ public static class BulletServer
         builder.Services.AddSingleton<IProtoParserService, ProtoParserService>();
         builder.Services.AddSingleton<IGrpcReflectionService, GrpcReflectionService>();
         builder.Services.AddSingleton<IGrpcShotExecutor, GrpcShotExecutor>();
+        builder.Services.AddSingleton<IMeshCollaborationService, MeshCollaborationService>();
 
-        // Background Worker for Sentinels
+        // Background Workers
         builder.Services.AddHostedService<SentinelWorker>();
+        builder.Services.AddHostedService<MeshDiscoveryBeaconWorker>();
 
         // Controllers & JSON options
         builder.Services.AddControllers()
@@ -160,6 +164,7 @@ public static class BulletServer
         app.MapHub<ExecutionHub>("/hubs/execution");
         app.MapHub<FiringRunHub>("/hubs/firing-run");
         app.MapHub<FiringRunHub>("/hubs/firing-runs");
+        app.MapHub<MeshHub>("/hubs/mesh");
 
         // Health check endpoint
         app.MapGet("/api/health", () => Results.Ok(new

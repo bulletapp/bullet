@@ -197,6 +197,8 @@ public class ShotExecutor : IShotExecutor
 
         // Apply Armor
         _armorResolver.ApplyToRequest(effectiveArmor, httpRequest, resolvedRounds, _tokenResolver, ref resolvedUrl);
+        httpRequest.RequestUri = new Uri(resolvedUrl, UriKind.RelativeOrAbsolute);
+        impact.ResolvedUrl = resolvedUrl;
 
         // Apply Headers
         foreach (var kvp in headersDict)

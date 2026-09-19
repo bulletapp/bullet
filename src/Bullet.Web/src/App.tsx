@@ -25,6 +25,7 @@ import { NewRangeModal } from './components/modals/NewRangeModal';
 import { NewArsenalModal } from './components/modals/NewArsenalModal';
 import { NewSquadModal } from './components/modals/NewSquadModal';
 import { NewShotModal } from './components/modals/NewShotModal';
+import { MeshCollaborationModal } from './components/modals/MeshCollaborationModal';
 
 // Dedicated Views
 import { LoadoutsView } from './components/views/LoadoutsView';
@@ -71,6 +72,8 @@ export function App() {
   const [targetArsenalForSquad, setTargetArsenalForSquad] = useState<string>('');
   const [newShotOpen, setNewShotOpen] = useState(false);
   const [newShotTarget, setNewShotTarget] = useState<{ arsenalId?: string; squadId?: string }>({});
+  const [meshCollabOpen, setMeshCollabOpen] = useState(false);
+  const [isMeshBroadcasting, setIsMeshBroadcasting] = useState(false);
 
   // 1. Fetch Ranges on Mount
   useEffect(() => {
@@ -466,6 +469,8 @@ export function App() {
         consoleOpen={consoleOpen}
         onToggleConsole={() => setConsoleOpen((prev) => !prev)}
         consoleLogCount={trajectoryLogs.length}
+        onOpenMeshCollab={() => setMeshCollabOpen(true)}
+        isMeshBroadcasting={isMeshBroadcasting}
       />
 
       {/* 2. Main Workspace Layout */}
@@ -733,6 +738,14 @@ export function App() {
           }}
         />
       )}
+
+      {/* Mesh WiFi Collaboration Modal */}
+      <MeshCollaborationModal
+        isOpen={meshCollabOpen}
+        onClose={() => setMeshCollabOpen(false)}
+        selectedRangeId={selectedRange?.id || null}
+        selectedRangeName={selectedRange?.name || null}
+      />
     </div>
   );
 }

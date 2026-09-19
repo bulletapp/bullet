@@ -334,3 +334,64 @@ export interface CookieRecord {
   isHttpOnly: boolean;
   expiresUtc?: string;
 }
+
+// === Mesh WiFi Collaboration ===
+export interface MeshStatus {
+  machineName: string;
+  osPlatform: string;
+  localIpAddresses: string[];
+  port: number;
+  activeShares: ActiveShareInfo[];
+}
+
+export interface ActiveShareInfo {
+  rangeId: string;
+  rangeName: string;
+  isPasswordProtected: boolean;
+  accessMode: string;
+  connectedPeers: number;
+  sharedAtUtc: string;
+  peers: MeshPeerInfo[];
+}
+
+export interface MeshPeerInfo {
+  connectionId: string;
+  peerId: string;
+  peerName: string;
+  osPlatform: string;
+  ipAddress: string;
+  connectedAtUtc: string;
+}
+
+export interface DiscoveredRange {
+  peerId: string;
+  machineName: string;
+  osPlatform: string;
+  rangeId: string;
+  rangeName: string;
+  hostIp: string;
+  hostPort: number;
+  endpoint: string;
+  isPasswordProtected: boolean;
+  accessMode: string;
+  activePeers: number;
+  lastSeenUtc: string;
+}
+
+export interface MeshJoinResponse {
+  success: boolean;
+  ticket?: string;
+  rangeId?: string;
+  rangeName?: string;
+  accessMode?: string;
+  rangeSnapshot?: Range;
+  errorMessage?: string;
+}
+
+export interface MeshSyncEvent {
+  rangeId: string;
+  eventType: string;
+  authorPeerName: string;
+  payloadJson: string;
+  timestampUtc: string;
+}

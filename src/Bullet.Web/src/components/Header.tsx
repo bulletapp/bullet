@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Lock, Unlock, AlertTriangle, Terminal, Layers, Play, 
   Download, Upload, Command, Plus, RefreshCw, CheckCircle2,
-  Sun, Moon, Volume2, VolumeX, Crosshair
+  Sun, Moon, Volume2, VolumeX, Crosshair, Wifi
 } from 'lucide-react';
 import { Range, Loadout } from '../types/bullet';
 import { BulletLogo } from './BulletLogo';
@@ -23,6 +23,8 @@ interface HeaderProps {
   consoleOpen: boolean;
   onToggleConsole: () => void;
   consoleLogCount: number;
+  onOpenMeshCollab?: () => void;
+  isMeshBroadcasting?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -40,6 +42,8 @@ export const Header: React.FC<HeaderProps> = ({
   consoleOpen,
   onToggleConsole,
   consoleLogCount,
+  onOpenMeshCollab,
+  isMeshBroadcasting,
 }) => {
   const [soundActive, setSoundActive] = React.useState<boolean>(isSoundEnabled);
 
@@ -215,6 +219,26 @@ export const Header: React.FC<HeaderProps> = ({
           <Play className="w-3 h-3 fill-amber-400" />
           <span className="font-mono font-medium">Firing Run</span>
         </button>
+
+        {/* WiFi Mesh Collaboration */}
+        {onOpenMeshCollab && (
+          <button
+            data-testid="header-mesh-btn"
+            onClick={onOpenMeshCollab}
+            className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded border transition ${
+              isMeshBroadcasting
+                ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300 shadow-sm shadow-emerald-500/20'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+            }`}
+            title="WiFi Workspace Collaboration (Mesh)"
+          >
+            <Wifi className={`w-3.5 h-3.5 ${isMeshBroadcasting ? 'text-emerald-400' : 'text-cyan-400'}`} />
+            <span className="font-mono text-[10px] font-medium">Mesh</span>
+            {isMeshBroadcasting && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            )}
+          </button>
+        )}
 
         {/* Import & Export */}
         <button
