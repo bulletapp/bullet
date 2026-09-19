@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { 
   CheckCircle2, XCircle, Clock, Database, Copy, 
-  ExternalLink, FileText, Activity, ShieldCheck, Eye,
-  ShieldAlert, ShieldOff, AlertTriangle, RefreshCw, Terminal, Info 
+  ExternalLink, FileText, Activity, Eye,
+  Lock, Unlock, AlertTriangle, RefreshCw, Terminal, Info 
 } from 'lucide-react';
 import { Impact } from '../types/bullet';
 
@@ -148,7 +148,7 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
           {/* TLS Protocol Indicator */}
           {impact.telemetry?.tlsProtocol && (
             <div className="flex items-center gap-1 text-cyan-400 font-mono text-xs bg-cyan-950/30 px-1.5 py-0.5 rounded border border-cyan-500/20">
-              <ShieldCheck className="w-3 h-3" />
+              <Lock className="w-3 h-3" />
               <span>{impact.telemetry.tlsProtocol}</span>
             </div>
           )}
@@ -163,7 +163,7 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
               ) : (
                 <XCircle className="w-3 h-3 text-rose-400" />
               )}
-              <span>Verifications: {passedTests}/{totalTests} Passed</span>
+              <span>Tests: {passedTests}/{totalTests} Passed</span>
             </div>
           )}
         </div>
@@ -262,7 +262,7 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>Verifications</span>
+              <span>Test Results</span>
               <span className={`text-[10px] px-1 rounded font-bold ${
                 passedTests === totalTests ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
               }`}>
@@ -294,7 +294,7 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
                 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' 
                 : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
             }`}>
-              {isSslError ? <ShieldAlert className="w-7 h-7" /> : <AlertTriangle className="w-7 h-7" />}
+              <AlertTriangle className="w-7 h-7" />
             </div>
 
             {/* Error Title & Subtitle */}
@@ -326,7 +326,7 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
                   data-testid="disable-ssl-retry-btn"
                   className="flex items-center gap-2 px-5 py-2.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-950/40 transition-all cursor-pointer font-sans"
                 >
-                  <ShieldOff className="w-4 h-4" />
+                  <Unlock className="w-4 h-4" />
                   <span>Disable SSL Verification & Retry</span>
                 </button>
                 <span className="text-[11px] text-slate-400 font-sans">

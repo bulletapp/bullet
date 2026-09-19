@@ -85,6 +85,7 @@ export interface ShotSettings {
   verifyTls?: boolean;
   verifySsl?: boolean;
   bypassSsrfGuard: boolean;
+  bypassSsrfProtection?: boolean;
   tlsProfileId?: string;
 }
 

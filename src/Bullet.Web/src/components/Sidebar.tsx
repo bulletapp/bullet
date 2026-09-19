@@ -144,9 +144,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
           }`}
-          title="Bulletproof TLS (Certificates & mTLS)"
+          title="Certificates & TLS Profiles"
         >
-          <ShieldCheck className="w-4 h-4" />
+          <Lock className="w-4 h-4" />
         </button>
 
         <button

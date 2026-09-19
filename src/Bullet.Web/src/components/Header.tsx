@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  ShieldAlert, ShieldCheck, ShieldOff, Terminal, Layers, Play, 
+  Lock, Unlock, AlertTriangle, Terminal, Layers, Play, 
   Download, Command, Plus, RefreshCw, CheckCircle2,
   Sun, Moon
 } from 'lucide-react';
@@ -127,7 +127,7 @@ export const Header: React.FC<HeaderProps> = ({
             : 'bg-bullet-surface border-bullet-border text-slate-200'
         }`}>
           {selectedLoadout?.isProduction ? (
-            <ShieldAlert className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
           ) : (
             <div className="w-2 h-2 rounded-full bg-emerald-400" />
           )}
@@ -241,9 +241,9 @@ export const Header: React.FC<HeaderProps> = ({
           title={globalSsl ? 'SSL Verification: ON (Click to disable and bypass SSL errors globally)' : 'SSL Verification: OFF (Allowing self-signed & untrusted certs)'}
         >
           {globalSsl ? (
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <Lock className="w-3.5 h-3.5 text-emerald-400" />
           ) : (
-            <ShieldOff className="w-3.5 h-3.5 text-amber-400" />
+            <Unlock className="w-3.5 h-3.5 text-amber-400" />
           )}
           <span className="font-mono text-[10px] font-semibold">{globalSsl ? 'SSL: ON' : 'SSL: OFF'}</span>
         </button>

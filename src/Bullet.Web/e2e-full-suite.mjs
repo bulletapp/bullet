@@ -263,8 +263,8 @@ async function runFullTestSuite() {
     // -------------------------------------------------------------
     // TEST 4: EDITOR SUB-TABS & SAVE SHOT
     // -------------------------------------------------------------
-    console.log('\n[TEST 4] Testing All Editor Sub-Tabs (Headers, Armor, Payload, Triggers, Verifiers, Settings)...');
-    const tabNames = ['Headers', 'Armor', 'Payload', 'Triggers', 'Verifiers', 'Settings'];
+    console.log('\n[TEST 4] Testing All Editor Sub-Tabs (Headers, Auth, Body, Pre-request, Tests, Settings)...');
+    const tabNames = ['Headers', 'Auth', 'Body', 'Pre-request', 'Tests', 'Settings'];
     for (const tabName of tabNames) {
       const tabHandle = await page.evaluateHandle((name) => {
         const tabs = Array.from(document.querySelectorAll('button'));

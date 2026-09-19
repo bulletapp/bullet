@@ -1,4 +1,4 @@
-﻿import puppeteer from 'puppeteer-core';
+import puppeteer from 'puppeteer-core';
 import fs from 'fs';
 
 const edgePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
@@ -85,9 +85,9 @@ async function run() {
   const statusOk = responseText.includes('ms') || responseText.includes('Status') || responseText.includes('200') || responseText.includes('Error');
   console.log(`   Step 5 OK: Fire execution completed. Response received: ${statusOk}`);
 
-  // 6. Test Header Tabs (Params, Headers, Armor, Payload, Triggers, Verifiers, Settings)
+  // 6. Test Header Tabs (Params, Headers, Auth, Body, Pre-request, Tests, Settings)
   console.log('6. Clicking through editor sub-tabs...');
-  const editorTabs = ['Headers', 'Armor', 'Payload', 'Triggers', 'Verifiers', 'Settings', 'Params'];
+  const editorTabs = ['Headers', 'Auth', 'Body', 'Pre-request', 'Tests', 'Settings', 'Params'];
   for (const tabName of editorTabs) {
     const tabEl = await page.waitForSelector(`button ::-p-text(${tabName})`);
     if (tabEl) {
