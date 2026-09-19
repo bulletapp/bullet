@@ -61,6 +61,7 @@ export const ShotLogView: React.FC<ShotLogViewProps> = ({ rangeId }) => {
             <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2 pointer-events-none" />
             <input
               type="text"
+              data-testid="filter-shot-logs-input"
               placeholder="Filter logs..."
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
@@ -79,6 +80,7 @@ export const ShotLogView: React.FC<ShotLogViewProps> = ({ rangeId }) => {
 
           <button
             onClick={handleClear}
+            data-testid="clear-shot-logs-btn"
             disabled={logs.length === 0}
             className="flex items-center gap-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-700"
           >

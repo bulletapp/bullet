@@ -340,6 +340,7 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
 
           {totalTests > 0 && (
             <button
+              data-testid="tab-test-results"
               onClick={() => setActiveTab('verifiers')}
               className={`px-3 py-2 border-b-2 font-mono transition flex items-center gap-1.5 ${
                 activeTab === 'verifiers'
@@ -476,6 +477,7 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
                   <Search className="w-3.5 h-3.5 absolute left-2.5 top-2 text-slate-500" />
                   <input
                     type="text"
+                    data-testid="json-search-input"
                     value={jsonSearch}
                     onChange={(e) => setJsonSearch(e.target.value)}
                     placeholder="Find in response JSON..."
@@ -483,7 +485,7 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
                   />
                 </div>
                 {jsonSearch && (
-                  <span className="text-[11px] font-mono text-amber-400 ml-2">
+                  <span data-testid="json-match-count" className="text-[11px] font-mono text-amber-400 ml-2">
                     {jsonMatchCount} {jsonMatchCount === 1 ? 'match' : 'matches'}
                   </span>
                 )}
@@ -523,6 +525,7 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
               <Search className="w-3.5 h-3.5 absolute left-2.5 top-2 text-slate-500" />
               <input
                 type="text"
+                data-testid="header-filter-input"
                 value={headerFilter}
                 onChange={(e) => setHeaderFilter(e.target.value)}
                 placeholder="Filter headers by key or value..."

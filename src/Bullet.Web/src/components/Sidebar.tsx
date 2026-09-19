@@ -502,7 +502,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         )}
 
                         {/* Direct Shots */}
-                        {arsenal.shots?.map((shot) => {
+                        {arsenal.shots?.filter((shot) => !shot.squadId).map((shot) => {
                           const isSelected = selectedShotId === shot.id;
                           const isDragging = draggedShotId === shot.id;
                           return (

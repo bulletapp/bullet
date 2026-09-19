@@ -129,6 +129,7 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
               <label className="text-slate-400 block mb-1">Profile Name</label>
               <input
                 type="text"
+                data-testid="tls-profile-name-input"
                 required
                 placeholder="e.g. Internal Banking mTLS Cert"
                 value={name}
@@ -173,6 +174,7 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
               <label className="flex items-center gap-2 text-slate-300 cursor-pointer">
                 <input
                   type="checkbox"
+                  data-testid="tls-skip-verify-checkbox"
                   checked={skipVerify}
                   onChange={(e) => setSkipVerify(e.target.checked)}
                   className="rounded bg-slate-900 border-slate-700 text-emerald-500"
@@ -182,6 +184,7 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
 
               <button
                 type="submit"
+                data-testid="save-tls-profile-btn"
                 disabled={!name.trim()}
                 className="px-4 py-1.5 rounded bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-bold"
               >

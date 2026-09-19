@@ -59,6 +59,7 @@ export interface KeyValuePair {
 export interface PayloadConfig {
   type: 'none' | 'json' | 'formUrlEncoded' | 'multipart' | 'raw' | 'xml' | 'graphQl';
   rawText?: string;
+  rawContent?: string;
   graphQlQuery?: string;
   graphQlVariables?: string;
   formData: KeyValuePair[];
@@ -76,6 +77,7 @@ export interface ArmorConfig {
   awsSecretKey?: string;
   awsRegion?: string;
   awsService?: string;
+  properties?: Record<string, string>;
 }
 
 export interface ShotSettings {
@@ -101,6 +103,7 @@ export interface Round {
   id: string;
   loadoutId: string;
   key: string;
+  name?: string;
   value: string;
   isSecret: boolean;
   description?: string;

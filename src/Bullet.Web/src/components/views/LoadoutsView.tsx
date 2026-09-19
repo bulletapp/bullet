@@ -66,6 +66,7 @@ export const LoadoutsView: React.FC<LoadoutsViewProps> = ({ rangeId, loadouts, o
     try {
       await bulletApi.addRound(currentLoadout.id, {
         key: newRoundKey.trim(),
+        name: newRoundKey.trim(),
         value: newRoundValue,
         isSecret: newRoundIsSecret,
         description: newRoundDesc,
@@ -213,7 +214,7 @@ export const LoadoutsView: React.FC<LoadoutsViewProps> = ({ rangeId, loadouts, o
                       currentLoadout.rounds.map((round) => (
                         <tr key={round.id} className="border-b border-bullet-border/40 hover:bg-bullet-surface/50">
                           <td className="px-3 py-2 font-mono text-amber-400 font-medium select-text">
-                            {round.key}
+                            {round.key || (round as any).name}
                           </td>
                           <td className="px-3 py-2 font-mono text-slate-200 select-text">
                             {round.isSecret && maskSecrets ? (
@@ -254,6 +255,7 @@ export const LoadoutsView: React.FC<LoadoutsViewProps> = ({ rangeId, loadouts, o
                   <div>
                     <input
                       type="text"
+                      data-testid="new-round-key-input"
                       required
                       placeholder="Key (e.g. apiHost)"
                       value={newRoundKey}
@@ -264,6 +266,7 @@ export const LoadoutsView: React.FC<LoadoutsViewProps> = ({ rangeId, loadouts, o
                   <div className="col-span-2">
                     <input
                       type="text"
+                      data-testid="new-round-value-input"
                       placeholder="Value (e.g. https://api.prod.com)"
                       value={newRoundValue}
                       onChange={(e) => setNewRoundValue(e.target.value)}
@@ -282,6 +285,7 @@ export const LoadoutsView: React.FC<LoadoutsViewProps> = ({ rangeId, loadouts, o
                     </label>
                     <button
                       type="submit"
+                      data-testid="add-round-submit-btn"
                       disabled={!newRoundKey.trim()}
                       className="flex-1 py-1.5 rounded bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-bold"
                     >

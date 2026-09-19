@@ -69,12 +69,14 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange }) => {
 
   // Format JSON payload
   const beautifyPayload = () => {
-    if (shot.payload.type === 'json' && shot.payload.rawText) {
+    const raw = shot.payload.rawText || shot.payload.rawContent;
+    if (shot.payload.type === 'json' && raw) {
       try {
-        const obj = JSON.parse(shot.payload.rawText);
+        const obj = JSON.parse(raw);
+        const formatted = JSON.stringify(obj, null, 2);
         onChange({
           ...shot,
-          payload: { ...shot.payload, rawText: JSON.stringify(obj, null, 2) },
+          payload: { ...shot.payload, rawText: formatted, rawContent: formatted },
         });
       } catch {
         // invalid JSON
@@ -366,6 +368,7 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange }) => {
             <div>
               <label className="text-xs text-slate-400 font-mono block mb-1">Type</label>
               <select
+                data-testid="auth-type-select"
                 value={shot.armor?.type || 'inherit'}
                 onChange={(e) =>
                   onChange({
@@ -397,11 +400,19 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange }) => {
                 </label>
                 <input
                   type="text"
+                  data-testid="bearer-token-input"
                   value={shot.armor.bearerToken || ''}
                   onChange={(e) =>
                     onChange({
                       ...shot,
-                      armor: { ...shot.armor, bearerToken: e.target.value },
+                      armor: {
+                        ...shot.armor,
+                        bearerToken: e.target.value,
+                        properties: {
+                          ...(shot.armor?.properties || {}),
+                          token: e.target.value,
+                        },
+                      },
                     })
                   }
                   placeholder="e.g. {{authToken}} or eyJhbGciOi..."
@@ -532,6 +543,7 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange }) => {
 
               {shot.payload?.type === 'json' && (
                 <button
+                  data-testid="beautify-json-btn"
                   onClick={beautifyPayload}
                   className="flex items-center gap-1 text-[11px] font-mono text-cyan-400 hover:text-cyan-300 cursor-pointer"
                 >
@@ -578,11 +590,16 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange }) => {
               </div>
             ) : (
               <textarea
-                value={shot.payload?.rawText || ''}
+                data-testid="payload-raw-textarea"
+                value={shot.payload?.rawText ?? shot.payload?.rawContent ?? ''}
                 onChange={(e) =>
                   onChange({
                     ...shot,
-                    payload: { ...shot.payload, rawText: e.target.value },
+                    payload: {
+                      ...shot.payload,
+                      rawText: e.target.value,
+                      rawContent: e.target.value,
+                    },
                   })
                 }
                 placeholder="Enter payload contents (supports {{round}} tokens)..."
@@ -678,6 +695,7 @@ bullet.test('Body contains token', function() {
     bullet.expect(json.token).toBeDefined();
     bullet.rounds.set('authToken', json.token);
 });"
+                data-testid="verifier-script-textarea"
                 className="w-full h-80 bg-bullet-surface border border-bullet-border rounded p-3 font-mono text-xs text-amber-300 outline-none focus:border-amber-500"
               />
             </div>
@@ -688,6 +706,7 @@ bullet.test('Body contains token', function() {
                 Assertion Snippets
               </span>
               <button
+                data-testid="snippet-status-200"
                 onClick={() => addVerifierSnippet("bullet.test('Status is 200 OK', function() {\n  bullet.expect(bullet.response.status).toBe(200);\n});")}
                 className="text-left text-xs font-mono text-slate-300 hover:text-emerald-400 p-1.5 rounded hover:bg-bullet-surface border border-bullet-border"
               >

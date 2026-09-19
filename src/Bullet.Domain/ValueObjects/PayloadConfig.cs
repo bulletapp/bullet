@@ -6,6 +6,13 @@ public class PayloadConfig
 {
     public PayloadType Type { get; set; } = PayloadType.None;
     public string? RawContent { get; set; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("rawText")]
+    public string? RawText
+    {
+        get => RawContent;
+        set => RawContent = value;
+    }
     public List<FormDataItem> FormData { get; set; } = new();
     public List<MultipartItem> MultipartData { get; set; } = new();
     public string? GraphQLQuery { get; set; }

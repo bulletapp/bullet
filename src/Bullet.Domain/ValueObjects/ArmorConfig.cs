@@ -11,6 +11,42 @@ public class ArmorConfig
 
     public void SetProperty(string key, string value) => Properties[key] = value;
 
+    public string? BearerToken
+    {
+        get => GetProperty("token");
+        set { if (value != null) SetProperty("token", value); }
+    }
+
+    public string? BasicUsername
+    {
+        get => GetProperty("username");
+        set { if (value != null) SetProperty("username", value); }
+    }
+
+    public string? BasicPassword
+    {
+        get => GetProperty("password");
+        set { if (value != null) SetProperty("password", value); }
+    }
+
+    public string? ApiKeyName
+    {
+        get => GetProperty("key");
+        set { if (value != null) SetProperty("key", value); }
+    }
+
+    public string? ApiKeyValue
+    {
+        get => GetProperty("value");
+        set { if (value != null) SetProperty("value", value); }
+    }
+
+    public string? ApiKeyLocation
+    {
+        get => GetProperty("addTo");
+        set { if (value != null) SetProperty("addTo", value); }
+    }
+
     public static ArmorConfig None() => new() { Type = ArmorType.None };
     
     public static ArmorConfig Basic(string username, string password)

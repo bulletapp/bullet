@@ -25,6 +25,14 @@ public class Round
     public Range? Range { get; set; }
 
     public string Name { get; set; } = string.Empty;
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    [System.Text.Json.Serialization.JsonPropertyName("key")]
+    public string Key
+    {
+        get => Name;
+        set => Name = value;
+    }
     public string Value { get; set; } = string.Empty;
     public RoundType Type { get; set; } = RoundType.String;
     public bool IsSecret { get; set; }

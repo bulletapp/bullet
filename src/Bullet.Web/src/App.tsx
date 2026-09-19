@@ -200,18 +200,29 @@ export function App() {
       };
 
       const targetShotId = targetShot.id || (targetShot as any).Id;
-      const res = await bulletApi.fireShot(targetShotId, {
-        loadoutId: selectedLoadout?.id,
-        method: targetShot.method,
-        url: targetShot.url,
-        parameters: targetShot.parameters,
-        headers: targetShot.headers,
-        payload: targetShot.payload,
-        armor: targetShot.armor,
-        settings: effectiveSettings,
-        triggerScript: targetShot.triggerScript,
-        verifierScript: targetShot.verifierScript,
-      });
+      let res: Impact;
+      if (targetShotId && targetShotId !== 'undefined') {
+        res = await bulletApi.fireShot(targetShotId, {
+          loadoutId: selectedLoadout?.id,
+          method: targetShot.method,
+          url: targetShot.url,
+          parameters: targetShot.parameters,
+          headers: targetShot.headers,
+          payload: targetShot.payload,
+          armor: targetShot.armor,
+          settings: effectiveSettings,
+          triggerScript: targetShot.triggerScript,
+          verifierScript: targetShot.verifierScript,
+        });
+      } else {
+        res = await bulletApi.fireAdHoc(
+          {
+            ...targetShot,
+            settings: effectiveSettings,
+          },
+          selectedLoadout?.id
+        );
+      }
       setImpact(res);
 
       if (res.isSuccess) {
