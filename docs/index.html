@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BULLET — Load. Aim. API. | Sub-Millisecond Native API Weapon</title>
+  <meta name="description" content="Ultra-fast, offline-first API client built with .NET 10 and React 19. Microsecond telemetry waterfall, complete Postman v2.1 fidelity, SSRF guard, and native cross-platform binaries for Windows, macOS Apple Silicon, Intel, and Docker.">
+  <meta name="author" content="Vishal Viswanathan">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  
+  <!-- OpenGraph / Twitter -->
+  <meta property="og:title" content="BULLET — Load. Aim. API.">
+  <meta property="og:description" content="Ultra-fast, offline-first API client built with .NET 10 & React 19. Microsecond connection telemetry, Postman fidelity, SSRF guard, and native speeds.">
+  <meta property="og:image" content="assets/bullet-logo.png">
+  <meta property="og:url" content="https://vishalviswanathan03.github.io/bullet/">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            bullet: {
+              gold: '#f59e0b',
+              goldLight: '#fbbf24',
+              goldPale: '#fef08a',
+              amberDark: '#b45309',
+              cyan: '#06b6d4',
+              cyanLight: '#38bdf8',
+              emerald: '#10b981',
+              dark: '#06090e',
+              card: '#0c121e',
+              border: '#1e293b'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts & Custom Styling -->
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="bg-[#06090e] text-slate-100 min-h-screen relative antialiased selection:bg-amber-500 selection:text-black">
+
+  <!-- Subtle Cyber Grid Background -->
+  <div class="cyber-grid"></div>
+
+  <!-- 1. Top Announcement Bar -->
+  <div class="relative z-50 bg-gradient-to-r from-amber-950/50 via-slate-900 to-cyan-950/50 border-b border-amber-500/20 py-2 px-4 text-center text-xs sm:text-sm">
+    <div class="max-w-7xl mx-auto flex items-center justify-center gap-2 flex-wrap font-medium">
+      <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono text-[11px] font-bold uppercase tracking-wider border border-amber-500/30">
+        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+        v0.0.2 Live
+      </span>
+      <span class="text-slate-300">Native macOS (Apple Silicon M1-M4 & Intel) + Windows + Docker + Standalone PWA released!</span>
+      <a href="#downloads" class="text-amber-400 font-semibold hover:text-amber-300 underline underline-offset-4 ml-1">Get Downloads &rarr;</a>
+    </div>
+  </div>
+
+  <!-- 2. Sticky Glass Navigation -->
+  <nav class="sticky top-0 z-40 glass-nav transition-all">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <a href="#" class="flex items-center gap-3 group text-decoration-none">
+        <div class="relative w-9 h-9 rounded-xl bg-gradient-to-br from-slate-900 to-slate-950 p-1 border border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.25)] group-hover:border-amber-400 transition-all flex items-center justify-center">
+          <img src="assets/favicon.svg" alt="BULLET Logo" class="w-7 h-7">
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span class="font-extrabold tracking-wider font-mono text-xl text-white group-hover:text-amber-400 transition-colors">BULLET</span>
+          <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">v0.0.2</span>
+        </div>
+      </a>
+
+      <!-- Desktop Links -->
+      <div class="hidden md:flex items-center gap-7 text-sm font-medium text-slate-300">
+        <a href="#simulator" class="hover:text-amber-400 transition-colors">Live Weapon</a>
+        <a href="#telemetry" class="hover:text-cyan-400 transition-colors">Microsecond Telemetry</a>
+        <a href="#features" class="hover:text-amber-400 transition-colors">Features</a>
+        <a href="#comparison" class="hover:text-amber-400 transition-colors">Postman vs BULLET</a>
+        <a href="#gallery" class="hover:text-amber-400 transition-colors">Screenshots</a>
+        <a href="#downloads" class="hover:text-amber-400 transition-colors">Downloads</a>
+        <a href="#docs" class="hover:text-amber-400 transition-colors">Docs</a>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="hidden md:flex items-center gap-3">
+        <a href="https://github.com/VishalViswanathan03/bullet" target="_blank" rel="noopener" class="btn-secondary text-xs font-mono py-2 px-3.5">
+          <svg class="w-4 h-4 fill-current text-slate-300" viewBox="0 0 24 24">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          <span>Star on GitHub</span>
+        </a>
+        <a href="#downloads" class="btn-primary text-xs py-2 px-4 font-bold">
+          <span>Download Free</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+          </svg>
+        </a>
+      </div>
+
+      <!-- Mobile Hamburger Button -->
+      <button id="mobile-menu-toggle" class="md:hidden p-2 text-slate-400 hover:text-white" aria-label="Toggle Navigation">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+        </svg>
+      </button>
+
+    </div>
+
+    <!-- Mobile Dropdown Menu -->
+    <div id="mobile-menu" class="hidden md:hidden px-4 pt-2 pb-6 border-b border-slate-800 bg-[#080c14]/95 backdrop-blur-xl">
+      <div class="flex flex-col gap-3 text-sm font-medium text-slate-300">
+        <a href="#simulator" class="py-2 hover:text-amber-400">Live Weapon</a>
+        <a href="#telemetry" class="py-2 hover:text-cyan-400">Microsecond Telemetry</a>
+        <a href="#features" class="py-2 hover:text-amber-400">Features</a>
+        <a href="#comparison" class="py-2 hover:text-amber-400">Postman vs BULLET</a>
+        <a href="#gallery" class="py-2 hover:text-amber-400">Screenshots</a>
+        <a href="#downloads" class="py-2 hover:text-amber-400">Downloads</a>
+        <a href="#docs" class="py-2 hover:text-amber-400">Docs</a>
+        <div class="pt-3 flex flex-col gap-2">
+          <a href="https://github.com/VishalViswanathan03/bullet" target="_blank" rel="noopener" class="btn-secondary text-xs text-center justify-center">Star on GitHub</a>
+          <a href="#downloads" class="btn-primary text-xs text-center justify-center">Download Free v0.0.2</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 3. Hero Section -->
+  <section class="relative pt-12 pb-20 sm:pt-20 sm:pb-28 overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      
+      <div class="text-center max-w-4xl mx-auto">
+        
+        <!-- Reticle Eyebrow Badge -->
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.15)] mb-8">
+          <div class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b]"></div>
+          <span class="text-xs font-mono font-bold tracking-widest text-amber-300 uppercase">THE SUB-MILLISECOND API CLIENT</span>
+          <span class="text-slate-600">|</span>
+          <span class="text-xs font-mono text-slate-400">.NET 10 &bull; React 19 &bull; Jint ES6</span>
+        </div>
+
+        <!-- High-Impact Main Title -->
+        <h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.05] mb-6">
+          <span class="block text-white font-mono tracking-tighter">LOAD. AIM.</span>
+          <span class="gradient-text font-black tracking-normal">API.</span>
+        </h1>
+
+        <!-- Subtitle -->
+        <p class="text-lg sm:text-xl md:text-2xl text-slate-300 font-normal max-w-3xl mx-auto leading-relaxed mb-10">
+          The high-velocity, offline-first API weapon. Sub-millisecond connection waterfalls, 100% Postman collection fidelity, built-in SSRF loopback shield, and native cross-platform binaries. Zero telemetry tracking.
+        </p>
+
+        <!-- CTAs -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+          <a href="#downloads" class="btn-primary text-base py-3.5 px-8 font-extrabold w-full sm:w-auto shadow-[0_0_30px_rgba(245,158,11,0.4)]">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+              <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.949-1.801"/>
+            </svg>
+            <span>Download for Windows</span>
+          </a>
+
+          <a href="#downloads" class="btn-secondary text-base py-3.5 px-7 font-bold w-full sm:w-auto">
+            <svg class="w-5 h-5 fill-current text-slate-200" viewBox="0 0 24 24">
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.75 1.04-1.8 0.92-2.85-.9.04-2.02.6-2.66 1.36-.57.66-1.06 1.73-.93 2.76 1.01.08 2.05-.51 2.67-1.27z"/>
+            </svg>
+            <span>macOS (M1-M4 & Intel)</span>
+          </a>
+
+          <a href="#simulator" class="btn-secondary text-base py-3.5 px-6 font-mono text-xs w-full sm:w-auto text-amber-400 border-amber-500/30">
+            <span>⚡ Try Live Demo</span>
+          </a>
+        </div>
+
+        <!-- Terminal One-Liner Box -->
+        <div class="max-w-xl mx-auto p-1.5 rounded-xl bg-slate-950/80 border border-slate-800/80 shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 text-left">
+          <div class="flex items-center gap-2 pl-3 font-mono text-xs text-slate-400 overflow-hidden text-ellipsis whitespace-nowrap">
+            <span class="text-amber-400 font-bold">$</span>
+            <span id="hero-cmd-text" class="text-slate-200">docker run -d -p 5000:5000 ghcr.io/vishalviswanathan03/bullet:latest</span>
+          </div>
+          <button class="btn-copy px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-medium shrink-0 transition-colors" data-copy-target="hero-cmd-text">
+            Copy
+          </button>
+        </div>
+
+        <!-- Social Proof Stats -->
+        <div class="mt-14 grid grid-cols-2 md:grid-cols-4 gap-6 pt-10 border-t border-slate-800/60 max-w-4xl mx-auto">
+          <div>
+            <div class="text-3xl font-black font-mono text-amber-400">&lt; 300ms</div>
+            <div class="text-xs font-mono text-slate-400 mt-1 uppercase tracking-wider">Cold Start Speed</div>
+          </div>
+          <div>
+            <div class="text-3xl font-black font-mono text-cyan-400">~65 MB</div>
+            <div class="text-xs font-mono text-slate-400 mt-1 uppercase tracking-wider">Memory Footprint</div>
+          </div>
+          <div>
+            <div class="text-3xl font-black font-mono text-emerald-400">100%</div>
+            <div class="text-xs font-mono text-slate-400 mt-1 uppercase tracking-wider">Postman v2.1 Fidelity</div>
+          </div>
+          <div>
+            <div class="text-3xl font-black font-mono text-purple-400">0 KB</div>
+            <div class="text-xs font-mono text-slate-400 mt-1 uppercase tracking-wider">Cloud Data Leaked</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 4. Interactive Live Ballistic API Gun Simulator -->
+  <section id="simulator" class="py-16 relative">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center mb-10">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 font-mono text-xs font-semibold mb-3 border border-cyan-500/20">
+          <span>⚡ LIVE BALLISTIC SIMULATOR</span>
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Test the Trigger Right in Your Browser</h2>
+        <p class="text-slate-400 max-w-2xl mx-auto mt-2 text-sm sm:text-base">
+          Experience the microsecond telemetry waterfall and instant response rendering of the .NET 10 ballistic engine.
+        </p>
+      </div>
+
+      <!-- Simulator Window Frame -->
+      <div class="glass-panel overflow-hidden border border-slate-700/80 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)]">
+        
+        <!-- Window Chrome / Header -->
+        <div class="bg-slate-950/90 px-4 py-3 border-b border-slate-800 flex items-center justify-between flex-wrap gap-3">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-rose-500/80"></span>
+            <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
+            <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
+            <span class="text-xs font-mono text-slate-400 ml-2 font-medium">BULLET Cockpit v0.0.2</span>
+          </div>
+
+          <!-- Preset Switcher -->
+          <div class="flex items-center gap-2 text-xs font-mono">
+            <span class="text-slate-400 hidden sm:inline">Scenario Preset:</span>
+            <select id="simulator-preset" class="bg-slate-900 text-slate-200 border border-slate-700 rounded-md px-2.5 py-1 text-xs font-mono focus:outline-none focus:border-amber-500">
+              <option value="telemetry">⚡ Sub-ms Telemetry Sample (8.4ms)</option>
+              <option value="fire">🎯 POST /v1/bullets/fire (12.1ms)</option>
+              <option value="github">🐙 GET GitHub Public Repo (24.6ms)</option>
+              <option value="ssrf">🛡️ SSRF Guard Block (0.4ms link-local)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- URL & Firing Bar -->
+        <div class="p-4 sm:p-5 bg-slate-900/60 border-b border-slate-800/80 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div class="flex items-center gap-2 bg-slate-950 px-3 py-2 rounded-lg border border-slate-800 flex-1">
+            <span id="simulator-method" class="badge-method badge-get">GET</span>
+            <input id="simulator-url" type="text" readonly value="https://api.bullet.dev/v1/telemetry/sample" class="bg-transparent text-slate-200 font-mono text-xs sm:text-sm w-full focus:outline-none select-all">
+          </div>
+
+          <button id="btn-fire-shot" class="btn-fire px-6 py-2.5 rounded-lg flex items-center justify-center gap-2 font-mono text-sm shrink-0">
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            <span>FIRE SHOT</span>
+          </button>
+        </div>
+
+        <!-- Response Cockpit Area -->
+        <div class="p-4 sm:p-6 bg-slate-950/70">
+          
+          <!-- Telemetry Summary Pill Strip -->
+          <div class="flex items-center justify-between flex-wrap gap-3 pb-4 border-b border-slate-800/70">
+            <div class="flex items-center gap-3">
+              <span id="sim-status-pill" class="px-2.5 py-1 rounded text-xs font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                200 OK
+              </span>
+              <div class="flex items-center gap-1.5 text-xs font-mono text-slate-300">
+                <span class="text-slate-500">Latency:</span>
+                <span id="sim-time-pill" class="text-cyan-400 font-bold">8.4 ms</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-xs font-mono text-slate-300">
+                <span class="text-slate-500">Payload:</span>
+                <span id="sim-size-pill" class="text-slate-300">1.42 KB</span>
+              </div>
+            </div>
+
+            <!-- View Tabs -->
+            <div class="flex items-center gap-1 bg-slate-900/80 p-1 rounded-lg border border-slate-800 text-xs font-mono">
+              <button class="sim-tab-btn active px-3 py-1 rounded text-amber-400 border-b-2 border-amber-500" data-tab="body">Body (JSON)</button>
+              <button class="sim-tab-btn px-3 py-1 rounded text-slate-400 border-b-2 border-transparent hover:text-slate-200" data-tab="waterfall">Waterfall</button>
+              <button class="sim-tab-btn px-3 py-1 rounded text-slate-400 border-b-2 border-transparent hover:text-slate-200" data-tab="assertions">Assertions (Passed)</button>
+              <button class="sim-tab-btn px-3 py-1 rounded text-slate-400 border-b-2 border-transparent hover:text-slate-200" data-tab="headers">Headers</button>
+            </div>
+          </div>
+
+          <!-- Content: Tab 1 (JSON Body) -->
+          <div id="sim-content-body" class="sim-tab-content pt-4">
+            <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800/80 font-mono text-xs sm:text-sm overflow-x-auto max-h-80 leading-relaxed text-slate-200"><code id="sim-json-body"></code></pre>
+          </div>
+
+          <!-- Content: Tab 2 (Waterfall Telemetry) -->
+          <div id="sim-content-waterfall" class="sim-tab-content hidden pt-4 space-y-3">
+            <div class="bg-slate-950 p-5 rounded-xl border border-slate-800/80 space-y-3 font-mono text-xs">
+              
+              <!-- DNS -->
+              <div class="flex items-center justify-between gap-4">
+                <span class="w-32 text-slate-400">DNS Resolution</span>
+                <div class="flex-1 bg-slate-900 rounded-full h-3 overflow-hidden">
+                  <div id="bar-dns" class="bg-cyan-500 h-full rounded-full animate-waterfall" style="width: 12%;"></div>
+                </div>
+                <span id="val-dns" class="w-16 text-right text-cyan-400 font-bold">0.8 ms</span>
+              </div>
+
+              <!-- TCP -->
+              <div class="flex items-center justify-between gap-4">
+                <span class="w-32 text-slate-400">TCP Handshake</span>
+                <div class="flex-1 bg-slate-900 rounded-full h-3 overflow-hidden">
+                  <div id="bar-tcp" class="bg-blue-500 h-full rounded-full animate-waterfall" style="width: 18%;"></div>
+                </div>
+                <span id="val-tcp" class="w-16 text-right text-blue-400 font-bold">1.2 ms</span>
+              </div>
+
+              <!-- TLS -->
+              <div class="flex items-center justify-between gap-4">
+                <span class="w-32 text-slate-400">TLS 1.3 Handshake</span>
+                <div class="flex-1 bg-slate-900 rounded-full h-3 overflow-hidden">
+                  <div id="bar-tls" class="bg-purple-500 h-full rounded-full animate-waterfall" style="width: 25%;"></div>
+                </div>
+                <span id="val-tls" class="w-16 text-right text-purple-400 font-bold">2.1 ms</span>
+              </div>
+
+              <!-- TTFB -->
+              <div class="flex items-center justify-between gap-4">
+                <span class="w-32 text-slate-400">Time To First Byte</span>
+                <div class="flex-1 bg-slate-900 rounded-full h-3 overflow-hidden">
+                  <div id="bar-ttfb" class="bg-amber-500 h-full rounded-full animate-waterfall" style="width: 40%;"></div>
+                </div>
+                <span id="val-ttfb" class="w-16 text-right text-amber-400 font-bold">3.8 ms</span>
+              </div>
+
+              <!-- Transfer -->
+              <div class="flex items-center justify-between gap-4">
+                <span class="w-32 text-slate-400">Content Transfer</span>
+                <div class="flex-1 bg-slate-900 rounded-full h-3 overflow-hidden">
+                  <div id="bar-transfer" class="bg-emerald-500 h-full rounded-full animate-waterfall" style="width: 10%;"></div>
+                </div>
+                <span id="val-transfer" class="w-16 text-right text-emerald-400 font-bold">0.5 ms</span>
+              </div>
+
+            </div>
+            <p class="text-slate-400 text-xs font-mono text-center">
+              Measured directly through custom .NET 10 SocketsHttpHandler EventListener nanosecond socket hooks.
+            </p>
+          </div>
+
+          <!-- Content: Tab 3 (Assertions) -->
+          <div id="sim-content-assertions" class="sim-tab-content hidden pt-4">
+            <div id="sim-assertions-list" class="space-y-2 max-h-80 overflow-y-auto"></div>
+          </div>
+
+          <!-- Content: Tab 4 (Headers) -->
+          <div id="sim-content-headers" class="sim-tab-content hidden pt-4">
+            <div id="sim-headers-list" class="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-1 max-h-80 overflow-y-auto"></div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 5. Microsecond Telemetry Section -->
+  <section id="telemetry" class="py-20 bg-slate-950/60 border-y border-slate-900 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 font-mono text-xs font-semibold mb-4 border border-cyan-500/20">
+            <span>MICROSECOND RESOLUTION</span>
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+            Stop Guessing Where Your Milliseconds Went.
+          </h2>
+          <p class="text-slate-300 mt-4 text-base sm:text-lg leading-relaxed">
+            Most API clients only show you an aggregate duration. If a request takes 140ms, was it slow DNS resolution, a sluggish TLS 1.3 handshake, congested network TCP, or slow backend database processing?
+          </p>
+          <p class="text-slate-400 mt-3 text-sm sm:text-base leading-relaxed">
+            BULLET intercepts socket-level events via high-performance <code class="text-amber-400 font-mono">EventListener</code> telemetry hooks inside the .NET 10 <code class="text-amber-400 font-mono">SocketsHttpHandler</code>, recording every transition with nanosecond precision.
+          </p>
+
+          <!-- Telemetry Specs -->
+          <div class="grid grid-cols-2 gap-4 mt-8">
+            <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+              <div class="text-cyan-400 font-mono text-xl font-bold">DNS Resolution</div>
+              <div class="text-slate-400 text-xs mt-1">Tracks domain resolution duration and cached lookup times.</div>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+              <div class="text-purple-400 font-mono text-xl font-bold">TLS Negotiation</div>
+              <div class="text-slate-400 text-xs mt-1">Records cipher suite handshake and ALPN negotiation timings.</div>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+              <div class="text-amber-400 font-mono text-xl font-bold">TTFB (First Byte)</div>
+              <div class="text-slate-400 text-xs mt-1">Microsecond server processing latency before stream payload starts.</div>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+              <div class="text-emerald-400 font-mono text-xl font-bold">Content Transfer</div>
+              <div class="text-slate-400 text-xs mt-1">Stream read throughput and complete byte transmission time.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telemetry Screenshot Card -->
+        <div class="relative group">
+          <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 to-amber-500/20 rounded-2xl blur-xl opacity-50 group-hover:opacity-100 transition duration-500"></div>
+          <div class="relative rounded-2xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-2xl">
+            <img src="assets/preview-telemetry.png" alt="BULLET Telemetry Waterfall" class="w-full object-cover">
+            <div class="p-4 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between text-xs font-mono text-slate-400">
+              <span>Actual In-App Telemetry Explorer</span>
+              <span class="text-cyan-400">Filter by &gt; 50ms &bull; Sort by Phase</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 6. 8 Core Weapons (Feature Grid) -->
+  <section id="features" class="py-20 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 font-mono text-xs font-semibold mb-3 border border-amber-500/20">
+          <span>THE BALLISTIC ARSENAL</span>
+        </div>
+        <h2 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">Engineered for Velocity and Privacy</h2>
+        <p class="text-slate-400 mt-3 text-base sm:text-lg">
+          No bloated WebViews, no forced cloud accounts, no hidden telemetry snooping on your internal APIs.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        <!-- Weapon 1 -->
+        <div class="glass-panel p-6 relative group flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-5 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Sub-ms Waterfall</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Nanosecond-precision breakdown of DNS, TCP handshake, TLS negotiation, and TTFB using custom SocketsHttpHandler probes.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-amber-400">Zero Socket Guesswork</div>
+        </div>
+
+        <!-- Weapon 2 -->
+        <div class="glass-panel p-6 relative group flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mb-5 shadow-[0_0_15px_rgba(244,63,94,0.2)]">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">SSRF Loopback Fortress</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Automatic shield blocking malicious redirection to private RFC1918 subnets (127.0.0.1, 10.0.0.0/8, 169.254.169.254 cloud metadata).
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-rose-400">Enterprise Security Default</div>
+        </div>
+
+        <!-- Weapon 3 -->
+        <div class="glass-panel p-6 relative group flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-5 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">100% Postman v2.1 Import</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Drag-and-drop Postman collections and environments directly. Pre-request scripts and Chai test assertions run natively in Jint ES6 isolate.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-cyan-400">Seamless Zero-Friction Migration</div>
+        </div>
+
+        <!-- Weapon 4 -->
+        <div class="glass-panel p-6 relative group flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-5 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Bulletproof TLS & mTLS</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Manage client PKCS#12 (.p12/.pfx) certificates, corporate Root CAs, self-signed validation bypass, and custom SSL ciphers.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-purple-400">Full Zero-Trust Auth</div>
+        </div>
+
+        <!-- Weapon 5 -->
+        <div class="glass-panel p-6 relative group flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-5 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Multi-Shot Batch Runner</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Fire concurrent shots across collection folders. Real-time latency percentiles (p50, p95, p99) and CSV export for load verification.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-emerald-400">Automated Pipeline Testing</div>
+        </div>
+
+        <!-- Weapon 6 -->
+        <div class="glass-panel p-6 relative group flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 mb-5 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Polyglot Code Generator</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Generate production-ready code snippets with 1 click in cURL, Python, Node.js Fetch, Go, C#, Rust, PHP, Java, Ruby, and Swift.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-blue-400">10 Modern Languages</div>
+        </div>
+
+        <!-- Weapon 7 -->
+        <div class="glass-panel p-6 relative group flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-300 mb-5 shadow-[0_0_15px_rgba(251,191,36,0.2)]">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">AES-256 Vault</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Zero-knowledge local SQLite database with AES-256-GCM encryption for API keys, bearer tokens, and session cookies. No cloud leaks.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-amber-300">100% Offline-First Privacy</div>
+        </div>
+
+        <!-- Weapon 8 -->
+        <div class="glass-panel p-6 relative group flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-slate-500/10 border border-slate-500/30 flex items-center justify-center text-slate-300 mb-5 shadow-[0_0_15px_rgba(148,163,184,0.2)]">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Native Everywhere</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              True native desktop binaries for Windows x64 and macOS (Apple Silicon M1-M4 & Intel x64), Docker containers for CI/CD, and offline PWA.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-slate-400">Zero Rosetta Overhead</div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 7. Screenshot Gallery Showcase -->
+  <section id="gallery" class="py-20 bg-slate-950/80 border-t border-slate-900 relative">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center mb-12">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 font-mono text-xs font-semibold mb-3 border border-amber-500/20">
+          <span>HIGH-RESOLUTION INTERFACE</span>
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Built for Engineers Who Value Craft</h2>
+        <p class="text-slate-400 max-w-2xl mx-auto mt-2 text-sm sm:text-base">
+          Click the views below to inspect the interface designed for speed, clarity, and precision.
+        </p>
+
+        <!-- Gallery Tabs -->
+        <div class="flex items-center justify-center flex-wrap gap-2 mt-8">
+          <button class="gallery-tab-btn active px-4 py-2 rounded-lg font-mono text-xs font-semibold border-b-2 border-amber-500 text-amber-400 bg-slate-900/60" data-gallery="editor">Shot Cockpit</button>
+          <button class="gallery-tab-btn px-4 py-2 rounded-lg font-mono text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 bg-slate-900/60" data-gallery="telemetry">Microsecond Telemetry</button>
+          <button class="gallery-tab-btn px-4 py-2 rounded-lg font-mono text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 bg-slate-900/60" data-gallery="tls">TLS & Cert Locker</button>
+          <button class="gallery-tab-btn px-4 py-2 rounded-lg font-mono text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 bg-slate-900/60" data-gallery="runner">Multi-Shot Runner</button>
+          <button class="gallery-tab-btn px-4 py-2 rounded-lg font-mono text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 bg-slate-900/60" data-gallery="assertions">Test Assertions</button>
+        </div>
+      </div>
+
+      <!-- Main Showcase Frame -->
+      <div class="glass-panel overflow-hidden border border-slate-700/80 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.9)]">
+        <div class="relative bg-slate-950">
+          <img id="gallery-main-img" src="assets/preview-editor.png" alt="BULLET Screenshot" class="w-full object-cover transition-opacity duration-300">
+        </div>
+        <div class="p-6 bg-slate-900/90 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h4 id="gallery-caption-title" class="text-base font-bold text-white font-mono">Shot Cockpit & JSON Syntax Formatter</h4>
+            <p id="gallery-caption-desc" class="text-slate-400 text-xs sm:text-sm mt-1">Fine-tune request headers, auth tokens, URL query params, and JSON bodies with instant indentation beautification.</p>
+          </div>
+          <a href="#downloads" class="btn-primary text-xs py-2 px-4 shrink-0 font-bold">Try BULLET Now</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 8. Head-to-Head Comparison Table -->
+  <section id="comparison" class="py-20 relative">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center mb-12">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-mono text-xs font-semibold mb-3 border border-emerald-500/20">
+          <span>HEAD-TO-HEAD MATRIX</span>
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Why Engineers are Switching to BULLET</h2>
+        <p class="text-slate-400 mt-2 text-sm sm:text-base">
+          Comparison between legacy tools and the .NET 10 ballistic architecture.
+        </p>
+      </div>
+
+      <!-- Comparison Table -->
+      <div class="glass-panel overflow-hidden border border-slate-800">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs sm:text-sm">
+            <thead class="bg-slate-950 text-slate-400 uppercase tracking-wider font-mono text-[11px] border-b border-slate-800">
+              <tr>
+                <th class="py-4 px-6 font-bold">Capability</th>
+                <th class="py-4 px-6 text-amber-400 font-extrabold bg-amber-500/10 border-x border-amber-500/20">BULLET</th>
+                <th class="py-4 px-6">Postman</th>
+                <th class="py-4 px-6">Insomnia</th>
+                <th class="py-4 px-6">Bruno</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 font-mono">
+              <tr class="hover:bg-slate-900/40 transition-colors">
+                <td class="py-3.5 px-6 font-sans font-medium text-slate-200">Cold Start Latency</td>
+                <td class="py-3.5 px-6 font-bold text-amber-300 bg-amber-500/5 border-x border-amber-500/20">&lt; 300 ms</td>
+                <td class="py-3.5 px-6 text-slate-400">8 &ndash; 15 s</td>
+                <td class="py-3.5 px-6 text-slate-400">6 &ndash; 10 s</td>
+                <td class="py-3.5 px-6 text-slate-400">2 &ndash; 4 s</td>
+              </tr>
+              <tr class="hover:bg-slate-900/40 transition-colors">
+                <td class="py-3.5 px-6 font-sans font-medium text-slate-200">RAM Footprint (Idle)</td>
+                <td class="py-3.5 px-6 font-bold text-emerald-400 bg-amber-500/5 border-x border-amber-500/20">~65 MB</td>
+                <td class="py-3.5 px-6 text-rose-400">1.2 GB+</td>
+                <td class="py-3.5 px-6 text-rose-400">800 MB+</td>
+                <td class="py-3.5 px-6 text-slate-300">220 MB</td>
+              </tr>
+              <tr class="hover:bg-slate-900/40 transition-colors">
+                <td class="py-3.5 px-6 font-sans font-medium text-slate-200">Forced Cloud Account</td>
+                <td class="py-3.5 px-6 font-bold text-emerald-400 bg-amber-500/5 border-x border-amber-500/20">NEVER (100% Offline)</td>
+                <td class="py-3.5 px-6 text-rose-400">Mandatory</td>
+                <td class="py-3.5 px-6 text-rose-400">Mandatory</td>
+                <td class="py-3.5 px-6 text-emerald-400">None</td>
+              </tr>
+              <tr class="hover:bg-slate-900/40 transition-colors">
+                <td class="py-3.5 px-6 font-sans font-medium text-slate-200">Sub-ms Waterfall Telemetry</td>
+                <td class="py-3.5 px-6 font-bold text-cyan-400 bg-amber-500/5 border-x border-amber-500/20">Built-in (DNS, TCP, TLS, TTFB)</td>
+                <td class="py-3.5 px-6 text-slate-500">Aggregate only</td>
+                <td class="py-3.5 px-6 text-slate-500">Basic</td>
+                <td class="py-3.5 px-6 text-slate-500">Basic</td>
+              </tr>
+              <tr class="hover:bg-slate-900/40 transition-colors">
+                <td class="py-3.5 px-6 font-sans font-medium text-slate-200">SSRF & Loopback Defense</td>
+                <td class="py-3.5 px-6 font-bold text-emerald-400 bg-amber-500/5 border-x border-amber-500/20">Default Enforced</td>
+                <td class="py-3.5 px-6 text-rose-400">None</td>
+                <td class="py-3.5 px-6 text-rose-400">None</td>
+                <td class="py-3.5 px-6 text-rose-400">None</td>
+              </tr>
+              <tr class="hover:bg-slate-900/40 transition-colors">
+                <td class="py-3.5 px-6 font-sans font-medium text-slate-200">Postman v2.1 Script Fidelity</td>
+                <td class="py-3.5 px-6 font-bold text-amber-300 bg-amber-500/5 border-x border-amber-500/20">Full (pm.test, Chai, Jint)</td>
+                <td class="py-3.5 px-6 text-slate-300">Native</td>
+                <td class="py-3.5 px-6 text-slate-500">Partial</td>
+                <td class="py-3.5 px-6 text-slate-400">Custom syntax</td>
+              </tr>
+              <tr class="hover:bg-slate-900/40 transition-colors">
+                <td class="py-3.5 px-6 font-sans font-medium text-slate-200">Open Source & License</td>
+                <td class="py-3.5 px-6 font-bold text-amber-300 bg-amber-500/5 border-x border-amber-500/20">MIT (100% Free)</td>
+                <td class="py-3.5 px-6 text-rose-400">Proprietary Paid Tiers</td>
+                <td class="py-3.5 px-6 text-rose-400">Freemium Cloud</td>
+                <td class="py-3.5 px-6 text-slate-300">Open Core (Golden Edition $)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 9. Interactive Platform Download Hub -->
+  <section id="downloads" class="py-20 bg-slate-950/90 border-t border-slate-900 relative">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center mb-12">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 font-mono text-xs font-semibold mb-3 border border-amber-500/20">
+          <span>CROSS-PLATFORM DISTRIBUTION</span>
+        </div>
+        <h2 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">Deploy BULLET on Any Machine</h2>
+        <p class="text-slate-400 max-w-2xl mx-auto mt-2 text-sm sm:text-base">
+          Native binaries for Windows & macOS, containerized Linux for servers, and standalone PWA for browser docks.
+        </p>
+
+        <!-- Platform Tabs -->
+        <div class="flex items-center justify-center flex-wrap gap-2 sm:gap-3 mt-8">
+          <button class="platform-tab-btn active px-4 py-2.5 rounded-xl font-mono text-xs font-bold border transition-all bg-amber-500/20 text-amber-400 border-amber-500/40" data-platform="windows">
+            Windows x64
+          </button>
+          <button class="platform-tab-btn px-4 py-2.5 rounded-xl font-mono text-xs font-bold border transition-all bg-slate-900/60 text-slate-300 border-slate-800 hover:border-slate-700" data-platform="mac_arm">
+            macOS Apple Silicon (M1-M4)
+          </button>
+          <button class="platform-tab-btn px-4 py-2.5 rounded-xl font-mono text-xs font-bold border transition-all bg-slate-900/60 text-slate-300 border-slate-800 hover:border-slate-700" data-platform="mac_intel">
+            macOS Intel (x64)
+          </button>
+          <button class="platform-tab-btn px-4 py-2.5 rounded-xl font-mono text-xs font-bold border transition-all bg-slate-900/60 text-slate-300 border-slate-800 hover:border-slate-700" data-platform="docker">
+            Docker Container
+          </button>
+          <button class="platform-tab-btn px-4 py-2.5 rounded-xl font-mono text-xs font-bold border transition-all bg-slate-900/60 text-slate-300 border-slate-800 hover:border-slate-700" data-platform="pwa">
+            Web App / PWA
+          </button>
+          <button class="platform-tab-btn px-4 py-2.5 rounded-xl font-mono text-xs font-bold border transition-all bg-slate-900/60 text-slate-300 border-slate-800 hover:border-slate-700" data-platform="sdk">
+            .NET 10 SDK Source
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Platform Card Display -->
+      <div class="glass-panel p-6 sm:p-10 border border-slate-700/80 shadow-2xl">
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 pb-8 border-b border-slate-800">
+          <div>
+            <div class="flex items-center gap-3">
+              <h3 id="platform-card-title" class="text-2xl sm:text-3xl font-bold text-white font-mono">Windows 10 / 11 (x64)</h3>
+              <span id="platform-card-badge" class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">Installer &amp; Portable</span>
+            </div>
+            <p id="platform-card-desc" class="text-slate-300 text-sm sm:text-base mt-2 max-w-xl">
+              Self-contained desktop application with native WebView2 runtime and microsecond SocketsHttpHandler.
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+            <a id="platform-card-primary" href="https://github.com/VishalViswanathan03/bullet/releases/download/v0.0.2/Bullet-Setup-v0.0.2.exe" class="btn-primary text-sm font-bold py-3 px-6 text-center flex-1 sm:flex-none">
+              Download Setup (.exe)
+            </a>
+            <a id="platform-card-secondary" href="https://github.com/VishalViswanathan03/bullet/releases/download/v0.0.2/Bullet-Windows-Portable-v0.0.2.zip" class="btn-secondary text-sm font-semibold py-3 px-5 text-center flex-1 sm:flex-none">
+              Portable (.zip)
+            </a>
+          </div>
+        </div>
+
+        <!-- Terminal Command Box -->
+        <div class="mt-6">
+          <div class="flex items-center justify-between text-xs font-mono text-slate-400 mb-2">
+            <span>Terminal Quick Run:</span>
+            <button class="btn-copy text-amber-400 hover:text-amber-300 font-bold" data-copy-target="platform-card-terminal">
+              Copy Command
+            </button>
+          </div>
+          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto"><code id="platform-card-terminal"># Install via PowerShell One-Liner
+Invoke-WebRequest -Uri "https://github.com/VishalViswanathan03/bullet/releases/download/v0.0.2/Bullet-Setup-v0.0.2.exe" -OutFile "Bullet-Setup.exe"; .\Bullet-Setup.exe</code></pre>
+        </div>
+
+        <!-- Code Signing & Security Info -->
+        <div class="mt-6 p-4 rounded-xl bg-slate-900/40 border border-slate-800/80 flex items-start gap-3 text-xs text-slate-400">
+          <svg class="w-5 h-5 text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <div>
+            <span class="text-slate-200 font-semibold">Open Source Security &amp; Code Signing Note:</span>
+            BULLET is 100% open source under the MIT License. On Windows, click <em class="text-amber-300">More info &rarr; Run anyway</em> if SmartScreen prompts. On macOS, run <code class="text-cyan-300 font-mono">xattr -cr Bullet.app</code> to clear Gatekeeper quarantine.
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 10. Polyglot Code Snippet Sandbox -->
+  <section class="py-20 relative">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center mb-10">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 font-mono text-xs font-semibold mb-3 border border-blue-500/20">
+          <span>CODE GENERATION</span>
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">One-Click Production Code</h2>
+        <p class="text-slate-400 mt-2 text-sm sm:text-base">
+          Export any request into your favorite language with headers, auth, and payload ready to copy.
+        </p>
+
+        <!-- Lang Tabs -->
+        <div class="flex items-center justify-center flex-wrap gap-2 mt-6">
+          <button class="snippet-tab-btn active px-3.5 py-1.5 rounded-lg font-mono text-xs font-bold border-b-2 border-amber-500 text-amber-400 bg-slate-900/70" data-lang="curl">cURL</button>
+          <button class="snippet-tab-btn px-3.5 py-1.5 rounded-lg font-mono text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 bg-slate-900/70" data-lang="python">Python</button>
+          <button class="snippet-tab-btn px-3.5 py-1.5 rounded-lg font-mono text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 bg-slate-900/70" data-lang="node">Node.js (Fetch)</button>
+          <button class="snippet-tab-btn px-3.5 py-1.5 rounded-lg font-mono text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 bg-slate-900/70" data-lang="go">Go</button>
+          <button class="snippet-tab-btn px-3.5 py-1.5 rounded-lg font-mono text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 bg-slate-900/70" data-lang="csharp">C# (.NET)</button>
+          <button class="snippet-tab-btn px-3.5 py-1.5 rounded-lg font-mono text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 bg-slate-900/70" data-lang="rust">Rust (Reqwest)</button>
+        </div>
+      </div>
+
+      <!-- Code Box -->
+      <div class="glass-panel overflow-hidden border border-slate-800">
+        <div class="bg-slate-950 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-400">Generated Client Snippet</span>
+          <button class="btn-copy text-xs font-mono text-amber-400 hover:text-amber-300 font-bold" data-copy-target="snippet-code">
+            Copy Snippet
+          </button>
+        </div>
+        <pre class="bg-slate-950 p-5 font-mono text-xs sm:text-sm text-slate-200 overflow-x-auto leading-relaxed"><code id="snippet-code">curl -X POST "https://api.bullet.dev/v1/bullets/fire" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer bullet_secret_token" \
+  -d '{"caliber": "5.56 NATO", "target": "api.production"}'</code></pre>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 11. Architecture Blueprint -->
+  <section class="py-20 bg-slate-950/60 border-t border-slate-900 relative">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center mb-14">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 font-mono text-xs font-semibold mb-3 border border-purple-500/20">
+          <span>HIGH-THROUGHPUT ARCHITECTURE</span>
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Decoupled Ballistic Core</h2>
+        <p class="text-slate-400 mt-2 text-sm sm:text-base max-w-2xl mx-auto">
+          Built from the ground up for maximum throughput, isolation, and safety.
+        </p>
+      </div>
+
+      <!-- Diagram Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Layer 1 -->
+        <div class="glass-panel p-6 border-slate-800 flex flex-col justify-between">
+          <div>
+            <div class="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider mb-2">Presentation Layer</div>
+            <h4 class="text-lg font-bold text-white mb-2">React 19 + Tailwind</h4>
+            <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">
+              Ultra-responsive modern UI compiled to static assets. Supports real-time SignalR duplex streams, virtualized logs, and dark/light themes.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-slate-500">Native WebView2 & Safari WebKit</div>
+        </div>
+
+        <!-- Layer 2 -->
+        <div class="glass-panel p-6 border-amber-500/30 bg-slate-900/60 flex flex-col justify-between shadow-[0_0_30px_rgba(245,158,11,0.1)]">
+          <div>
+            <div class="text-xs font-mono text-amber-400 font-bold uppercase tracking-wider mb-2">Engine Core</div>
+            <h4 class="text-lg font-bold text-white mb-2">.NET 10 Kestrel Host</h4>
+            <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">
+              High-performance non-blocking async pipeline. Handles SocketsHttpHandler microsecond connection telemetry and SSRF loopback defense.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-amber-400">Low-latency Socket Hooks</div>
+        </div>
+
+        <!-- Layer 3 -->
+        <div class="glass-panel p-6 border-slate-800 flex flex-col justify-between">
+          <div>
+            <div class="text-xs font-mono text-purple-400 font-bold uppercase tracking-wider mb-2">Sandbox &amp; Vault</div>
+            <h4 class="text-lg font-bold text-white mb-2">Jint ES6 &amp; SQLite AES-256</h4>
+            <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">
+              Isolated JavaScript execution for Chai assertions and pre-request scripts. Secrets stored in zero-knowledge AES-256 encrypted SQLite vault.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-slate-500">Zero Cloud Data Transmission</div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 12. Documentation Portal Links -->
+  <section id="docs" class="py-20 relative">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center mb-12">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 text-slate-300 font-mono text-xs font-semibold mb-3 border border-slate-700">
+          <span>ENGINEERING DOCUMENTATION</span>
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Explore the Technical Specifications</h2>
+        <p class="text-slate-400 mt-2 text-sm sm:text-base">
+          Read the deep-dive architectural specifications, CLI guides, and scripting references.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <a href="https://github.com/VishalViswanathan03/bullet/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
+          <div class="flex items-center justify-between text-amber-400 font-mono text-xs mb-2">
+            <span>ARCHITECTURE.md</span>
+            <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
+          </div>
+          <h4 class="text-white font-bold text-base mb-1">Architecture Specification</h4>
+          <p class="text-slate-400 text-xs">Decoupled server/client model, EventListener socket hooks, and IPC SignalR pipeline.</p>
+        </a>
+
+        <a href="https://github.com/VishalViswanathan03/bullet/blob/main/docs/CLI.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
+          <div class="flex items-center justify-between text-cyan-400 font-mono text-xs mb-2">
+            <span>CLI.md</span>
+            <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
+          </div>
+          <h4 class="text-white font-bold text-base mb-1">Command Line &amp; Docker</h4>
+          <p class="text-slate-400 text-xs">Headless execution, Docker Compose setup, environment variable flags, and port binding.</p>
+        </a>
+
+        <a href="https://github.com/VishalViswanathan03/bullet/blob/main/docs/SCRIPTING.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
+          <div class="flex items-center justify-between text-purple-400 font-mono text-xs mb-2">
+            <span>SCRIPTING.md</span>
+            <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
+          </div>
+          <h4 class="text-white font-bold text-base mb-1">Scripting &amp; Jint Sandbox</h4>
+          <p class="text-slate-400 text-xs">Pre-request hooks, pm.* API emulation, CryptoJS hashing, and dynamic environment manipulation.</p>
+        </a>
+
+        <a href="https://github.com/VishalViswanathan03/bullet/blob/main/docs/SECURITY.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
+          <div class="flex items-center justify-between text-rose-400 font-mono text-xs mb-2">
+            <span>SECURITY.md</span>
+            <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
+          </div>
+          <h4 class="text-white font-bold text-base mb-1">Security &amp; SSRF Hardening</h4>
+          <p class="text-slate-400 text-xs">Link-local subnet filtering, zero-knowledge AES-256 storage, and intranet access rules.</p>
+        </a>
+
+        <a href="https://github.com/VishalViswanathan03/bullet/blob/main/docs/TESTING.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
+          <div class="flex items-center justify-between text-emerald-400 font-mono text-xs mb-2">
+            <span>TESTING.md</span>
+            <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
+          </div>
+          <h4 class="text-white font-bold text-base mb-1">Testing &amp; Assertions</h4>
+          <p class="text-slate-400 text-xs">Chai assertion patterns, schema validation, multi-shot batch runners, and CI assertions.</p>
+        </a>
+
+        <a href="https://github.com/VishalViswanathan03/bullet/blob/main/docs/TLS.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
+          <div class="flex items-center justify-between text-blue-400 font-mono text-xs mb-2">
+            <span>TLS.md</span>
+            <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
+          </div>
+          <h4 class="text-white font-bold text-base mb-1">TLS &amp; mTLS Configuration</h4>
+          <p class="text-slate-400 text-xs">Mutual TLS client certificates, custom PKI root authorities, and cipher enforcement.</p>
+        </a>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 13. Call-to-Action Banner -->
+  <section class="py-20 relative overflow-hidden">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+      <div class="glass-panel p-10 sm:p-14 border border-amber-500/30 shadow-[0_0_50px_rgba(245,158,11,0.2)] bg-gradient-to-b from-slate-900/90 to-[#080c14]">
+        <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 p-2 shadow-[0_0_25px_rgba(245,158,11,0.5)] flex items-center justify-center">
+          <img src="assets/favicon.svg" alt="Bullet Icon" class="w-12 h-12">
+        </div>
+        <h2 class="text-3xl sm:text-5xl font-black text-white tracking-tight">Upgrade Your API Weapon Today</h2>
+        <p class="text-slate-300 max-w-xl mx-auto mt-4 text-base sm:text-lg">
+          No cloud login required. Free, open source, and built for developers who care about speed and privacy.
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+          <a href="#downloads" class="btn-primary text-base py-3.5 px-8 font-extrabold w-full sm:w-auto">
+            <span>Download BULLET v0.0.2 Free</span>
+          </a>
+          <a href="https://github.com/VishalViswanathan03/bullet" target="_blank" rel="noopener" class="btn-secondary text-base py-3.5 px-7 font-bold w-full sm:w-auto">
+            <span>View GitHub Repository</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14. Footer -->
+  <footer class="border-t border-slate-900 bg-black/80 py-12 text-slate-400 text-xs font-mono">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+      
+      <div class="flex items-center gap-3">
+        <img src="assets/favicon.svg" alt="BULLET Logo" class="w-6 h-6">
+        <span class="text-slate-200 font-bold text-sm">BULLET: Load. Aim. API.</span>
+        <span class="text-slate-600">|</span>
+        <span>v0.0.2</span>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <a href="https://github.com/VishalViswanathan03/bullet" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub</a>
+        <a href="https://github.com/VishalViswanathan03/bullet/releases" target="_blank" rel="noopener" class="hover:text-white transition-colors">Releases</a>
+        <a href="https://github.com/VishalViswanathan03/bullet/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-white transition-colors">MIT License</a>
+        <a href="https://github.com/VishalViswanathan03/bullet/blob/main/AGENTS.md" target="_blank" rel="noopener" class="hover:text-white transition-colors">Agents Guide</a>
+      </div>
+
+      <div class="text-center md:text-right text-slate-500">
+        Created by <a href="https://github.com/VishalViswanathan03" target="_blank" rel="noopener" class="text-amber-400 hover:underline">@VishalViswanathan03</a>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- Interactive JavaScript Engine -->
+  <script src="assets/app.js"></script>
+</body>
+</html>

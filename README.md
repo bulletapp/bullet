@@ -1,6 +1,12 @@
 # BULLET: Load. Aim. API.
 
+[![Website](https://img.shields.io/badge/Website-vishalviswanathan03.github.io%2Fbullet-f59e0b?style=flat-square&logo=google-chrome&logoColor=white)](https://vishalviswanathan03.github.io/bullet/)
+[![GitHub Release](https://img.shields.io/github/v/release/VishalViswanathan03/bullet?color=10b981&style=flat-square)](https://github.com/VishalViswanathan03/bullet/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
+
 > A serious, production-grade API development and automated testing platform for engineering teams. Built on **.NET 10**, **C# 13**, **React 19**, and **Vite**.
+>
+> 🌐 **Official Website & Live Weapon Simulator:** [https://vishalviswanathan03.github.io/bullet/](https://vishalviswanathan03.github.io/bullet/)
 
 ---
 
