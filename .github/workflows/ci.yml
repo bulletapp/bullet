@@ -58,7 +58,7 @@ jobs:
         run: npm run build
 
   e2e-click-through-tests:
-    name: 12-Phase Automated E2E Browser Suite
+    name: 25-Phase Automated E2E Browser Suite
     needs: lint-and-format
     runs-on: windows-latest
 
@@ -93,7 +93,7 @@ jobs:
         run: |
           dotnet build Bullet.slnx --configuration Release
 
-      - name: Execute Full 12-Phase E2E Browser Suite
+      - name: Execute Full 25-Phase E2E Browser Suite
         working-directory: src/Bullet.Web
         shell: pwsh
         run: |
@@ -145,6 +145,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
@@ -193,6 +195,69 @@ jobs:
           $hash = (Get-FileHash -Algorithm SHA256 dist-installer/Bullet-Setup.exe).Hash
           "$hash  Bullet-Setup.exe" | Out-File -Encoding utf8 dist-installer/Bullet-Setup.exe.sha256
 
+      - name: Generate Release Notes & Changelog
+        shell: pwsh
+        run: |
+          $ver = "${{ github.event.inputs.release_version || github.ref_name }}"
+          Write-Host "Compiling release notes and changelog for $ver..."
+          
+          # Check for previous release tag
+          $prevTag = git describe --tags --abbrev=0 "$ver^" 2>$null
+          if (-not $prevTag) {
+            $prevTag = git describe --tags --abbrev=0 HEAD^ 2>$null
+          }
+          
+          $changelog = ""
+          if ($prevTag) {
+            Write-Host "Found previous tag: $prevTag"
+            $commitList = (git log "$prevTag..HEAD" --pretty=format:"* %s ([%h](https://github.com/${{ github.repository }}/commit/%H)) by @%an") -join "`n"
+            $changelog = "#### Commits since $prevTag`n`n$commitList"
+          } else {
+            Write-Host "No previous tag found. Generating recent commit history..."
+            $commitList = (git log -n 50 --pretty=format:"* %s ([%h](https://github.com/${{ github.repository }}/commit/%H)) by @%an") -join "`n"
+            $changelog = "#### Commits Included in this Release`n`n$commitList"
+          }
+
+          $installerHash = ""
+          if (Test-Path "dist-installer/Bullet-Setup.exe.sha256") {
+            $installerHash = (Get-Content "dist-installer/Bullet-Setup.exe.sha256" -Raw).Trim()
+          }
+
+          $zipHash = ""
+          if (Test-Path "Bullet-Desktop-Windows-x64.zip.sha256") {
+            $zipHash = (Get-Content "Bullet-Desktop-Windows-x64.zip.sha256" -Raw).Trim()
+          }
+
+          $lines = @(
+            "## 🚀 BULLET Release $ver",
+            "*Load. Aim. API.*",
+            "",
+            "### 📋 Changelog",
+            $changelog,
+            "",
+            "> View the full curated release history in the repository [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md).",
+            "",
+            "---",
+            "",
+            "### 📦 Release Packages & Checksums",
+            "",
+            "| Package | Type | Description |",
+            "|---|---|---|",
+            "| **[Bullet-Setup.exe](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Setup.exe)** | Setup Installer | Single-file Windows installer (per-user install, desktop + start menu shortcuts, automatic launch) |",
+            "| **[Bullet-Desktop-Windows-x64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Desktop-Windows-x64.zip)** | Portable Zip | Zero-install standalone archive with executable and assets |",
+            "",
+            "#### 🔐 SHA256 Verification Hashes",
+            '```text',
+            $installerHash,
+            $zipHash,
+            '```'
+          )
+
+          $body = $lines -join "`n"
+          [System.IO.File]::WriteAllText("release_notes.md", $body, [System.Text.Encoding]::UTF8)
+          Write-Host "Release notes generated successfully:"
+          Get-Content release_notes.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -200,13 +265,8 @@ jobs:
           name: BULLET ${{ github.event.inputs.release_version || github.ref_name }}
           draft: false
           prerelease: false
-          body: |
-            ## BULLET: Load. Aim. API.
-
-            ### Release Artifacts
-            - **Bullet-Setup.exe**: Recommended single-file Windows setup installer. Installs per-user (`%LOCALAPPDATA%\Programs\Bullet`), creates Start Menu and Desktop shortcuts, registers uninstaller, and launches automatically without admin elevation prompts.
-            - **Bullet-Desktop-Windows-x64.zip**: Portable zero-install package containing standalone executable and bundled assets.
-            - **Checksums**: Verifiable SHA256 hashes provided for all release artifacts.
+          body_path: release_notes.md
+          generate_release_notes: true
           files: |
             dist-installer/Bullet-Setup.exe
             dist-installer/Bullet-Setup.exe.sha256
