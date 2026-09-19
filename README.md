@@ -76,50 +76,118 @@ graph TD
 
 ---
 
-## Quickstart Guide
+## 📦 Downloads & Installation
 
-### 1. Prerequisites
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (Version 10.0.103 or higher)
+Pre-built, signed packages are published for Windows and macOS with every release:
+
+| Platform | Architecture | Package | Details |
+|---|---|---|---|
+| **Windows** | x64 (Installer) | **[`Bullet-Setup.exe`](https://github.com/VishalViswanathan03/bullet/releases/latest)** | Recommended single-file installer (desktop & start menu shortcuts, auto-launch, non-elevated per-user install) |
+| **Windows** | x64 (Portable) | **[`Bullet-Desktop-Windows-x64.zip`](https://github.com/VishalViswanathan03/bullet/releases/latest)** | Zero-install standalone zip with executable and bundled assets |
+| **macOS** | Apple Silicon (M1/M2/M3/M4) | **[`Bullet-macOS-AppleSilicon-arm64.zip`](https://github.com/VishalViswanathan03/bullet/releases/latest)** | Native Apple Silicon bundle with double-clickable `Bullet.command` |
+| **macOS** | Intel x64 | **[`Bullet-macOS-Intel-x64.zip`](https://github.com/VishalViswanathan03/bullet/releases/latest)** | Native Intel Mac bundle with double-clickable `Bullet.command` |
+| **macOS / Web** | Cross-Platform | **Standalone Web App (PWA)** | Installable from Safari ("Add to Dock") or Chrome/Edge ("Install App") |
+| **Docker** | Linux / Any | `docker/docker-compose.yml` | Multi-container setup with PostgreSQL, API, and Web frontend |
+
+---
+
+### 🪟 Windows Installation Guide
+
+1. **Setup Installer (`Bullet-Setup.exe`)**:
+   - Download `Bullet-Setup.exe` from the latest release.
+   - Run the installer. It installs per-user to `%LOCALAPPDATA%\Programs\Bullet`, places shortcuts on your Desktop and Start Menu, and launches automatically without requiring administrator rights.
+2. **Portable Zero-Install (`Bullet-Desktop-Windows-x64.zip`)**:
+   - Extract the `.zip` to any folder.
+   - Run `Bullet.exe`.
+
+#### Why Windows SmartScreen / Smart App Control Flags New Releases
+When downloading newly released open-source software, Windows flags the binary with the **Mark of the Web (Zone.Identifier = 3)** because new release hashes have not yet accumulated cloud reputation telemetry:
+- **Windows Defender SmartScreen**: Click **"More info"** $\rightarrow$ **"Run anyway"**.
+- **Windows 11 Smart App Control**: If execution is blocked, unblock the installer:
+  1. Right-click `Bullet-Setup.exe` $\rightarrow$ **Properties**.
+  2. At the bottom of the **General** tab, check **☑ Unblock** $\rightarrow$ **Apply** $\rightarrow$ **OK**.
+  3. Or via PowerShell:
+     ```powershell
+     Unblock-File -Path .\Bullet-Setup.exe
+     ```
+
+#### Cryptographic Signature & SHA256 Checksums
+All official releases are Authenticode signed with DigiCert RFC 3161 timestamps:
+1. **Inspect Signature**: Right-click `Bullet-Setup.exe` $\rightarrow$ **Properties** $\rightarrow$ **Digital Signatures** tab to verify `VishalViswanathan03 - BULLET Open Source Project`.
+2. **Verify SHA256**:
+   ```powershell
+   Get-FileHash -Algorithm SHA256 .\Bullet-Setup.exe
+   ```
+
+---
+
+### 🍎 macOS Installation Guide
+
+1. **Download**: Grab the package matching your Mac hardware:
+   - **Apple Silicon (M1/M2/M3/M4)**: `Bullet-macOS-AppleSilicon-arm64.zip`
+   - **Intel Macs**: `Bullet-macOS-Intel-x64.zip`
+2. **Launch via Finder**:
+   - Double-click the downloaded `.zip` to extract.
+   - Double-click **`Bullet.command`** in Finder. It boots the local BULLET Core Engine and launches the interface in your browser.
+   - Or launch from Terminal:
+     ```bash
+     chmod +x run-mac.sh
+     ./run-mac.sh
+     ```
+3. **Install as a Native Standalone Mac Web App (PWA)**:
+   - **Safari (macOS Sonoma 14+)**: Click **File $\rightarrow$ Add to Dock** to turn BULLET into a native Mac app in your Dock with its own window, keyboard shortcuts, and zero browser chrome.
+   - **Chrome / Edge on macOS**: Click the **"Install App"** button in the top navigation bar or address bar to install BULLET into `/Applications/Chrome Apps/BULLET.app`.
+
+---
+
+### 🐳 Docker Deployment (Linux / Any OS)
+
+Run the entire platform (PostgreSQL database, ASP.NET Core API, and React Web UI) with Docker Compose:
+```bash
+docker-compose -f docker/docker-compose.yml up --build
+```
+Access the web client at [http://localhost:3000](http://localhost:3000).
+
+---
+
+## 🛠️ Developer Quickstart & Building from Source
+
+### Prerequisites
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (10.0.103 or higher)
 - [Node.js](https://nodejs.org/) (Version 20+ or 22+)
 
-### 2. Run the Backend API
+### 1. Run the Backend API
 ```bash
 dotnet run --project src/Bullet.Api
 ```
-The API starts on `http://localhost:5000`. On first startup, the database is automatically created and seeded with a complete demo workspace:
-- **Demo Range**: Pre-configured with User APIs, Auth endpoints, Delay simulators, and Health checks.
-- **Loadouts**: Development (`{{apiHost}} = http://localhost:5000`) and Production.
-- **Automated Verifiers**: Pre-written test scripts asserting status codes, JSON fields, and latency.
+Starts the API on `http://localhost:5000` (serves the REST API, SignalR WebSockets, and bundled frontend).
 
-### 3. Run the Frontend Web IDE
+### 2. Run the Frontend in Development Mode
 ```bash
 cd src/Bullet.Web
 npm install
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000) with hot module replacement (HMR).
 
-### 4. Run the Test Suite
-All 18 unit, security, execution, and integration tests pass with 100% success:
+### 3. Run the Full Test Suite
 ```bash
+# Unit & Integration Tests:
 dotnet test Bullet.slnx
+
+# 25-Phase Automated E2E Browser Suite:
+cd src/Bullet.Web
+node e2e-full-suite.mjs
 ```
 
-### 5. Run from CLI / CI Pipelines
+### 4. Run the Windows Desktop Shell
 ```bash
-# Execute local test arsenal
-dotnet run --project src/Bullet.Cli -- arsenal run demo.bullet.json --report junit --output results.xml
+dotnet run --project src/Bullet.Desktop
 ```
-
-### 6. Run with Docker Compose
-```bash
-docker-compose -f docker/docker-compose.yml up --build
-```
-Spins up PostgreSQL, Bullet API, and Bullet Web frontend in isolated containers.
 
 ---
 
-## Key Features
+## ✨ Key Features
 
 - **Sandboxed JavaScript**: Jint 4.16.2 runtime with 3-second timeout protection and 10MB memory limits. Infinite loops (`while(true)`) abort automatically.
 - **SSRF Guard**: Blocks access to loopback (`127.0.0.1`), private networks (`10.x`, `192.168.x`, `172.16.x`), and cloud metadata APIs (`169.254.169.254`) by default.
@@ -128,56 +196,6 @@ Spins up PostgreSQL, Bullet API, and Bullet Web frontend in isolated containers.
 - **Polyglot Code Generation**: Generate code snippets in cURL, C# HttpClient, TypeScript fetch, JavaScript axios, Python requests, Go net/http, Rust reqwest, Java 11, PHP cURL, and Ruby Net::HTTP.
 - **Armory Transfer**: Import and export collections via native `.bullet.json`, Postman v2.1, OpenAPI 3.0, and cURL.
 - **JUnit XML CI/CD Reports**: Export test results formatted for native GitHub Actions, GitLab CI, and Jenkins integration.
-
----
-
-## Windows Installation & Code Signing Verification
-
-All official release binaries (`Bullet-Setup.exe` and `Bullet.exe`) are built directly in GitHub Actions and cryptographically signed with Authenticode digital signatures identifying `VishalViswanathan03 - BULLET Open Source Project` alongside a DigiCert RFC 3161 timestamp.
-
-### Why Windows SmartScreen / Smart App Control Flags New Releases
-When downloading newly released open-source executables from the internet, Windows marks them with the **Mark of the Web (Zone.Identifier = 3)**. Because new version hashes do not yet have historical telemetry in Microsoft's cloud reputation database:
-- **SmartScreen**: Click **"More info"** $\rightarrow$ **"Run anyway"**.
-- **Windows 11 Smart App Control**: If Smart App Control blocks execution, simply unblock the file:
-  1. Right-click `Bullet-Setup.exe` $\rightarrow$ **Properties**.
-  2. In the **General** tab at the bottom, check **☑ Unblock** $\rightarrow$ **Apply** $\rightarrow$ **OK**.
-  3. Or run via PowerShell:
-     ```powershell
-     Unblock-File -Path .\Bullet-Setup.exe
-     ```
-
-### Verifying Authenticode Signature & SHA256 Checksums
-1. **Digital Signature**: Right-click `Bullet-Setup.exe` $\rightarrow$ **Properties** $\rightarrow$ **Digital Signatures** tab to inspect the publisher certificate and DigiCert timestamp.
-2. **SHA256 Checksum**: Verify the package integrity against the published `.sha256` checksums in the release:
-   ```powershell
-   Get-FileHash -Algorithm SHA256 .\Bullet-Setup.exe
-   ```
-
----
-
-## macOS Installation & Launching
-
-BULLET supports macOS natively on both **Apple Silicon (M1/M2/M3/M4)** and **Intel x64**:
-
-1. **Download**: Download the release package for your Mac architecture:
-   - **Apple Silicon**: `Bullet-macOS-AppleSilicon-arm64.zip`
-   - **Intel Macs**: `Bullet-macOS-Intel-x64.zip`
-2. **Extract & Launch**:
-   - Double-click the downloaded `.zip` file to extract.
-   - Double-click **`Bullet.command`** in Finder to start the BULLET Engine and launch the UI in your default browser.
-   - Or launch from Terminal:
-     ```bash
-     chmod +x run-mac.sh
-     ./run-mac.sh
-     ```
-3. **Run from Source on macOS**:
-   ```bash
-   dotnet run --project src/Bullet.Api
-   ```
-4. **Install as a Standalone macOS Desktop Web App (PWA)**:
-   - When running BULLET in Safari, Chrome, or Edge on macOS:
-     - **Safari (macOS Sonoma 14+)**: Click **File $\rightarrow$ Add to Dock** to create a native macOS application with its own dock icon and standalone window.
-     - **Chrome / Edge on macOS**: Click the **"Install App"** button in the header or address bar to install BULLET as an independent application window without browser tabs or URL bars.
 
 ---
 
