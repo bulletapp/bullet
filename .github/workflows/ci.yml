@@ -208,13 +208,31 @@ jobs:
           }
           
           $changelog = ""
+          $formatCommitLine = {
+            param($line)
+            if (-not $line) { return $null }
+            $parts = $line.Split('|')
+            $msg = $parts[0]
+            $hash = $parts[1]
+            $fullHash = $parts[2]
+            $author = $parts[3]
+            $email = $parts[4]
+            $mention = "by $author"
+            if ($author -eq "VishalViswanathan" -or $email -eq "vishalvn2003@gmail.com" -or $author -like "*Vishal*") {
+              $mention = "by @${{ github.repository_owner }}"
+            }
+            return "* $msg ([$hash](https://github.com/${{ github.repository }}/commit/$fullHash)) $mention"
+          }
+
           if ($prevTag) {
             Write-Host "Found previous tag: $prevTag"
-            $commitList = (git log "$prevTag..HEAD" --pretty=format:"* %s ([%h](https://github.com/${{ github.repository }}/commit/%H)) by @%an") -join "`n"
+            $rawList = git log "$prevTag..HEAD" --pretty=format:"%s|%h|%H|%an|%ae"
+            $commitList = ($rawList | ForEach-Object { & $formatCommitLine $_ }) -join "`n"
             $changelog = "#### Commits since $prevTag`n`n$commitList"
           } else {
             Write-Host "No previous tag found. Generating recent commit history..."
-            $commitList = (git log -n 50 --pretty=format:"* %s ([%h](https://github.com/${{ github.repository }}/commit/%H)) by @%an") -join "`n"
+            $rawList = git log -n 50 --pretty=format:"%s|%h|%H|%an|%ae"
+            $commitList = ($rawList | ForEach-Object { & $formatCommitLine $_ }) -join "`n"
             $changelog = "#### Commits Included in this Release`n`n$commitList"
           }
 
