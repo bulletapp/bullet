@@ -23,7 +23,6 @@ interface HeaderProps {
   consoleOpen: boolean;
   onToggleConsole: () => void;
   consoleLogCount: number;
-  onReplayIntro?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -41,7 +40,6 @@ export const Header: React.FC<HeaderProps> = ({
   consoleOpen,
   onToggleConsole,
   consoleLogCount,
-  onReplayIntro,
 }) => {
   const [soundActive, setSoundActive] = React.useState<boolean>(isSoundEnabled);
 
@@ -259,18 +257,6 @@ export const Header: React.FC<HeaderProps> = ({
           )}
           <span className="font-mono text-[10px] font-semibold">{globalSsl ? 'SSL: ON' : 'SSL: OFF'}</span>
         </button>
-
-        {/* Replay Intro Splash Button */}
-        {onReplayIntro && (
-          <button
-            data-testid="header-replay-intro-btn"
-            onClick={onReplayIntro}
-            className="flex items-center justify-center w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 transition"
-            title="Replay Supersonic Launch Sequence"
-          >
-            <Crosshair className="w-3.5 h-3.5" />
-          </button>
-        )}
 
         {/* Sound FX Mute Toggle */}
         <button

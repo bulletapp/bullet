@@ -138,10 +138,44 @@ async function runFullTestSuite() {
     await page.waitForSelector('[data-testid="header-new-shot-btn"]', { timeout: 10000 });
     console.log('  ✓ UI loaded and Header mounted successfully.');
 
-    // Enable test-friendly SSL mode in localStorage (standard for local API dev clients)
-    await page.evaluate(() => {
-      localStorage.setItem('bullet_verify_ssl', 'false');
-    });
+    // Helper to verify clean SSL error handling and global bypass
+    const ensureResponseWithoutSslError = async (retryFireSelector = '[data-testid="fire-btn"]') => {
+      await page.waitForSelector('[data-testid="status-code"]', { timeout: 20000 });
+      let code = await page.$eval('[data-testid="status-code"]', (el) => el.textContent.trim());
+      if (code === 'SSL Error') {
+        console.log('  [SSL Check] SSL certificate verification failure caught: inspecting error card...');
+        const bodyText = await page.evaluate(() => document.body.innerText);
+        if (bodyText.includes('Converting circular structure') || bodyText.includes('HTMLButtonElement')) {
+          throw new Error('Found circular structure / HTMLButtonElement error in Error Diagnostics!');
+        }
+        const deprecatedBtn = await page.$('[data-testid="disable-ssl-retry-btn"]');
+        if (deprecatedBtn) {
+          throw new Error('Found deprecated "Disable SSL & Retry" button which should be removed.');
+        }
+        console.log('  [SSL Check] Verified: No circular structure errors and no unneeded "Disable SSL & Retry" button.');
+
+        // Toggle Header Global SSL to OFF to bypass SSL verification
+        const globalSslBtn = await page.waitForSelector('[data-testid="global-ssl-toggle-btn"]');
+        const sslBtnText = await page.evaluate((el) => el.textContent.trim(), globalSslBtn);
+        if (sslBtnText.includes('SSL: ON')) {
+          await globalSslBtn.click();
+          console.log('  [SSL Check] Toggled Header Global SSL switch to "SSL: OFF".');
+          await new Promise((r) => setTimeout(r, 200));
+        }
+
+        // Retry execution
+        const fireBtn = await page.waitForSelector(retryFireSelector);
+        await fireBtn.click();
+        console.log('  [SSL Check] Retried request with Global SSL bypassed.');
+
+        await page.waitForFunction(() => {
+          const el = document.querySelector('[data-testid="status-code"]');
+          return el && el.textContent.trim() !== 'SSL Error';
+        }, { timeout: 20000 });
+        code = await page.$eval('[data-testid="status-code"]', (el) => el.textContent.trim());
+      }
+      return code;
+    };
 
     // -------------------------------------------------------------
     // TEST 1: CREATE SHOT BUTTON (The exact bug reported by user)
@@ -685,25 +719,40 @@ async function runFullTestSuite() {
     console.log('  ★ TEST 14 PASSED: Sidebar Drag & Drop organization verified!');
 
     // -------------------------------------------------------------
-    // TEST 15: REPLAY SUPERSONIC LAUNCH SEQUENCE (HEADER BUTTON)
+    // TEST 15: BULLET BRAND LOGO & HEADER COMMAND DECK (NO REPLAY BUTTON)
     // -------------------------------------------------------------
-    console.log('\n[TEST 15] Testing Replay Launch Sequence Button in Header...');
-    const replayIntroBtn = await page.waitForSelector('[data-testid="header-replay-intro-btn"]', { timeout: 5000 });
-    await replayIntroBtn.click();
-    console.log('  ✓ Clicked Replay Launch Sequence button in Header.');
+    console.log('\n[TEST 15] Testing Bullet Brand Cartridge Logo & Header Controls...');
+    // 1. Verify authentic Bullet brand cartridge logo is rendered
+    const brandLogo = await page.waitForSelector('[data-testid="bullet-brand-logo"]', { timeout: 5000 });
+    if (!brandLogo) throw new Error('Bullet Brand Logo not found in Header');
+    console.log('  ✓ Verified authentic Bullet brand cartridge logo rendered in Header.');
 
-    await page.waitForSelector('[data-testid="bullet-intro-splash"]', { timeout: 5000 });
-    console.log('  ✓ Supersonic Bullet Firing Intro Splash active on replay!');
-    await new Promise((r) => setTimeout(r, 600));
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '11-bullet-intro-replay.png') });
-    console.log('  ✓ Captured 11-bullet-intro-replay.png screenshot.');
+    // 2. Verify replay intro button is NOT present in the header
+    const replayIntroBtn = await page.$('[data-testid="header-replay-intro-btn"]');
+    if (replayIntroBtn) {
+      throw new Error('Replay intro button found in Header, but user requested it removed!');
+    }
+    console.log('  ✓ Verified Replay Intro button is removed from Header as requested.');
 
-    // Dismiss intro
-    const dismissReplayBtn = await page.waitForSelector('[data-testid="dismiss-intro-btn"]', { timeout: 3000 });
-    await dismissReplayBtn.click();
-    await page.waitForSelector('[data-testid="bullet-intro-splash"]', { hidden: true, timeout: 5000 });
-    console.log('  ✓ Intro splash dismissed cleanly back to workspace.');
-    console.log('  ★ TEST 15 PASSED: Replay launch sequence operational!');
+    // 3. Test Global SSL Verification Toggle button
+    const globalSslBtn = await page.waitForSelector('[data-testid="global-ssl-toggle-btn"]');
+    const initialSslText = await page.$eval('[data-testid="global-ssl-toggle-btn"]', (el) => el.textContent.trim());
+    console.log(`  ✓ Current Global SSL status in Header: "${initialSslText}"`);
+
+    // Toggle SSL
+    await globalSslBtn.click();
+    await new Promise((r) => setTimeout(r, 200));
+    const toggledSslText = await page.$eval('[data-testid="global-ssl-toggle-btn"]', (el) => el.textContent.trim());
+    console.log(`  ✓ Toggled Global SSL button to: "${toggledSslText}"`);
+
+    // Toggle back
+    await globalSslBtn.click();
+    await new Promise((r) => setTimeout(r, 200));
+    console.log('  ✓ Toggled Global SSL button back to initial state.');
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '11-bullet-brand-header-deck.png') });
+    console.log('  ✓ Captured 11-bullet-brand-header-deck.png screenshot.');
+    console.log('  ★ TEST 15 PASSED: Bullet brand cartridge logo & header controls verified!');
 
     // -------------------------------------------------------------
     // TEST 16: cURL AUTO-DETECTION ON PASTE & COPY AS cURL
@@ -817,23 +866,9 @@ async function runFullTestSuite() {
     await fireBtn18.click();
     console.log('  ✓ Clicked FIRE button for POST request.');
 
-    // Wait for response
-    await page.waitForSelector('[data-testid="status-code"]', { timeout: 20000 });
-    let postStatusCode = await page.$eval('[data-testid="status-code"]', (el) => el.textContent.trim());
+    // Wait for response and handle SSL if remote cert issues
+    const postStatusCode = await ensureResponseWithoutSslError('[data-testid="fire-btn"]');
     console.log(`  ✓ Received POST response: Status Code ${postStatusCode}`);
-
-    // If remote certificate check encountered an issue, trigger Bullet's built-in Disable SSL & Retry
-    const disableSslBtn18 = await page.$('[data-testid="disable-ssl-retry-btn"]');
-    if (disableSslBtn18) {
-      console.log('  ✓ Clicking "Disable SSL & Retry"...');
-      await disableSslBtn18.click();
-      await page.waitForFunction(() => {
-        const el = document.querySelector('[data-testid="status-code"]');
-        return el && el.textContent.trim() !== 'SSL Error';
-      }, { timeout: 20000 });
-      postStatusCode = await page.$eval('[data-testid="status-code"]', (el) => el.textContent.trim());
-      console.log(`  ✓ Retried with SSL bypass: Status Code ${postStatusCode}`);
-    }
 
     // Verify response body contains reflected payload
     await new Promise((r) => setTimeout(r, 600));
@@ -873,16 +908,8 @@ async function runFullTestSuite() {
     await fireBtn18.click();
     console.log('  ✓ Clicked FIRE with Bearer auth.');
 
-    // Wait for 200 response
-    await page.waitForSelector('[data-testid="status-code"]', { timeout: 20000 });
-    const disableSslBtn19 = await page.$('[data-testid="disable-ssl-retry-btn"]');
-    if (disableSslBtn19) {
-      await disableSslBtn19.click();
-      await page.waitForFunction(() => {
-        const el = document.querySelector('[data-testid="status-code"]');
-        return el && el.textContent.trim() !== 'SSL Error';
-      }, { timeout: 20000 });
-    }
+    // Wait for 200 response and handle SSL if remote cert issues
+    await ensureResponseWithoutSslError('[data-testid="fire-btn"]');
     await new Promise((r) => setTimeout(r, 600));
 
     // Verify that Authorization header is returned by httpbin
@@ -915,15 +942,7 @@ async function runFullTestSuite() {
     console.log('  ✓ Dispatched request with test assertions.');
 
     // Wait for response and check Test Results tab in ImpactViewer
-    await page.waitForSelector('[data-testid="status-code"]', { timeout: 20000 });
-    const disableSslBtn20 = await page.$('[data-testid="disable-ssl-retry-btn"]');
-    if (disableSslBtn20) {
-      await disableSslBtn20.click();
-      await page.waitForFunction(() => {
-        const el = document.querySelector('[data-testid="status-code"]');
-        return el && el.textContent.trim() !== 'SSL Error';
-      }, { timeout: 20000 });
-    }
+    await ensureResponseWithoutSslError('[data-testid="fire-btn"]');
     await page.waitForSelector('[data-testid="tab-test-results"]', { timeout: 20000 });
     console.log('  ✓ "Test Results" tab rendered in Impact Viewer!');
 
@@ -1037,17 +1056,8 @@ async function runFullTestSuite() {
     await fireBtn22.click();
     console.log('  ✓ Fired request with interpolated environment variable.');
 
-    // Wait for response
-    await page.waitForSelector('[data-testid="status-code"]', { timeout: 20000 });
-    const disableSslBtn22 = await page.$('[data-testid="disable-ssl-retry-btn"]');
-    if (disableSslBtn22) {
-      await disableSslBtn22.click();
-      await page.waitForFunction(() => {
-        const el = document.querySelector('[data-testid="status-code"]');
-        return el && el.textContent.trim() !== 'SSL Error';
-      }, { timeout: 20000 });
-    }
-    const interpStatusCode = await page.$eval('[data-testid="status-code"]', (el) => el.textContent.trim());
+    // Wait for response and ensure SSL handling
+    const interpStatusCode = await ensureResponseWithoutSslError('[data-testid="fire-btn"]');
     console.log(`  ✓ Received response: Status Code ${interpStatusCode}`);
 
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '17-environment-variable-interpolation.png') });

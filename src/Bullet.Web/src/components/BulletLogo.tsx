@@ -14,56 +14,84 @@ export const BulletLogo: React.FC<BulletLogoProps> = ({ className = '', size = 2
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
+      data-testid="bullet-brand-logo"
     >
       <defs>
-        <linearGradient id="bulletLogoBody" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fbbf24" />
-          <stop offset="50%" stopColor="#f59e0b" />
-          <stop offset="100%" stopColor="#d97706" />
+        {/* Projectile (Copper / Gold Ogive) */}
+        <linearGradient id="bulletProjectileGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#d97706" />
+          <stop offset="25%" stopColor="#f59e0b" />
+          <stop offset="50%" stopColor="#fef08a" />
+          <stop offset="75%" stopColor="#f59e0b" />
+          <stop offset="100%" stopColor="#b45309" />
         </linearGradient>
-        <linearGradient id="bulletLogoTip" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fef3c7" />
-          <stop offset="100%" stopColor="#f59e0b" />
+
+        {/* Cartridge Case (Polished Brass) */}
+        <linearGradient id="bulletCaseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#a16207" />
+          <stop offset="25%" stopColor="#ca8a04" />
+          <stop offset="50%" stopColor="#fef08a" />
+          <stop offset="75%" stopColor="#eab308" />
+          <stop offset="100%" stopColor="#713f12" />
         </linearGradient>
+
+        {/* Extractor Groove Shadow */}
+        <linearGradient id="grooveShadow" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#451a03" />
+          <stop offset="50%" stopColor="#78350f" />
+          <stop offset="100%" stopColor="#451a03" />
+        </linearGradient>
+
+        {/* Panel Background Squircle */}
         <linearGradient id="bulletLogoBg" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#131b2e" />
+          <stop offset="0%" stopColor="#1e293b" />
+          <stop offset="50%" stopColor="#0f172a" />
           <stop offset="100%" stopColor="#080c14" />
         </linearGradient>
       </defs>
 
       {/* Rounded Squircle Container */}
-      <rect width="128" height="128" rx="28" fill="url(#bulletLogoBg)" stroke="#f59e0b" strokeWidth="3" strokeOpacity="0.4" />
+      <rect width="128" height="128" rx="26" fill="url(#bulletLogoBg)" stroke="#f59e0b" strokeWidth="2.5" strokeOpacity="0.4" />
 
-      {/* Targeting Reticle Rings */}
-      <circle cx="64" cy="64" r="46" fill="none" stroke="#23304b" strokeWidth="2" strokeDasharray="6 6" />
-      <circle cx="64" cy="64" r="34" fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeOpacity="0.3" />
+      {/* Tactical Targeting Crosshair Elements */}
+      <circle cx="64" cy="64" r="50" fill="none" stroke="#334155" strokeWidth="1.5" strokeDasharray="4 4" strokeOpacity="0.6" />
+      <circle cx="64" cy="64" r="32" fill="none" stroke="#f59e0b" strokeWidth="1" strokeOpacity="0.25" />
 
-      {/* Crosshair Notches */}
-      <line x1="64" y1="12" x2="64" y2="24" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="64" y1="104" x2="64" y2="116" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="12" y1="64" x2="24" y2="64" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="104" y1="64" x2="116" y2="64" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" />
+      {/* Crosshair Ticks */}
+      <line x1="64" y1="6" x2="64" y2="14" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.8" />
+      <line x1="64" y1="114" x2="64" y2="122" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.8" />
+      <line x1="6" y1="64" x2="14" y2="64" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.8" />
+      <line x1="114" y1="64" x2="122" y2="64" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.8" />
 
-      {/* Supersonic shockwaves */}
-      <path d="M40 82 L64 56 L88 82" fill="none" stroke="#06b6d4" strokeWidth="2" strokeOpacity="0.6" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M46 92 L64 72 L82 92" fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeOpacity="0.4" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Supersonic Mach Shockwaves (Left and Right) */}
+      <path d="M38 52 L28 64 L38 76" fill="none" stroke="#06b6d4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.5" />
+      <path d="M90 52 L100 64 L90 76" fill="none" stroke="#06b6d4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.5" />
 
-      {/* Bullet Projectile Body */}
-      <path
-        d="M64 26 C57 38 52 50 52 64 L52 88 C52 90 54 92 56 92 L72 92 C74 92 76 90 76 88 L76 64 C76 50 71 38 64 26 Z"
-        fill="url(#bulletLogoBody)"
-        stroke="#fef3c7"
-        strokeWidth="1"
-      />
-      {/* Bullet Tip Highlight */}
-      <path d="M64 26 C60 33 57 40 56 46 L72 46 C71 40 68 33 64 26 Z" fill="url(#bulletLogoTip)" />
+      {/* 1. EXTRACTOR RIM (BASE) - y=106 to y=112 */}
+      <rect x="47" y="106" width="34" height="6" rx="1.5" fill="url(#bulletCaseGrad)" stroke="#ca8a04" strokeWidth="0.8" />
+      <line x1="56" y1="112" x2="72" y2="112" stroke="#451a03" strokeWidth="1.5" strokeLinecap="round" />
 
-      {/* Kinetic Spine */}
-      <line x1="64" y1="30" x2="64" y2="90" stroke="#ffffff" strokeWidth="1.5" strokeOpacity="0.8" strokeLinecap="round" />
+      {/* 2. EXTRACTOR GROOVE (REDUCED WAIST) - y=101 to y=106 */}
+      <rect x="51" y="101" width="26" height="5" fill="url(#grooveShadow)" />
 
-      {/* Primer Grooves */}
-      <line x1="53" y1="76" x2="75" y2="76" stroke="#b45309" strokeWidth="1.5" />
-      <line x1="53" y1="84" x2="75" y2="84" stroke="#b45309" strokeWidth="1.5" />
+      {/* 3. CARTRIDGE MAIN BODY (BRASS CYLINDER) - y=64 to y=101 */}
+      <path d="M47 64 L81 64 L81 101 L47 101 Z" fill="url(#bulletCaseGrad)" stroke="#ca8a04" strokeWidth="0.8" />
+
+      {/* 4. CARTRIDGE SHOULDER (ANGLED TAPER) - y=54 to y=64 */}
+      <path d="M56 54 L72 54 L81 64 L47 64 Z" fill="url(#bulletCaseGrad)" stroke="#ca8a04" strokeWidth="0.8" />
+
+      {/* 5. CARTRIDGE NECK - y=44 to y=54 */}
+      <rect x="56" y="44" width="16" height="10" fill="url(#bulletCaseGrad)" stroke="#ca8a04" strokeWidth="0.8" />
+      <line x1="55" y1="44" x2="73" y2="44" stroke="#78350f" strokeWidth="1.2" />
+
+      {/* 6. BULLET PROJECTILE (COPPER OGIVE & POINTED SPITZER TIP) - y=16 to y=44 */}
+      <path d="M64 16 C61 24 57 34 56 44 L72 44 C71 34 67 24 64 16 Z" fill="url(#bulletProjectileGrad)" stroke="#d97706" strokeWidth="0.8" />
+      <path d="M64 16 C63 19 62 23 60 26 L68 26 C66 23 65 19 64 16 Z" fill="#fef9c3" />
+      <line x1="57" y1="36" x2="71" y2="36" stroke="#92400e" strokeWidth="1" strokeDasharray="2 1" />
+
+      {/* Specular Highlight Streak */}
+      <line x1="61" y1="20" x2="61" y2="42" stroke="#ffffff" strokeWidth="1.2" strokeOpacity="0.75" strokeLinecap="round" />
+      <line x1="60" y1="46" x2="60" y2="100" stroke="#ffffff" strokeWidth="1.5" strokeOpacity="0.45" strokeLinecap="round" />
     </svg>
   );
 };

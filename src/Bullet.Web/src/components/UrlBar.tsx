@@ -250,7 +250,7 @@ export const UrlBar: React.FC<UrlBarProps> = ({
         ) : (
           <button
             data-testid="fire-btn"
-            onClick={onFire}
+            onClick={() => onFire()}
             className="h-9 px-5 rounded bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:from-amber-600 active:to-amber-500 text-slate-950 font-mono font-black text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition cursor-pointer"
             title="Fire Shot (Ctrl+Enter)"
           >

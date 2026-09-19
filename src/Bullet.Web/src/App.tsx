@@ -168,8 +168,11 @@ export function App() {
   }, [selectedShot, selectedLoadout]);
 
   // Actions
-  const handleFireShot = async (shotOverride?: Shot) => {
-    const targetShot = shotOverride || selectedShot;
+  const handleFireShot = async (shotOverride?: any) => {
+    // Defensively ensure shotOverride is a valid Shot object with string url & method (not a React SyntheticEvent)
+    const targetShot = (shotOverride && typeof shotOverride.url === 'string' && typeof shotOverride.method === 'string')
+      ? (shotOverride as Shot)
+      : selectedShot;
     if (!targetShot) return;
     setIsFiring(true);
     setImpact(null);
@@ -300,27 +303,6 @@ export function App() {
     } finally {
       setIsFiring(false);
     }
-  };
-
-  const handleDisableSslAndRetry = async () => {
-    if (!selectedShot) return;
-    const updatedShot: Shot = {
-      ...selectedShot,
-      settings: {
-        ...selectedShot.settings,
-        verifySsl: false,
-        verifyTls: false,
-      },
-    };
-    setSelectedShot(updatedShot);
-
-    try {
-      await bulletApi.updateShot(updatedShot.id, {
-        settings: updatedShot.settings,
-      });
-    } catch {}
-
-    handleFireShot(updatedShot);
   };
 
   const handleSaveShot = async () => {
@@ -480,7 +462,6 @@ export function App() {
         consoleOpen={consoleOpen}
         onToggleConsole={() => setConsoleOpen((prev) => !prev)}
         consoleLogCount={trajectoryLogs.length}
-        onReplayIntro={() => setShowIntro(true)}
       />
 
       {/* 2. Main Workspace Layout */}
@@ -523,7 +504,7 @@ export function App() {
                 <UrlBar
                   shot={selectedShot}
                   onChange={setSelectedShot}
-                  onFire={handleFireShot}
+                  onFire={() => handleFireShot()}
                   onCancel={() => setIsFiring(false)}
                   isFiring={isFiring}
                   onSave={handleSaveShot}
@@ -546,7 +527,6 @@ export function App() {
                     <ImpactViewer
                       impact={impact}
                       isFiring={isFiring}
-                      onDisableSslAndRetry={handleDisableSslAndRetry}
                       onRetry={() => handleFireShot()}
                     />
                   </div>

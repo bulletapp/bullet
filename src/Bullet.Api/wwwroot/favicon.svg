@@ -1,61 +1,51 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
   <defs>
-    <linearGradient id="bulletBody" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fbbf24" />
-      <stop offset="50%" stop-color="#f59e0b" />
-      <stop offset="100%" stop-color="#d97706" />
+    <linearGradient id="bulletProjectileGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#d97706" />
+      <stop offset="25%" stop-color="#f59e0b" />
+      <stop offset="50%" stop-color="#fef08a" />
+      <stop offset="75%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#b45309" />
     </linearGradient>
-    <linearGradient id="bulletTip" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fef3c7" />
-      <stop offset="100%" stop-color="#f59e0b" />
+    <linearGradient id="bulletCaseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#a16207" />
+      <stop offset="25%" stop-color="#ca8a04" />
+      <stop offset="50%" stop-color="#fef08a" />
+      <stop offset="75%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#713f12" />
     </linearGradient>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0d131f" />
+    <linearGradient id="grooveShadow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#451a03" />
+      <stop offset="50%" stop-color="#78350f" />
+      <stop offset="100%" stop-color="#451a03" />
+    </linearGradient>
+    <linearGradient id="bulletLogoBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="50%" stop-color="#0f172a" />
       <stop offset="100%" stop-color="#080c14" />
     </linearGradient>
-    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.4" />
-      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0" />
-    </linearGradient>
-    <filter id="bulletGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="3" result="blur" />
-      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-    </filter>
   </defs>
 
-  <!-- Dark Rounded Container -->
-  <rect width="128" height="128" rx="28" fill="url(#bgGrad)" stroke="#23304b" stroke-width="2.5" />
+  <rect width="128" height="128" rx="26" fill="url(#bulletLogoBg)" stroke="#f59e0b" stroke-width="2.5" stroke-opacity="0.4" />
+  <circle cx="64" cy="64" r="50" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 4" stroke-opacity="0.6" />
+  <circle cx="64" cy="64" r="32" fill="none" stroke="#f59e0b" stroke-width="1" stroke-opacity="0.25" />
+  <line x1="64" y1="6" x2="64" y2="14" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-opacity="0.8" />
+  <line x1="64" y1="114" x2="64" y2="122" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-opacity="0.8" />
+  <line x1="6" y1="64" x2="14" y2="64" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-opacity="0.8" />
+  <line x1="114" y1="64" x2="122" y2="64" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-opacity="0.8" />
+  <path d="M38 52 L28 64 L38 76" fill="none" stroke="#06b6d4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.5" />
+  <path d="M90 52 L100 64 L90 76" fill="none" stroke="#06b6d4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.5" />
 
-  <!-- Outer Ambient Glow -->
-  <circle cx="64" cy="64" r="44" fill="url(#glowGrad)" />
-
-  <!-- Precision Crosshair Rings -->
-  <circle cx="64" cy="64" r="46" fill="none" stroke="#23304b" stroke-width="1.5" stroke-dasharray="6 6" opacity="0.7" />
-  <circle cx="64" cy="64" r="34" fill="none" stroke="#f59e0b" stroke-width="1.2" opacity="0.3" />
-
-  <!-- Targeting Reticle Notches -->
-  <line x1="64" y1="14" x2="64" y2="24" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" />
-  <line x1="64" y1="104" x2="64" y2="114" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" />
-  <line x1="14" y1="64" x2="24" y2="64" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" />
-  <line x1="104" y1="64" x2="114" y2="64" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" />
-
-  <!-- Supersonic Shockwave Chevrons -->
-  <path d="M40 82 L64 56 L88 82" fill="none" stroke="#06b6d4" stroke-width="2" opacity="0.5" stroke-linecap="round" stroke-linejoin="round" />
-  <path d="M46 92 L64 72 L82 92" fill="none" stroke="#f59e0b" stroke-width="1.5" opacity="0.3" stroke-linecap="round" stroke-linejoin="round" />
-
-  <!-- The Bullet Core Projectile -->
-  <g filter="url(#bulletGlow)">
-    <!-- Aerodynamic Ogive / Nosecone -->
-    <path d="M64 26 C57 38 52 50 52 64 L52 88 C52 90 54 92 56 92 L72 92 C74 92 76 90 76 88 L76 64 C76 50 71 38 64 26 Z" fill="url(#bulletBody)" stroke="#fef3c7" stroke-width="1" />
-    
-    <!-- Bullet Tip Highlight -->
-    <path d="M64 26 C60 33 57 40 56 46 L72 46 C71 40 68 33 64 26 Z" fill="url(#bulletTip)" />
-    
-    <!-- Central Kinetic Spine -->
-    <line x1="64" y1="30" x2="64" y2="90" stroke="#fef3c7" stroke-width="1.5" opacity="0.7" stroke-linecap="round" />
-
-    <!-- Primer / Base Grooves -->
-    <line x1="53" y1="76" x2="75" y2="76" stroke="#b45309" stroke-width="1.5" />
-    <line x1="53" y1="84" x2="75" y2="84" stroke="#b45309" stroke-width="1.5" />
-  </g>
+  <rect x="47" y="106" width="34" height="6" rx="1.5" fill="url(#bulletCaseGrad)" stroke="#ca8a04" stroke-width="0.8" />
+  <line x1="56" y1="112" x2="72" y2="112" stroke="#451a03" stroke-width="1.5" stroke-linecap="round" />
+  <rect x="51" y="101" width="26" height="5" fill="url(#grooveShadow)" />
+  <path d="M47 64 L81 64 L81 101 L47 101 Z" fill="url(#bulletCaseGrad)" stroke="#ca8a04" stroke-width="0.8" />
+  <path d="M56 54 L72 54 L81 64 L47 64 Z" fill="url(#bulletCaseGrad)" stroke="#ca8a04" stroke-width="0.8" />
+  <rect x="56" y="44" width="16" height="10" fill="url(#bulletCaseGrad)" stroke="#ca8a04" stroke-width="0.8" />
+  <line x1="55" y1="44" x2="73" y2="44" stroke="#78350f" stroke-width="1.2" />
+  <path d="M64 16 C61 24 57 34 56 44 L72 44 C71 34 67 24 64 16 Z" fill="url(#bulletProjectileGrad)" stroke="#d97706" stroke-width="0.8" />
+  <path d="M64 16 C63 19 62 23 60 26 L68 26 C66 23 65 19 64 16 Z" fill="#fef9c3" />
+  <line x1="57" y1="36" x2="71" y2="36" stroke="#92400e" stroke-width="1" stroke-dasharray="2 1" />
+  <line x1="61" y1="20" x2="61" y2="42" stroke="#ffffff" stroke-width="1.2" stroke-opacity="0.75" stroke-linecap="round" />
+  <line x1="60" y1="46" x2="60" y2="100" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.45" stroke-linecap="round" />
 </svg>

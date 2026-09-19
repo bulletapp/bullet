@@ -10,7 +10,6 @@ import { Impact } from '../types/bullet';
 interface ImpactViewerProps {
   impact: Impact | null;
   isFiring: boolean;
-  onDisableSslAndRetry?: () => void;
   onRetry?: () => void;
 }
 
@@ -19,7 +18,6 @@ type ImpactTab = 'pretty' | 'raw' | 'preview' | 'headers' | 'cookies' | 'timing'
 export const ImpactViewer: React.FC<ImpactViewerProps> = ({ 
   impact, 
   isFiring, 
-  onDisableSslAndRetry,
   onRetry 
 }) => {
   const [activeTab, setActiveTab] = useState<ImpactTab>('pretty');
@@ -256,7 +254,7 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
         {/* Retry Button if Error */}
         {isExecutionError && onRetry && (
           <button
-            onClick={onRetry}
+            onClick={() => onRetry()}
             className="flex items-center gap-1 text-xs font-mono text-slate-300 hover:text-white px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 cursor-pointer shadow-sm transition"
           >
             <RefreshCw className="w-3 h-3" />
@@ -426,23 +424,6 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
               </div>
             </div>
 
-            {/* Actionable Button: Disable SSL Verification & Retry */}
-            {isSslError && onDisableSslAndRetry && (
-              <div className="flex flex-col items-center gap-2 mb-6">
-                <button
-                  onClick={onDisableSslAndRetry}
-                  data-testid="disable-ssl-retry-btn"
-                  className="flex items-center gap-2 px-5 py-2.5 rounded bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold text-xs shadow-lg shadow-amber-950/40 transition-all cursor-pointer font-sans"
-                >
-                  <Unlock className="w-4 h-4" />
-                  <span>Disable SSL Verification & Retry</span>
-                </button>
-                <span className="text-[11px] text-slate-400 font-sans">
-                  Automatically turns off certificate validation for this shot (matching Postman behavior)
-                </span>
-              </div>
-            )}
-
             {/* Guidance / Troubleshooting Card */}
             <div className="w-full bg-bullet-surface border border-bullet-border rounded p-4 text-left text-xs font-sans">
               <div className="flex items-center gap-1.5 font-semibold text-slate-200 mb-2.5">
@@ -451,7 +432,10 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
               </div>
               <ul className="space-y-2 text-[11px] text-slate-400 list-disc list-inside leading-relaxed">
                 <li>
-                  <strong className="text-slate-200">Self-Signed / Local Certificates:</strong> Toggle off <span className="text-amber-400 font-semibold">Verify TLS / SSL Certificate</span> in the Shot Settings tab.
+                  <strong className="text-slate-200">Global SSL Verification Bypass:</strong> Toggle the <span className="text-amber-400 font-bold font-mono">SSL: ON / SSL: OFF</span> switch in the top header bar to disable certificate validation across all requests.
+                </li>
+                <li>
+                  <strong className="text-slate-200">Shot-Specific Settings:</strong> Toggle off <span className="text-amber-400 font-semibold">Verify TLS / SSL Certificate</span> in the Shot Settings tab.
                 </li>
                 <li>
                   <strong className="text-slate-200">Hostname Mismatch:</strong> Verify that the Shot URL hostname matches the certificate's Common Name (CN) or Subject Alternative Names (SAN).
