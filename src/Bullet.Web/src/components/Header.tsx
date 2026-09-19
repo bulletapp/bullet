@@ -2,10 +2,11 @@ import React from 'react';
 import { 
   Lock, Unlock, AlertTriangle, Terminal, Layers, Play, 
   Download, Upload, Command, Plus, RefreshCw, CheckCircle2,
-  Sun, Moon
+  Sun, Moon, Volume2, VolumeX, Crosshair
 } from 'lucide-react';
 import { Range, Loadout } from '../types/bullet';
 import { BulletLogo } from './BulletLogo';
+import { isSoundEnabled, setSoundEnabled } from '../utils/audioFx';
 
 interface HeaderProps {
   ranges: Range[];
@@ -22,6 +23,7 @@ interface HeaderProps {
   consoleOpen: boolean;
   onToggleConsole: () => void;
   consoleLogCount: number;
+  onReplayIntro?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -39,7 +41,16 @@ export const Header: React.FC<HeaderProps> = ({
   consoleOpen,
   onToggleConsole,
   consoleLogCount,
+  onReplayIntro,
 }) => {
+  const [soundActive, setSoundActive] = React.useState<boolean>(isSoundEnabled);
+
+  const toggleSound = () => {
+    const next = !soundActive;
+    setSoundActive(next);
+    setSoundEnabled(next);
+  };
+
   const [theme, setTheme] = React.useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('bullet_theme');
     return saved === 'light' ? 'light' : 'dark';
@@ -247,6 +258,36 @@ export const Header: React.FC<HeaderProps> = ({
             <Unlock className="w-3.5 h-3.5 text-amber-400" />
           )}
           <span className="font-mono text-[10px] font-semibold">{globalSsl ? 'SSL: ON' : 'SSL: OFF'}</span>
+        </button>
+
+        {/* Replay Intro Splash Button */}
+        {onReplayIntro && (
+          <button
+            data-testid="header-replay-intro-btn"
+            onClick={onReplayIntro}
+            className="flex items-center justify-center w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 transition"
+            title="Replay Supersonic Launch Sequence"
+          >
+            <Crosshair className="w-3.5 h-3.5" />
+          </button>
+        )}
+
+        {/* Sound FX Mute Toggle */}
+        <button
+          data-testid="header-sound-toggle-btn"
+          onClick={toggleSound}
+          className={`flex items-center justify-center w-7 h-7 rounded border transition ${
+            soundActive
+              ? 'bg-slate-800 hover:bg-slate-700 text-cyan-400 border-slate-700'
+              : 'bg-slate-800/60 hover:bg-slate-700 text-slate-500 border-slate-800'
+          }`}
+          title={soundActive ? 'Sound Effects: ON (Click to Mute)' : 'Sound Effects: MUTED (Click to Enable)'}
+        >
+          {soundActive ? (
+            <Volume2 className="w-3.5 h-3.5" />
+          ) : (
+            <VolumeX className="w-3.5 h-3.5" />
+          )}
         </button>
 
         {/* Theme Toggle (Light / Dark) */}

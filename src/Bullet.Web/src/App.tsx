@@ -5,6 +5,7 @@ import {
   Impact, TrajectoryLogEntry 
 } from './types/bullet';
 import { bulletApi, createExecutionHubConnection } from './api/bulletApi';
+import { playFireSound, playImpactSuccessSound, playImpactErrorSound } from './utils/audioFx';
 
 // Components
 import { Header } from './components/Header';
@@ -13,6 +14,7 @@ import { UrlBar } from './components/UrlBar';
 import { ShotEditor } from './components/ShotEditor';
 import { ImpactViewer } from './components/ImpactViewer';
 import { TrajectoryConsole } from './components/TrajectoryConsole';
+import { BulletIntroSplash } from './components/BulletIntroSplash';
 
 // Modals
 import { CommandPaletteModal } from './components/modals/CommandPaletteModal';
@@ -57,6 +59,9 @@ export function App() {
   const [firingRunOpen, setFiringRunOpen] = useState(false);
   const [armoryTransferOpen, setArmoryTransferOpen] = useState(false);
   const [initialImportContent, setInitialImportContent] = useState('');
+  const [showIntro, setShowIntro] = useState<boolean>(() => {
+    return localStorage.getItem('bullet_skip_intro') !== 'true';
+  });
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const dragCounter = useRef(0);
   const [codeShotOpen, setCodeShotOpen] = useState(false);
@@ -168,6 +173,7 @@ export function App() {
     if (!targetShot) return;
     setIsFiring(true);
     setImpact(null);
+    playFireSound();
 
     // Append trigger log
     const startTime = new Date().toISOString();
@@ -208,6 +214,12 @@ export function App() {
       });
       setImpact(res);
 
+      if (res.isSuccess) {
+        playImpactSuccessSound();
+      } else {
+        playImpactErrorSound();
+      }
+
       // Append impact telemetry
       if (res.trajectoryLogs) {
         setTrajectoryLogs((prev) => [...prev, ...res.trajectoryLogs]);
@@ -223,6 +235,7 @@ export function App() {
         },
       ]);
     } catch (err: any) {
+      playImpactErrorSound();
       const errMsg = err.message || 'Execution failed due to network or connection error.';
       const isSsl = errMsg.toLowerCase().includes('ssl') || 
                     errMsg.toLowerCase().includes('certificate') ||
@@ -428,6 +441,11 @@ export function App() {
         </div>
       )}
 
+      {/* 0. Cinematic Bullet Launch Intro Animation */}
+      {showIntro && (
+        <BulletIntroSplash onFinish={() => setShowIntro(false)} />
+      )}
+
       {/* 1. Header Bar */}
       <Header
         ranges={ranges}
@@ -451,6 +469,7 @@ export function App() {
         consoleOpen={consoleOpen}
         onToggleConsole={() => setConsoleOpen((prev) => !prev)}
         consoleLogCount={trajectoryLogs.length}
+        onReplayIntro={() => setShowIntro(true)}
       />
 
       {/* 2. Main Workspace Layout */}

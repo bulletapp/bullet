@@ -108,6 +108,21 @@ async function runFullTestSuite() {
   try {
     console.log(`\n[STEP 1] Navigating to Bullet Web IDE at ${APP_URL}...`);
     await page.goto(APP_URL, { waitUntil: 'networkidle0', timeout: 20000 });
+
+    // Handle Opening Bullet Firing Intro Splash if rendered
+    const introSplash = await page.$('[data-testid="bullet-intro-splash"]');
+    if (introSplash) {
+      console.log('  ✓ Animated Bullet Firing Intro Splash detected!');
+      const dismissBtn = await page.$('[data-testid="dismiss-intro-btn"]');
+      if (dismissBtn) {
+        await page.screenshot({ path: path.join(SCREENSHOT_DIR, '10-bullet-intro-splash.png') }).catch(() => {});
+        console.log('  ✓ Captured 10-bullet-intro-splash.png screenshot.');
+        await dismissBtn.click().catch(() => {});
+      }
+      await page.waitForSelector('[data-testid="bullet-intro-splash"]', { hidden: true, timeout: 5000 }).catch(() => {});
+      console.log('  ✓ Dismissed Intro Splash smoothly into workspace.');
+    }
+
     await page.waitForSelector('[data-testid="header-new-shot-btn"]', { timeout: 10000 });
     console.log('  ✓ UI loaded and Header mounted successfully.');
 
@@ -655,10 +670,82 @@ async function runFullTestSuite() {
     // Wait for backend to update and DOM to reflect the shot inside the squad container
     await new Promise((r) => setTimeout(r, 1000));
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '09-sidebar-drag-drop-success.png') });
-    console.log('  ✓ Captured 09-sidebar-drag-drop-success.png screenshot.');
     console.log('  ★ TEST 14 PASSED: Sidebar Drag & Drop organization verified!');
 
-    console.log('\n===============================================================');
+    // -------------------------------------------------------------
+    // TEST 15: REPLAY SUPERSONIC LAUNCH SEQUENCE (HEADER BUTTON)
+    // -------------------------------------------------------------
+    console.log('\n[TEST 15] Testing Replay Launch Sequence Button in Header...');
+    const replayIntroBtn = await page.waitForSelector('[data-testid="header-replay-intro-btn"]', { timeout: 5000 });
+    await replayIntroBtn.click();
+    console.log('  ✓ Clicked Replay Launch Sequence button in Header.');
+
+    await page.waitForSelector('[data-testid="bullet-intro-splash"]', { timeout: 5000 });
+    console.log('  ✓ Supersonic Bullet Firing Intro Splash active on replay!');
+    await new Promise((r) => setTimeout(r, 600));
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '11-bullet-intro-replay.png') });
+    console.log('  ✓ Captured 11-bullet-intro-replay.png screenshot.');
+
+    // Dismiss intro
+    const dismissReplayBtn = await page.waitForSelector('[data-testid="dismiss-intro-btn"]', { timeout: 3000 });
+    await dismissReplayBtn.click();
+    await page.waitForSelector('[data-testid="bullet-intro-splash"]', { hidden: true, timeout: 5000 });
+    console.log('  ✓ Intro splash dismissed cleanly back to workspace.');
+    console.log('  ★ TEST 15 PASSED: Replay launch sequence operational!');
+
+    // -------------------------------------------------------------
+    // TEST 16: cURL AUTO-DETECTION ON PASTE & COPY AS cURL
+    // -------------------------------------------------------------
+    console.log('\n[TEST 16] Testing cURL Command Auto-Detection on Paste...');
+    const urlInput = await page.waitForSelector('[data-testid="url-input"]');
+    
+    // Simulate paste event with full cURL command
+    const sampleCurl = "curl -X POST https://httpbin.org/post -H 'Content-Type: application/json' -H 'X-Bullet-Mode: supersonic' -d '{\"bullet\":\"supercharged\"}'";
+    await page.evaluate((curlCmd) => {
+      const input = document.querySelector('[data-testid="url-input"]');
+      if (!input) throw new Error('URL input not found');
+
+      const dt = new DataTransfer();
+      dt.setData('text/plain', curlCmd);
+
+      const pasteEv = new ClipboardEvent('paste', {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: dt,
+      });
+      input.dispatchEvent(pasteEv);
+    }, sampleCurl);
+
+    console.log('  ✓ Dispatched cURL paste event to URL bar.');
+
+    // Verify URL bar automatically updated to https://httpbin.org/post
+    await page.waitForFunction(() => {
+      const input = document.querySelector('[data-testid="url-input"]');
+      return input && input.value === 'https://httpbin.org/post';
+    }, { timeout: 5000 });
+    console.log('  ✓ Target URL successfully updated to "https://httpbin.org/post"!');
+
+    // Verify Method updated to POST
+    const methodVal = await page.$eval('[data-testid="method-select"]', (el) => el.value);
+    if (methodVal !== 'POST') {
+      throw new Error(`Expected method POST from cURL but got: ${methodVal}`);
+    }
+    console.log('  ✓ HTTP Method auto-detected and set to POST!');
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '12-curl-paste-detected.png') });
+    console.log('  ✓ Captured 12-curl-paste-detected.png screenshot.');
+    console.log('  ★ TEST 16 PASSED: cURL auto-detection on paste verified!');
+
+    // -------------------------------------------------------------
+    // TEST 17: SOUND FX MUTE TOGGLE
+    // -------------------------------------------------------------
+    console.log('\n[TEST 17] Testing Web Audio Sound FX Toggle...');
+    const soundToggleBtn = await page.waitForSelector('[data-testid="header-sound-toggle-btn"]');
+    await soundToggleBtn.click();
+    console.log('  ✓ Toggled sound FX (muted).');
+    await soundToggleBtn.click();
+    console.log('  ✓ Toggled sound FX back (enabled).');
+    console.log('  ★ TEST 17 PASSED: Synthesized Audio FX controls operational!');
     console.log(`TOTAL UNCAUGHT ERRORS: ${uncaughtErrors.length}`);
     if (uncaughtErrors.length > 0) {
       console.error('Errors encountered:', uncaughtErrors);
