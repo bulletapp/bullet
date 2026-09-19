@@ -29,6 +29,7 @@ public class Shot
     public string? GrpcService { get; set; }
     public string? GrpcMethod { get; set; }
     public string? GrpcProto { get; set; }
+    public string? GrpcProtoFileName { get; set; }
     public bool GrpcUseTls { get; set; }
 
     public int Version { get; set; } = 1;

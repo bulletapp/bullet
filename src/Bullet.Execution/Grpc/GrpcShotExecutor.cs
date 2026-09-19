@@ -94,7 +94,7 @@ public class GrpcShotExecutor : IGrpcShotExecutor
         var resolvedUrl = _tokenResolver.Resolve(rawUrl, resolvedRounds);
         impact.ResolvedUrl = resolvedUrl;
 
-        var (serverEndpoint, methodPath) = ParseGrpcUrl(resolvedUrl);
+        var (serverEndpoint, methodPath) = ParseGrpcUrl(resolvedUrl, shot.GrpcUseTls);
         if (!string.IsNullOrEmpty(shot.GrpcService) && !string.IsNullOrEmpty(shot.GrpcMethod))
         {
             var svc = shot.GrpcService.Trim().TrimStart('/');
@@ -115,7 +115,8 @@ public class GrpcShotExecutor : IGrpcShotExecutor
             return impact;
         }
 
-        AddTrajectory("Protocol", $"Initializing gRPC channel over HTTP/2 to {serverEndpoint} for method {methodPath}");
+        var channelMode = serverEndpoint.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ? "TLS (Secure)" : "Plaintext (Insecure / h2c)";
+        AddTrajectory("Protocol", $"Initializing gRPC channel over HTTP/2 [{channelMode}] to {serverEndpoint} for method {methodPath}");
 
         var stopwatch = Stopwatch.StartNew();
         try
@@ -158,8 +159,24 @@ public class GrpcShotExecutor : IGrpcShotExecutor
             var timeoutSeconds = shot.Settings.TimeoutMs > 0 ? (shot.Settings.TimeoutMs / 1000.0) : 30.0;
             using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+            HttpClient? customClient = null;
+            var clientToUse = _httpClient;
+            if (request.TlsProfile != null || !shot.Settings.VerifySsl)
+            {
+                var customHandler = _tlsManager.CreateConfiguredHandler(request.TlsProfile, shot.Settings.VerifySsl);
+                customClient = new HttpClient(customHandler);
+                clientToUse = customClient;
+            }
 
-            var response = await _httpClient.SendAsync(httpRequest, HttpCompletionOption.ResponseContentRead, linkedCts.Token);
+            HttpResponseMessage response;
+            try
+            {
+                response = await clientToUse.SendAsync(httpRequest, HttpCompletionOption.ResponseContentRead, linkedCts.Token);
+            }
+            finally
+            {
+                customClient?.Dispose();
+            }
             stopwatch.Stop();
             impact.DurationMs = Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2);
 
@@ -257,10 +274,18 @@ public class GrpcShotExecutor : IGrpcShotExecutor
         return impact;
     }
 
-    private static (string serverEndpoint, string methodPath) ParseGrpcUrl(string url)
+    private static (string serverEndpoint, string methodPath) ParseGrpcUrl(string url, bool explicitUseTls = false)
     {
         var cleaned = url.Trim();
-        bool useTls = cleaned.StartsWith("grpcs://", StringComparison.OrdinalIgnoreCase) || cleaned.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+        bool useTls = explicitUseTls;
+        if (cleaned.StartsWith("grpcs://", StringComparison.OrdinalIgnoreCase) || cleaned.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            useTls = true;
+        }
+        else if (cleaned.StartsWith("grpc://", StringComparison.OrdinalIgnoreCase) || cleaned.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            useTls = false;
+        }
 
         cleaned = RegexCleanScheme(cleaned);
 

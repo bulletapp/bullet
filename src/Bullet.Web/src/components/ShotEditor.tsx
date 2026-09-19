@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   ShieldAlert, ShieldCheck, Sparkles, Plus, Trash2, Code2, 
   HelpCircle, Eye, EyeOff, CheckSquare, Square,
   Lock, AlertTriangle, Radio, FileCode, CheckCircle2,
-  RefreshCw, Copy, Check, Terminal, Play, X, Zap
+  RefreshCw, Copy, Check, Terminal, Play, X, Zap,
+  UploadCloud, FileUp, File, FolderOpen
 } from 'lucide-react';
 import { Shot, KeyValuePair, ArmorConfig, PayloadConfig, ShotSettings, TLSProfile } from '../types/bullet';
 import { bulletApi } from '../api/bulletApi';
@@ -38,6 +39,11 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
   const [protoModalOpen, setProtoModalOpen] = useState(false);
   const [protoInput, setProtoInput] = useState(shot.grpcProto || '');
   const [protoParseError, setProtoParseError] = useState<string | null>(null);
+  const [protoTab, setProtoTab] = useState<'upload' | 'raw'>('upload');
+  const [protoFileName, setProtoFileName] = useState<string>(shot.grpcProtoFileName || (shot.grpcProto ? 'imported.proto' : ''));
+  const [protoFileSize, setProtoFileSize] = useState<string>('');
+  const [isDraggingProto, setIsDraggingProto] = useState(false);
+  const protoFileInputRef = useRef<HTMLInputElement | null>(null);
   const [availableServices, setAvailableServices] = useState<
     Array<{
       name: string;
@@ -281,18 +287,20 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
     }
   };
 
-  const handleParseProto = async () => {
-    if (!protoInput.trim()) return;
+  const parseProtoContent = async (contentToParse: string, fileName: string = 'service.proto') => {
+    if (!contentToParse.trim()) return;
     setProtoParseError(null);
     try {
-      const res = await bulletApi.grpcParseProto(protoInput, 'service.proto');
+      const res = await bulletApi.grpcParseProto(contentToParse, fileName);
       if (res.isSuccess && res.services?.length) {
         setAvailableServices(res.services);
         const firstService = res.services[0];
         const firstMethod = firstService.methods[0];
+        setProtoFileName(fileName);
         onChange({
           ...shot,
-          grpcProto: protoInput,
+          grpcProto: contentToParse,
+          grpcProtoFileName: fileName,
           grpcService: firstService.name,
           grpcMethod: firstMethod?.name,
           payload: firstMethod?.samplePayloadJson ? {
@@ -308,6 +316,37 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
       }
     } catch (err: any) {
       setProtoParseError(err.message || 'Error parsing proto');
+    }
+  };
+
+  const handleParseProto = async () => {
+    await parseProtoContent(protoInput, protoFileName || 'service.proto');
+  };
+
+  const handleProtoFileSelect = (file: File) => {
+    if (!file) return;
+    const name = file.name;
+    const sizeKb = (file.size / 1024).toFixed(1) + ' KB';
+    setProtoFileName(name);
+    setProtoFileSize(sizeKb);
+    setProtoParseError(null);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = (e.target?.result as string) || '';
+      if (content) {
+        setProtoInput(content);
+        parseProtoContent(content, name);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleProtoDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingProto(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleProtoFileSelect(e.dataTransfer.files[0]);
     }
   };
 
@@ -430,6 +469,38 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
               <FileCode className="w-3 h-3 text-cyan-400" />
               <span>Proto</span>
             </button>
+
+            {/* Loaded Proto Badge Chip */}
+            {shot.grpcProto && (
+              <div
+                data-testid="grpc-loaded-proto-badge"
+                className="flex items-center gap-1.5 px-2 py-1 rounded bg-cyan-950/50 border border-cyan-500/40 text-[11px] font-mono text-cyan-300 shadow-sm"
+                title={shot.grpcProtoFileName ? `Active Proto: ${shot.grpcProtoFileName}` : 'Protobuf definition loaded'}
+              >
+                <File className="w-3 h-3 text-cyan-400" />
+                <span className="truncate max-w-[130px] font-semibold">
+                  {shot.grpcProtoFileName || (availableServices.length > 0 ? `${availableServices.length} Service(s)` : 'proto loaded')}
+                </span>
+                <button
+                  type="button"
+                  data-testid="clear-proto-btn"
+                  onClick={() => {
+                    setProtoInput('');
+                    setProtoFileName('');
+                    setProtoFileSize('');
+                    onChange({
+                      ...shot,
+                      grpcProto: undefined,
+                      grpcProtoFileName: undefined,
+                    });
+                  }}
+                  className="text-slate-400 hover:text-rose-400 ml-0.5 cursor-pointer"
+                  title="Clear active proto definition"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1816,16 +1887,42 @@ bullet.test('Body contains token', function() {
             <div className="flex items-center justify-between border-b border-bullet-border pb-2">
               <div className="flex items-center gap-2">
                 <FileCode className="w-4 h-4 text-cyan-400" />
-                <h3 className="text-sm font-bold text-slate-100 font-mono">Protobuf (.proto) Definition</h3>
+                <h3 className="text-sm font-bold text-slate-100 font-mono">Protobuf (.proto) Definition &amp; Import</h3>
               </div>
               <button data-testid="close-proto-modal-btn" onClick={() => setProtoModalOpen(false)} className="text-slate-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-400 font-sans">
-              Paste your proto service schema below to extract services, RPC methods, and sample payloads automatically.
-            </p>
+            {/* Mode Switcher Tabs */}
+            <div className="flex border-b border-bullet-border">
+              <button
+                type="button"
+                data-testid="proto-tab-upload"
+                onClick={() => setProtoTab('upload')}
+                className={`flex items-center gap-1.5 px-4 py-2 text-xs font-mono font-medium border-b-2 transition cursor-pointer ${
+                  protoTab === 'upload'
+                    ? 'border-cyan-400 text-cyan-400 bg-cyan-500/10'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <UploadCloud className="w-3.5 h-3.5" />
+                <span>Import .proto File</span>
+              </button>
+              <button
+                type="button"
+                data-testid="proto-tab-raw"
+                onClick={() => setProtoTab('raw')}
+                className={`flex items-center gap-1.5 px-4 py-2 text-xs font-mono font-medium border-b-2 transition cursor-pointer ${
+                  protoTab === 'raw'
+                    ? 'border-cyan-400 text-cyan-400 bg-cyan-500/10'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Code2 className="w-3.5 h-3.5" />
+                <span>Raw Schema / Paste</span>
+              </button>
+            </div>
 
             {protoParseError && (
               <div className="p-2 rounded bg-rose-950/30 border border-rose-500/30 text-rose-400 text-xs font-mono">
@@ -1833,27 +1930,137 @@ bullet.test('Body contains token', function() {
               </div>
             )}
 
-            <textarea
-              data-testid="proto-content-textarea"
-              value={protoInput}
-              onChange={(e) => setProtoInput(e.target.value)}
-              placeholder={`syntax = "proto3";\npackage bullet.v1;\n\nservice BulletTestService {\n  rpc Ping (PingRequest) returns (PingResponse);\n}\n\nmessage PingRequest {\n  string name = 1;\n}\n\nmessage PingResponse {\n  string message = 1;\n}`}
-              className="w-full h-64 bg-bullet-surface border border-bullet-border rounded p-3 font-mono text-xs text-slate-200 outline-none focus:border-cyan-500 leading-relaxed"
-            />
+            {protoTab === 'upload' ? (
+              <div className="space-y-3">
+                {/* Hidden File Input */}
+                <input
+                  type="file"
+                  ref={protoFileInputRef}
+                  accept=".proto,text/plain"
+                  data-testid="grpc-proto-file-input"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      handleProtoFileSelect(e.target.files[0]);
+                    }
+                  }}
+                />
+
+                {/* Drag and drop dropzone */}
+                <div
+                  data-testid="grpc-proto-dropzone"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDraggingProto(true);
+                  }}
+                  onDragLeave={() => setIsDraggingProto(false)}
+                  onDrop={handleProtoDrop}
+                  onClick={() => protoFileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center text-center cursor-pointer transition ${
+                    isDraggingProto
+                      ? 'border-cyan-400 bg-cyan-950/30 scale-[0.99]'
+                      : 'border-bullet-border hover:border-cyan-500/60 bg-bullet-surface/50 hover:bg-bullet-surface'
+                  }`}
+                >
+                  <div className="p-3 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 mb-3 shadow-inner">
+                    <FileUp className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-slate-200 font-mono mb-1">
+                    Drag &amp; drop your .proto file here
+                  </h4>
+                  <p className="text-xs text-slate-400 mb-3">
+                    or click to browse from your computer
+                  </p>
+                  <button
+                    type="button"
+                    data-testid="browse-proto-files-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      protoFileInputRef.current?.click();
+                    }}
+                    className="px-3.5 py-1.5 rounded bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/40 text-cyan-300 text-xs font-mono font-medium transition cursor-pointer"
+                  >
+                    Browse Files
+                  </button>
+                </div>
+
+                {/* File Card info if loaded */}
+                {protoFileName && (
+                  <div data-testid="imported-proto-card" className="p-3 rounded bg-slate-900 border border-cyan-500/30 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded bg-cyan-500/10 text-cyan-400">
+                        <FileCode className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-mono font-bold text-slate-200 flex items-center gap-1.5">
+                          <span>{protoFileName}</span>
+                          {protoFileSize && (
+                            <span className="text-[10px] text-slate-400 font-normal">({protoFileSize})</span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-emerald-400 font-mono flex items-center gap-1 mt-0.5">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          <span>File schema loaded &amp; ready</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => protoFileInputRef.current?.click()}
+                        className="text-xs font-mono text-cyan-400 hover:text-cyan-300 cursor-pointer"
+                      >
+                        Replace
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProtoFileName('');
+                          setProtoFileSize('');
+                          setProtoInput('');
+                        }}
+                        className="text-xs font-mono text-rose-400 hover:text-rose-300 cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-slate-400 font-sans">
+                  Paste raw .proto service schema below to extract services, RPC methods, and sample payloads automatically.
+                </p>
+                <textarea
+                  data-testid="proto-content-textarea"
+                  value={protoInput}
+                  onChange={(e) => setProtoInput(e.target.value)}
+                  placeholder={`syntax = "proto3";\npackage bullet.v1;\n\nservice BulletTestService {\n  rpc Ping (PingRequest) returns (PingResponse);\n}\n\nmessage PingRequest {\n  string name = 1;\n}\n\nmessage PingResponse {\n  string message = 1;\n}`}
+                  className="w-full h-64 bg-bullet-surface border border-bullet-border rounded p-3 font-mono text-xs text-slate-200 outline-none focus:border-cyan-500 leading-relaxed"
+                />
+              </div>
+            )}
 
             <div className="flex items-center justify-between pt-2 border-t border-bullet-border">
-              <button
-                type="button"
-                data-testid="insert-sample-proto-btn"
-                onClick={() =>
-                  setProtoInput(
-                    `syntax = "proto3";\npackage bullet.v1;\n\nservice BulletTestService {\n  rpc Ping (PingRequest) returns (PingResponse);\n}\n\nmessage PingRequest {\n  string name = 1;\n}\n\nmessage PingResponse {\n  string message = 1;\n}`
-                  )
-                }
-                className="text-xs font-mono text-cyan-400 hover:text-cyan-300 underline cursor-pointer"
-              >
-                Insert Sample Proto
-              </button>
+              {protoTab === 'raw' ? (
+                <button
+                  type="button"
+                  data-testid="insert-sample-proto-btn"
+                  onClick={() =>
+                    setProtoInput(
+                      `syntax = "proto3";\npackage bullet.v1;\n\nservice BulletTestService {\n  rpc Ping (PingRequest) returns (PingResponse);\n}\n\nmessage PingRequest {\n  string name = 1;\n}\n\nmessage PingResponse {\n  string message = 1;\n}`
+                    )
+                  }
+                  className="text-xs font-mono text-cyan-400 hover:text-cyan-300 underline cursor-pointer"
+                >
+                  Insert Sample Proto
+                </button>
+              ) : (
+                <span className="text-[11px] text-slate-400 font-mono">
+                  {protoFileName ? `Ready to parse: ${protoFileName}` : 'Select a .proto file or paste schema'}
+                </span>
+              )}
 
               <div className="flex items-center gap-2">
                 <button
@@ -1867,7 +2074,8 @@ bullet.test('Body contains token', function() {
                   type="button"
                   data-testid="parse-proto-submit-btn"
                   onClick={handleParseProto}
-                  className="px-4 py-1.5 text-xs font-mono font-bold rounded bg-cyan-500 hover:bg-cyan-400 text-slate-950 cursor-pointer shadow-sm transition"
+                  disabled={!protoInput.trim()}
+                  className="px-4 py-1.5 text-xs font-mono font-bold rounded bg-cyan-500 hover:bg-cyan-400 text-slate-950 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-sm transition"
                 >
                   Parse &amp; Load Services
                 </button>

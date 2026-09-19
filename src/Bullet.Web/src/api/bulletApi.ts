@@ -123,6 +123,7 @@ export const bulletApi = {
       grpcService?: string;
       grpcMethod?: string;
       grpcProto?: string;
+      grpcProtoFileName?: string;
       grpcUseTls?: boolean;
     }
   ) => {

@@ -1233,14 +1233,35 @@ async function runFullTestSuite() {
     console.log('  ★ TEST 27 PASSED: Client Certificate / TLS Profile successfully attached to Shot!');
 
     // -------------------------------------------------------------
-    // TEST 28: gRPC STUDIO COCKPIT, SERVER REFLECTION & PROTO PARSER MODAL
+    // TEST 28: gRPC STUDIO COCKPIT, TLS LOCK, SERVER REFLECTION & PROTO IMPORT
     // -------------------------------------------------------------
-    console.log('\n[TEST 28] Testing gRPC Studio Cockpit, Reflection & Proto Modal...');
+    console.log('\n[TEST 28] Testing gRPC Studio Cockpit, TLS Lock, Reflection & Proto Modal...');
 
     // Select GRPC method in URL bar
     const methodSelect28 = await page.waitForSelector('[data-testid="method-select"]');
     await methodSelect28.select('GRPC');
     console.log('  ✓ Selected GRPC protocol method.');
+
+    // Verify Postman-style gRPC TLS Lock button
+    const tlsLockBtn28 = await page.waitForSelector('[data-testid="grpc-tls-lock-btn"]', { timeout: 5000 });
+    const initialTlsText = await page.evaluate(el => el.textContent, tlsLockBtn28);
+    console.log(`  ✓ gRPC TLS Lock button detected: [${initialTlsText.trim()}]`);
+
+    // Toggle TLS on
+    await tlsLockBtn28.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="grpc-tls-lock-btn"]');
+      return btn && btn.textContent.includes('TLS');
+    }, { timeout: 3000 });
+    console.log('  ✓ Toggled gRPC connection to TLS (grpcs:// secure channel).');
+
+    // Toggle back to Plaintext
+    await tlsLockBtn28.click();
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('[data-testid="grpc-tls-lock-btn"]');
+      return btn && btn.textContent.includes('Plaintext');
+    }, { timeout: 3000 });
+    console.log('  ✓ Toggled gRPC connection back to Plaintext (grpc:// cleartext h2c).');
 
     // Enter gRPC endpoint in URL input
     await clearAndType('[data-testid="url-input"]', '127.0.0.1:50051');
@@ -1255,7 +1276,19 @@ async function runFullTestSuite() {
     const protoBtn28 = await page.waitForSelector('[data-testid="grpc-proto-btn"]');
     await protoBtn28.click();
     await page.waitForSelector('[data-testid="grpc-proto-modal"]', { timeout: 5000 });
-    console.log('  ✓ Protobuf (.proto) Definition modal opened.');
+    console.log('  ✓ Protobuf (.proto) Definition & Import modal opened.');
+
+    // Verify Import file tab and dropzone
+    await page.waitForSelector('[data-testid="proto-tab-upload"]', { timeout: 5000 });
+    await page.waitForSelector('[data-testid="grpc-proto-dropzone"]', { timeout: 5000 });
+    await page.waitForSelector('[data-testid="grpc-proto-file-input"]', { timeout: 5000 });
+    console.log('  ✓ Proto File Import tab and drag-and-drop dropzone verified.');
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '24b-grpc-proto-modal-import.png') });
+
+    // Switch to Raw Schema / Paste tab
+    const rawTab28 = await page.waitForSelector('[data-testid="proto-tab-raw"]');
+    await rawTab28.click();
+    console.log('  ✓ Switched to Raw Schema / Paste tab.');
 
     // Insert sample proto
     const insertSampleBtn28 = await page.waitForSelector('[data-testid="insert-sample-proto-btn"]');
@@ -1271,6 +1304,10 @@ async function runFullTestSuite() {
     await page.waitForSelector('[data-testid="grpc-proto-modal"]', { hidden: true, timeout: 5000 });
     console.log('  ✓ Proto schema parsed; modal closed cleanly.');
 
+    // Verify active proto badge in cockpit
+    await page.waitForSelector('[data-testid="grpc-loaded-proto-badge"]', { timeout: 5000 });
+    console.log('  ✓ Loaded proto badge displayed in gRPC Cockpit bar.');
+
     await page.waitForSelector('[data-testid="grpc-service-select"]', { timeout: 5000 });
     console.log('  ✓ gRPC Service selector populated with discovered services.');
 
@@ -1281,7 +1318,7 @@ async function runFullTestSuite() {
     console.log('  ✓ gRPC Message JSON Editor verified.');
 
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '24-grpc-cockpit-e2e.png') });
-    console.log('  ★ TEST 28 PASSED: gRPC Studio Cockpit & Proto Parser verified!');
+    console.log('  ★ TEST 28 PASSED: gRPC Studio Cockpit, TLS Lock & Proto Import verified!');
 
     // -------------------------------------------------------------
     // TEST 29: OAUTH 2.0 PKCE & CLIENT CREDENTIALS FLOW IN AUTH TAB

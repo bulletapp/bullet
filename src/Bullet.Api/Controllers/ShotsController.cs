@@ -62,7 +62,12 @@ public class ShotsController : ControllerBase
             LoadoutId = req.LoadoutId,
             TLSProfileId = req.TLSProfileId,
             TriggerScript = req.TriggerScript,
-            VerifierScript = req.VerifierScript
+            VerifierScript = req.VerifierScript,
+            GrpcService = req.GrpcService,
+            GrpcMethod = req.GrpcMethod,
+            GrpcProto = req.GrpcProto,
+            GrpcProtoFileName = req.GrpcProtoFileName,
+            GrpcUseTls = req.GrpcUseTls ?? false
         };
 
         _db.Shots.Add(shot);
@@ -108,6 +113,11 @@ public class ShotsController : ControllerBase
         shot.TLSProfileId = req.TLSProfileId ?? shot.TLSProfileId;
         shot.TriggerScript = req.TriggerScript ?? shot.TriggerScript;
         shot.VerifierScript = req.VerifierScript ?? shot.VerifierScript;
+        if (req.GrpcService != null) shot.GrpcService = req.GrpcService;
+        if (req.GrpcMethod != null) shot.GrpcMethod = req.GrpcMethod;
+        if (req.GrpcProto != null) shot.GrpcProto = req.GrpcProto;
+        if (req.GrpcProtoFileName != null) shot.GrpcProtoFileName = req.GrpcProtoFileName;
+        if (req.GrpcUseTls.HasValue) shot.GrpcUseTls = req.GrpcUseTls.Value;
         shot.UpdatedAtUtc = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
@@ -192,6 +202,7 @@ public class ShotsController : ControllerBase
             if (!string.IsNullOrEmpty(overrides.GrpcService)) shot.GrpcService = overrides.GrpcService;
             if (!string.IsNullOrEmpty(overrides.GrpcMethod)) shot.GrpcMethod = overrides.GrpcMethod;
             if (!string.IsNullOrEmpty(overrides.GrpcProto)) shot.GrpcProto = overrides.GrpcProto;
+            if (!string.IsNullOrEmpty(overrides.GrpcProtoFileName)) shot.GrpcProtoFileName = overrides.GrpcProtoFileName;
             if (overrides.GrpcUseTls.HasValue) shot.GrpcUseTls = overrides.GrpcUseTls.Value;
         }
 
@@ -284,6 +295,7 @@ public class ShotsController : ControllerBase
             GrpcService = req.GrpcService,
             GrpcMethod = req.GrpcMethod,
             GrpcProto = req.GrpcProto,
+            GrpcProtoFileName = req.GrpcProtoFileName,
             GrpcUseTls = req.GrpcUseTls
         };
 
@@ -292,6 +304,7 @@ public class ShotsController : ControllerBase
             if (!string.IsNullOrEmpty(req.GrpcService)) shot.GrpcService = req.GrpcService;
             if (!string.IsNullOrEmpty(req.GrpcMethod)) shot.GrpcMethod = req.GrpcMethod;
             if (!string.IsNullOrEmpty(req.GrpcProto)) shot.GrpcProto = req.GrpcProto;
+            if (!string.IsNullOrEmpty(req.GrpcProtoFileName)) shot.GrpcProtoFileName = req.GrpcProtoFileName;
             if (req.GrpcUseTls) shot.GrpcUseTls = true;
         }
 
@@ -365,6 +378,11 @@ public class CreateShotRequest
     public Guid? TLSProfileId { get; set; }
     public string? TriggerScript { get; set; }
     public string? VerifierScript { get; set; }
+    public string? GrpcService { get; set; }
+    public string? GrpcMethod { get; set; }
+    public string? GrpcProto { get; set; }
+    public string? GrpcProtoFileName { get; set; }
+    public bool? GrpcUseTls { get; set; }
 }
 
 public class FireShotOverrideRequest
@@ -382,6 +400,7 @@ public class FireShotOverrideRequest
     public string? GrpcService { get; set; }
     public string? GrpcMethod { get; set; }
     public string? GrpcProto { get; set; }
+    public string? GrpcProtoFileName { get; set; }
     public bool? GrpcUseTls { get; set; }
 }
 
@@ -408,6 +427,7 @@ public class AdHocFireRequest
     public string? GrpcService { get; set; }
     public string? GrpcMethod { get; set; }
     public string? GrpcProto { get; set; }
+    public string? GrpcProtoFileName { get; set; }
     public bool GrpcUseTls { get; set; }
 }
 

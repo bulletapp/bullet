@@ -356,6 +356,7 @@ export function App() {
           grpcService: targetShot.grpcService,
           grpcMethod: targetShot.grpcMethod,
           grpcProto: targetShot.grpcProto,
+          grpcProtoFileName: targetShot.grpcProtoFileName,
           grpcUseTls: targetShot.grpcUseTls,
           tlsProfileId: targetShot.tlsProfileId,
         });

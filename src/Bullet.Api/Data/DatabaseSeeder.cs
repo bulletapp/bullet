@@ -18,6 +18,7 @@ public static class DatabaseSeeder
         try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Shots ADD COLUMN GrpcService TEXT;"); } catch { }
         try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Shots ADD COLUMN GrpcMethod TEXT;"); } catch { }
         try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Shots ADD COLUMN GrpcProto TEXT;"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Shots ADD COLUMN GrpcProtoFileName TEXT;"); } catch { }
         try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Shots ADD COLUMN GrpcUseTls INTEGER NOT NULL DEFAULT 0;"); } catch { }
 
         if (await db.Ranges.AnyAsync())

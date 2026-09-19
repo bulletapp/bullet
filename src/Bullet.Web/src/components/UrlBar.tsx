@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Crosshair, Play, Square, Save, Code, Copy, Info, Check, Sparkles } from 'lucide-react';
+import { Crosshair, Play, Square, Save, Code, Copy, Info, Check, Sparkles, Lock, Unlock } from 'lucide-react';
 import { Shot, Loadout, KeyValuePair } from '../types/bullet';
 
 interface UrlBarProps {
@@ -153,6 +153,36 @@ export const UrlBar: React.FC<UrlBarProps> = ({
     setTimeout(() => setCopiedCurl(false), 2000);
   };
 
+  const isGrpc = shot.method === 'GRPC';
+  const isGrpcTls = isGrpc && (
+    shot.grpcUseTls === true ||
+    shot.url.trim().startsWith('grpcs://') ||
+    shot.url.trim().startsWith('https://')
+  );
+
+  const handleToggleGrpcTls = () => {
+    const nextTls = !isGrpcTls;
+    let updatedUrl = shot.url;
+    if (nextTls) {
+      if (updatedUrl.startsWith('grpc://')) {
+        updatedUrl = 'grpcs://' + updatedUrl.slice(7);
+      } else if (updatedUrl.startsWith('http://')) {
+        updatedUrl = 'https://' + updatedUrl.slice(7);
+      }
+    } else {
+      if (updatedUrl.startsWith('grpcs://')) {
+        updatedUrl = 'grpc://' + updatedUrl.slice(8);
+      } else if (updatedUrl.startsWith('https://')) {
+        updatedUrl = 'http://' + updatedUrl.slice(8);
+      }
+    }
+    onChange({
+      ...shot,
+      url: updatedUrl,
+      grpcUseTls: nextTls,
+    });
+  };
+
   return (
     <div className="relative flex flex-col bg-bullet-panel border-b border-bullet-border flex-shrink-0">
       {/* Laser firing beam indicator */}
@@ -196,6 +226,37 @@ export const UrlBar: React.FC<UrlBarProps> = ({
           </select>
         </div>
 
+        {/* gRPC TLS / Plaintext Lock Button (Postman Parity) */}
+        {isGrpc && (
+          <button
+            type="button"
+            data-testid="grpc-tls-lock-btn"
+            onClick={handleToggleGrpcTls}
+            className={`h-9 px-2.5 rounded border text-xs font-mono font-semibold flex items-center gap-1.5 transition cursor-pointer select-none shadow-sm ${
+              isGrpcTls
+                ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-400 hover:bg-emerald-900/60 shadow-[0_0_8px_rgba(16,185,129,0.15)]'
+                : 'bg-amber-950/50 border-amber-500/60 text-amber-400 hover:bg-amber-900/50'
+            }`}
+            title={
+              isGrpcTls
+                ? 'TLS Active (grpcs://) — Secure HTTP/2 Channel. Click to switch to Plaintext/Insecure.'
+                : 'Plaintext / Insecure (grpc://) — Cleartext HTTP/2 (h2c). Click to enable TLS.'
+            }
+          >
+            {isGrpcTls ? (
+              <>
+                <Lock className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-[11px] font-bold tracking-wider">TLS</span>
+              </>
+            ) : (
+              <>
+                <Unlock className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-[11px] font-bold tracking-wider">Plaintext</span>
+              </>
+            )}
+          </button>
+        )}
+
         {/* URL Input Bar */}
         <div className="relative flex-1 flex items-center">
           <input
@@ -212,7 +273,7 @@ export const UrlBar: React.FC<UrlBarProps> = ({
             }}
             placeholder={
               shot.method === 'GRPC'
-                ? "Enter gRPC target (e.g. localhost:50051 or grpc://...)"
+                ? (isGrpcTls ? "Enter gRPC target (e.g. grpcs://api.example.com:443 or host:port)" : "Enter gRPC target (e.g. grpc://localhost:50051 or host:port)")
                 : "Enter request URL, {{round}} token, or paste cURL command..."
             }
             className="w-full h-9 bg-bullet-surface border border-bullet-border rounded px-3 text-xs font-mono text-slate-100 placeholder-slate-500 outline-none focus:border-amber-500 transition shadow-inner pr-24"

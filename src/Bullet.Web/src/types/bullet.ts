@@ -52,6 +52,7 @@ export interface Shot {
   grpcService?: string;
   grpcMethod?: string;
   grpcProto?: string;
+  grpcProtoFileName?: string;
   grpcUseReflection?: boolean;
   grpcUseTls?: boolean;
   tlsProfileId?: string;
