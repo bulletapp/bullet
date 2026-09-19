@@ -55,6 +55,13 @@ e2e-screenshots/
 !src/Bullet.Desktop/Bullet.png
 !src/Bullet.Web/public/Bullet.png
 !src/Bullet.Web/public/favicon.svg
+!src/Bullet.Web/public/icon-*.png
+!src/Bullet.Web/public/apple-touch-icon.png
+!src/Bullet.Web/public/manifest.webmanifest
+!src/Bullet.Api/wwwroot/favicon.svg
+!src/Bullet.Api/wwwroot/icon-*.png
+!src/Bullet.Api/wwwroot/apple-touch-icon.png
+!src/Bullet.Api/wwwroot/manifest.webmanifest
 !src/Bullet.Desktop/Bullet.ico
 
 ## OS & Editor

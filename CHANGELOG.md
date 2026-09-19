@@ -35,6 +35,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Full cross-platform support for macOS running on Apple Silicon (`osx-arm64`: M1, M2, M3, M4) and Intel (`osx-x64`).
   - Added double-clickable Finder command launcher `Bullet.command` and `run-mac.sh`.
   - Automated CI release packaging generating `Bullet-macOS-AppleSilicon-arm64.zip` and `Bullet-macOS-Intel-x64.zip` with SHA256 checksums.
+- **Progressive Web App (PWA) & Standalone macOS Desktop Web App**:
+  - Web App Manifest (`manifest.webmanifest`), Apple Touch Icons, and macOS Web App meta tags enabling native installation.
+  - Safari on macOS Sonoma 14+ "Add to Dock" support creating a standalone macOS application window.
+  - Chrome / Edge PWA install prompt button with dock badges and frameless desktop execution.
 - **25-Phase Automated E2E Browser Test Suite**:
   - Complete end-to-end browser test suite in Puppeteer (`e2e-full-suite.mjs`) covering:
     1. Create Shot & URL Bar

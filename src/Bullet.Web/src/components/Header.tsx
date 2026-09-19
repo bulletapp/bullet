@@ -54,6 +54,26 @@ export const Header: React.FC<HeaderProps> = ({
     return saved === 'light' ? 'light' : 'dark';
   });
 
+  const [installPrompt, setInstallPrompt] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    if (choice?.outcome === 'accepted') {
+      setInstallPrompt(null);
+    }
+  };
+
   React.useEffect(() => {
     if (theme === 'light') {
       document.documentElement.classList.add('light');
@@ -257,6 +277,19 @@ export const Header: React.FC<HeaderProps> = ({
           )}
           <span className="font-mono text-[10px] font-semibold">{globalSsl ? 'SSL: ON' : 'SSL: OFF'}</span>
         </button>
+
+        {/* PWA Install Button (macOS / Chrome / Edge Standalone App) */}
+        {installPrompt && (
+          <button
+            data-testid="pwa-install-btn"
+            onClick={handleInstallApp}
+            className="flex items-center gap-1.5 px-2 py-1 text-xs rounded bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-300 border border-amber-500/50 hover:bg-amber-500/30 transition shadow-sm animate-pulse cursor-pointer"
+            title="Install BULLET as a standalone macOS/Desktop application"
+          >
+            <Download className="w-3.5 h-3.5 text-amber-400" />
+            <span className="font-mono text-[10px] font-bold">Install App</span>
+          </button>
+        )}
 
         {/* Sound FX Mute Toggle */}
         <button

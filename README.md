@@ -174,6 +174,10 @@ BULLET supports macOS natively on both **Apple Silicon (M1/M2/M3/M4)** and **Int
    ```bash
    dotnet run --project src/Bullet.Api
    ```
+4. **Install as a Standalone macOS Desktop Web App (PWA)**:
+   - When running BULLET in Safari, Chrome, or Edge on macOS:
+     - **Safari (macOS Sonoma 14+)**: Click **File $\rightarrow$ Add to Dock** to create a native macOS application with its own dock icon and standalone window.
+     - **Chrome / Edge on macOS**: Click the **"Install App"** button in the header or address bar to install BULLET as an independent application window without browser tabs or URL bars.
 
 ---
 
