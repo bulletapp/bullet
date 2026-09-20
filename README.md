@@ -23,7 +23,6 @@ Frustrated with Postman's forced cloud logins, collection run paywalls (25 runs/
 | **Data Storage & Privacy** | **100% Local-First** (SQLite / Postgres / JSON) | Forced Cloud Sync | Cloud Sync by default | Git-based / Local |
 | **Team Collaboration** | **Serverless WiFi Mesh P2P** (Zero Servers) | Cloud Relay (Account Required) | Cloud Relay (Account Required) | Git repository only |
 | **Postman Script Compatibility** | **Native `pm.*` Bridge** (Zero-rewrite migration) | Native | Broken scripts (Requests only) | Broken scripts (Custom syntax) |
-| **SSRF & Cloud Metadata Shield** | **Default Enforced** (Blocks RFC 1918 & 169.254) | None (Unrestricted) | None (Unrestricted) | None (Unrestricted) |
 | **Performance & RAM Footprint** | **.NET 10 & React 19** (~65MB RAM, <300ms launch) | Electron (~1.2GB+ RAM, 8-15s launch) | Electron (~800MB+ RAM) | Electron (~220MB RAM) |
 | **License & Paywall Policy** | **100% Free & Open Source (MIT)** | Proprietary ($14-$49/mo tiers) | Proprietary Freemium | Open-Core (Golden Edition $) |
 
