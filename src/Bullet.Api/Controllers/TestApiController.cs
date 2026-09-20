@@ -208,7 +208,7 @@ public class TestApiController : ControllerBase
     public IActionResult Headers()
     {
         var dict = Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString());
-        return Ok(new { receivedHeaders = dict });
+        return Ok(new { headers = dict, receivedHeaders = dict });
     }
 
     [HttpGet("cookies")]
@@ -225,7 +225,24 @@ public class TestApiController : ControllerBase
         return Ok(new { clientCookies, setCookie = "bullet_session created" });
     }
 
+    [HttpGet("echo")]
+    [HttpGet("get")]
+    public IActionResult EchoGet()
+    {
+        var queryDict = Request.Query.ToDictionary(q => q.Key, q => q.Value.ToString());
+        var headerDict = Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString());
+        return Ok(new
+        {
+            method = Request.Method,
+            args = queryDict,
+            headers = headerDict,
+            url = $"{Request.Scheme}://{Request.Host}{Request.Path}{Request.QueryString}",
+            timestamp = DateTime.UtcNow
+        });
+    }
+
     [HttpPost("echo")]
+    [HttpPost("post")]
     public async Task<IActionResult> Echo()
     {
         using var reader = new StreamReader(Request.Body);
@@ -236,6 +253,8 @@ public class TestApiController : ControllerBase
             contentType = Request.ContentType,
             contentLength = Request.ContentLength,
             rawBody = body,
+            data = body,
+            headers = Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString()),
             timestamp = DateTime.UtcNow
         });
     }

@@ -161,12 +161,12 @@ public class ShotsController : ControllerBase
         var shot = await _db.Shots
             .AsNoTracking()
             .Include(s => s.Squad)
-            .Include(s => s.Arsenal).ThenInclude(a => a.Range)
+            .Include(s => s.Arsenal!).ThenInclude(a => a.Range)
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
 
         if (shot == null) return NotFound(new { error = "Shot not found" });
 
-        var targetLoadoutId = overrides?.LoadoutId ?? shot.LoadoutId ?? shot.Arsenal.DefaultLoadoutId;
+        var targetLoadoutId = overrides?.LoadoutId ?? shot.LoadoutId ?? shot.Arsenal?.DefaultLoadoutId;
         Loadout? loadout = null;
         if (targetLoadoutId.HasValue)
         {
@@ -174,7 +174,7 @@ public class ShotsController : ControllerBase
                 .Include(l => l.Rounds)
                 .FirstOrDefaultAsync(l => l.Id == targetLoadoutId.Value, cancellationToken);
         }
-        else
+        else if (shot.Arsenal != null)
         {
             loadout = await _db.Loadouts
                 .Include(l => l.Rounds)
@@ -207,15 +207,18 @@ public class ShotsController : ControllerBase
         }
 
         var initialCookies = new Dictionary<string, string>();
-        var cookies = await _cookieLocker.GetCookiesAsync(shot.Arsenal.RangeId);
-        foreach (var c in cookies) initialCookies[c.Name] = c.Value;
+        if (shot.Arsenal != null)
+        {
+            var cookies = await _cookieLocker.GetCookiesAsync(shot.Arsenal.RangeId);
+            foreach (var c in cookies) initialCookies[c.Name] = c.Value;
+        }
 
         var execRequest = new ShotExecutionRequest
         {
             Shot = shot,
             Squad = shot.Squad,
             Arsenal = shot.Arsenal,
-            Range = shot.Arsenal.Range,
+            Range = shot.Arsenal?.Range,
             Loadout = loadout,
             TlsProfile = tlsProfile,
             InitialCookies = initialCookies
@@ -224,7 +227,7 @@ public class ShotsController : ControllerBase
         var impact = await _executor.FireAsync(execRequest, cancellationToken);
 
         // Update cookie locker if Set-Cookie headers returned
-        if (impact.Cookies.Count > 0)
+        if (impact.Cookies.Count > 0 && shot.Arsenal != null)
         {
             var domain = Uri.TryCreate(impact.ResolvedUrl, UriKind.Absolute, out var u) ? u.Host : "localhost";
             foreach (var c in impact.Cookies)
@@ -248,7 +251,7 @@ public class ShotsController : ControllerBase
         // Persist ShotLog
         var log = new ShotLog
         {
-            RangeId = shot.Arsenal.RangeId,
+            RangeId = shot.Arsenal?.RangeId ?? Guid.Empty,
             ArsenalId = shot.ArsenalId,
             ShotId = shot.Id,
             ShotName = shot.Name,
@@ -271,8 +274,11 @@ public class ShotsController : ControllerBase
         await _db.SaveChangesAsync(cancellationToken);
 
         // SignalR live broadcast
-        await _hubContext.Clients.Group($"range_{shot.Arsenal.RangeId}")
-            .SendAsync("OnShotFired", new { shotId = shot.Id, statusCode = impact.StatusCode, durationMs = impact.DurationMs }, cancellationToken);
+        if (shot.Arsenal != null)
+        {
+            await _hubContext.Clients.Group($"range_{shot.Arsenal.RangeId}")
+                .SendAsync("OnShotFired", new { shotId = shot.Id, statusCode = impact.StatusCode, durationMs = impact.DurationMs }, cancellationToken);
+        }
 
         return Ok(impact);
     }

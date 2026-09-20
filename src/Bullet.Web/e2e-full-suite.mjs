@@ -826,9 +826,9 @@ async function runFullTestSuite() {
     await methodSelect.select('POST');
     console.log('  ✓ Switched method to POST.');
 
-    // Set URL to https://httpbin.org/post
-    await clearAndType('[data-testid="url-input"]', 'https://httpbin.org/post');
-    console.log('  ✓ Set URL to "https://httpbin.org/post".');
+    // Set URL to local test-api post endpoint
+    await clearAndType('[data-testid="url-input"]', `${APP_URL}/api/test-api/post`);
+    console.log(`  ✓ Set URL to "${APP_URL}/api/test-api/post".`);
 
     // Click Body tab
     const bodyTab = await page.waitForSelector('[data-testid="tab-body"]');
@@ -897,10 +897,10 @@ async function runFullTestSuite() {
     await clearAndType('[data-testid="bearer-token-input"]', 'bullet_jwt_token_verified_999');
     console.log('  ✓ Entered Bearer token: "bullet_jwt_token_verified_999".');
 
-    // Switch URL to https://httpbin.org/headers to inspect injected Authorization header
+    // Switch URL to local test-api headers endpoint to inspect injected Authorization header
     await methodSelect.select('GET');
-    await clearAndType('[data-testid="url-input"]', 'https://httpbin.org/headers');
-    console.log('  ✓ Target URL set to "https://httpbin.org/headers".');
+    await clearAndType('[data-testid="url-input"]', `${APP_URL}/api/test-api/headers`);
+    console.log(`  ✓ Target URL set to "${APP_URL}/api/test-api/headers".`);
 
     // Fire GET request
     await fireBtn18.click();
