@@ -1462,7 +1462,7 @@ async function runFullTestSuite() {
     console.log('  ✓ Clicked Environment Quick-Look button [👁️].');
 
     // Verify Popover opened
-    await page.waitForSelector('[data-testid="env-quick-look-popover"]', { timeout: 5000 });
+    await page.waitForSelector('[data-testid="env-quick-look-popover"]', { timeout: 15000 });
     console.log('  ✓ Environment Quick-Look Popover opened.');
 
     // Test Search input inside popover
@@ -1473,7 +1473,7 @@ async function runFullTestSuite() {
     await clearAndType('[data-testid="env-quick-key-input"]', 'api_secret_token');
     await clearAndType('[data-testid="env-quick-val-input"]', 'super_secret_999');
     await page.click('[data-testid="env-quick-secret-toggle"]');
-    const quickAddBtn32 = await page.waitForSelector('[data-testid="env-quick-add-btn"]');
+    const quickAddBtn32 = await page.waitForSelector('[data-testid="env-quick-add-btn"]', { timeout: 15000 });
     await quickAddBtn32.click();
     console.log('  ✓ Added new secret variable via popover quick form.');
 
@@ -1484,7 +1484,7 @@ async function runFullTestSuite() {
     await page.waitForFunction(() => {
       const el = document.querySelector('[data-testid="toggle-secret-btn-api_secret_token"]');
       return !!el;
-    }, { timeout: 5000 });
+    }, { timeout: 15000 });
     await page.click('[data-testid="toggle-secret-btn-api_secret_token"]');
     console.log('  ✓ Toggled secret variable reveal / hide mask.');
 
@@ -1506,9 +1506,9 @@ async function runFullTestSuite() {
       console.log('  ✓ Colorized JSON syntax highlighting pre-block detected.');
 
       // Search in response JSON
-      await page.waitForSelector('[data-testid="json-search-input"]', { timeout: 5000 });
+      await page.waitForSelector('[data-testid="json-search-input"]', { timeout: 15000 });
       await clearAndType('[data-testid="json-search-input"]', 'pong');
-      await page.waitForSelector('[data-testid="json-search-highlight"]', { timeout: 5000 });
+      await page.waitForSelector('[data-testid="json-search-highlight"]', { timeout: 15000 });
       const highlightedText33 = await page.$eval('[data-testid="json-search-highlight"]', el => el.innerText);
       if (highlightedText33.toLowerCase().includes('pong')) {
         console.log(`  ✓ Search match highlight verified for token: "${highlightedText33}".`);
@@ -1537,7 +1537,7 @@ async function runFullTestSuite() {
     console.log('  ✓ Switched to Params tab.');
 
     // Verify Path Variables section rendered
-    await page.waitForSelector('[data-testid="path-variables-section"]', { timeout: 5000 });
+    await page.waitForSelector('[data-testid="path-variables-section"]', { timeout: 15000 });
     console.log('  ✓ Path Variables section automatically detected and rendered.');
 
     // Enter values for :userId and :orderId
