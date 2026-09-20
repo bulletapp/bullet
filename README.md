@@ -17,14 +17,16 @@ Frustrated with Postman's forced cloud logins, collection run paywalls (25 runs/
 
 | Capability | BULLET | Postman | Insomnia | Bruno |
 |---|:---:|:---:|:---:|:---:|
-| **Data Storage & Privacy** | **100% Local-First** (SQLite / Postgres / JSON) | Forced Cloud Sync | Forced Cloud Account | Git-based / Local |
-| **Forced Login / Paywall** | **None** (Open Source MIT) | Cloud Account Required | Account Required | Paid Pro Features |
-| **Collection Runner Limits** | **Unlimited** (UI & CLI) | 25 runs/month on free tier | Unlimited | Unlimited |
-| **gRPC Studio** | **Full** (Proto Import + Reflection + TLS) | Limited / Cloud | Limited | Basic |
-| **Client mTLS Certificates** | **Full** (Per-host PEM, PFX, Passphrase, CA) | Paid/Cloud Sync | Settings Tab | Limited |
-| **Team Collaboration** | **WiFi Mesh P2P** (Zero Servers) | Cloud Relay | Cloud Relay | Git repo only |
-| **Performance Core** | **.NET 10 & C# 13** (Sub-ms diagnostics) | Electron / Node.js | Electron | Node.js |
-| **Postman v2.1 Import** | **1-Click Instant Translation** | Native | Partial | Partial |
+| **Data Storage & Privacy** | **100% Local-First** (SQLite / Postgres / JSON) | Cloud Sync by default | Cloud Sync by default | Git-based / Local |
+| **Account / Login Requirement** | **None** (100% offline, zero account) | Mandatory Cloud Account | Mandatory Cloud Account | None (Offline) |
+| **Collection Runner Limits** | **Unlimited** (UI & CLI) | 25 runs/month on free tier | Unlimited (Local) | Unlimited (UI & CLI) |
+| **gRPC Studio** | **Full** (Proto Parser + Reflection + TLS Lock) | Full (Proto + Reflection + Streaming) | Supported (Proto + Reflection) | Basic (Proto files only) |
+| **Client mTLS & CA Bundles** | **Full** (Scoped TLS Profiles, AES-256 encrypted, CA Roots) | Supported (Global App Settings) | Supported (Collection Settings) | Supported (Collection Settings) |
+| **Postman Script Compatibility** | **Native `pm.*` Bridge** (`pm.test`, `pm.expect`, Jint) | Native | Partial (Requests only) | Partial (Requires translation) |
+| **SSRF & Loopback Defense** | **Default Enforced** (Blocks RFC 1918 & Cloud Metadata) | None (Unrestricted) | None (Unrestricted) | None (Unrestricted) |
+| **Team Collaboration** | **WiFi Mesh P2P** (Serverless LAN sync) | Cloud Workspaces | Cloud Workspaces | Git Repository |
+| **Performance Core** | **.NET 10 & React 19** (~65MB idle RAM, sub-ms timing) | Electron (~1.2GB+ RAM) | Electron (~800MB+ RAM) | Electron (~220MB RAM) |
+| **License & Pricing** | **100% Free & Open Source (MIT)** | Proprietary Freemium | Proprietary Freemium | Open Core (Golden Edition $) |
 
 ---
 
