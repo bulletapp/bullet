@@ -35,6 +35,8 @@ This document provides immediate, actionable guidance for AI agents (Antigravity
 | **Target Range** | Mock Server | Embedded mock engine with path matching, simulated latency, and dynamic responses. |
 | **Sentinel** | Monitor | Scheduled autonomous background worker executing API health checks. |
 | **Bulletproof TLS** | Certificates | Client mTLS certificates, private keys, and custom enterprise CA roots. |
+| **gRPC Studio** | gRPC GUI | HTTP/2 unary and streaming client with dynamic proto parsing & reflection. |
+| **WiFi Mesh** | LAN Collaboration | Zero-cloud P2P workspace discovery and SignalR live synchronization over WiFi. |
 | **Shot Log** | Execution History | Persistent log of executed requests with connection timings and payloads. |
 | **Cookie Locker** | Cookie Manager | Domain-scoped persistent cookie storage. |
 | **Code Shot** | Code Generation | Polyglot code snippet generation in 10 programming languages. |
@@ -47,16 +49,16 @@ This document provides immediate, actionable guidance for AI agents (Antigravity
 
 ```text
 Bullet.slnx
-├── src/Bullet.Domain/         -> Core domain entities (Shot, Arsenal, Loadout, Sentinel, Range)
+├── src/Bullet.Domain/         -> Core domain entities (Shot, Arsenal, Loadout, Sentinel, Range, TLSProfile, CookieRecord)
 ├── src/Bullet.Application/    -> Application interfaces, DTOs, CQRS handlers, validation
-├── src/Bullet.Execution/      -> High-performance HTTP client handler, SSRF guard, mTLS manager
+├── src/Bullet.Execution/      -> High-performance HTTP/gRPC client handler, SSRF guard, mTLS manager
 ├── src/Bullet.Scripting/      -> Jint 4.16.2 JS sandbox (3s timeout, 10MB memory ceiling)
 ├── src/Bullet.Infrastructure/ -> EF Core 10, SQLite / PostgreSQL context, AES-256-GCM encryption
 ├── src/Bullet.Workers/        -> Background Sentinel health-check execution daemon
-├── src/Bullet.Api/            -> ASP.NET Core 10 API, SignalR hubs, static wwwroot host
+├── src/Bullet.Api/            -> ASP.NET Core 10 API, SignalR hubs (BulletHub, MeshHub), static wwwroot host
 ├── src/Bullet.Desktop/        -> Windows Forms + Microsoft.Web.WebView2 desktop shell
 ├── src/Bullet.Cli/            -> Cross-platform CLI runner with JUnit XML reports
-└── src/Bullet.Web/            -> React 19, Vite, TypeScript, Tailwind CSS, Lucide Icons
+└── src/Bullet.Web/            -> React 18, Vite, TypeScript, Tailwind CSS, Lucide Icons
 ```
 
 ---
@@ -66,30 +68,32 @@ Bullet.slnx
 ### Running Backend API
 ```bash
 dotnet run --project src/Bullet.Api
-# Server starts at http://localhost:5000 (serves REST API, SignalR, and bundled React UI)
+# Server starts at http://127.0.0.1:5000 (serves REST API, SignalR, and bundled React UI)
 ```
 
 ### Running Frontend Development Server
 ```bash
 cd src/Bullet.Web
 npm.cmd run dev
-# Vite starts at http://localhost:3000 with HMR proxying /api to http://localhost:5000
+# Vite starts at http://localhost:3000 with HMR proxying /api to http://127.0.0.1:5000
 ```
 
 ### Building & Synchronizing Frontend Assets
 Whenever you edit frontend components in `src/Bullet.Web`, recompile and sync assets:
 ```powershell
 cd src/Bullet.Web
+$env:PATH = "C:\Program Files\nodejs;" + $env:PATH
 npm.cmd run build
 Copy-Item -Path "dist/*" -Destination "../Bullet.Api/wwwroot" -Recurse -Force
 ```
 
-### Running the Full 25-Phase Automated E2E Browser Suite
+### Running the Full 34-Phase Automated E2E Browser Suite
 ```powershell
 cd src/Bullet.Web
+$env:PATH = "C:\Program Files\nodejs;" + $env:PATH
 node e2e-full-suite.mjs
 ```
-The suite launches a headless browser, connects to the local backend, runs all 25 interaction phases, captures visual screenshots to `src/Bullet.Web/e2e-screenshots/`, and validates with zero console errors.
+The suite launches a headless browser, connects to the local backend, runs all 34 interaction phases, captures visual screenshots to `src/Bullet.Web/e2e-screenshots/`, and validates with zero console errors.
 
 ### Running Native Desktop on Windows
 ```bash
@@ -140,3 +144,14 @@ dotnet run --project src/Bullet.Desktop
 4. **Mark of the Web (Zone.Identifier = 3)**:
    - Newly downloaded binaries from browsers are blocked by Windows SmartScreen / Smart App Control by default.
    - Strip Mark of the Web using `Unblock-File .\Bullet-Setup.exe` or right-click Properties $\rightarrow$ Unblock.
+
+5. **SSRF Guard on Loopback / Internal Subnets**:
+   - BULLET's `SsrfProtectionService` intercepts requests to `127.0.0.1`, `localhost`, and RFC 1918 subnets (`10.0.0.0/8`, `192.168.0.0/16`).
+   - If targeting internal endpoints in tests, toggle `bypassSsrfGuard: true` in Shot Settings (via `[data-testid="bypass-ssrf-toggle"]`).
+
+6. **React Controlled Inputs in Puppeteer / E2E Automation**:
+   - `page.keyboard.press('Backspace')` on focused React controlled inputs does not always fire synthetic `change` events in headless Chromium.
+   - Use the `clearAndType` helper in `e2e-full-suite.mjs` which sets the value through the native prototype descriptor (`Object.getOwnPropertyDescriptor(proto, 'value')?.set`) and dispatches synthetic `'input'` and `'change'` events.
+
+7. **Environment State Refresh & Selected Loadout Sync**:
+   - When adding, updating, or deleting rounds (variables) in a Loadout, ensure `setSelectedLoadout` is also updated to the matching refreshed object in `App.tsx` and child popovers use optimistic state to prevent stale render delays.
