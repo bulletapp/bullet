@@ -15,9 +15,11 @@ public interface IOAuthService
 public class OAuthService : IOAuthService
 {
     private readonly HttpClient _httpClient;
+    private readonly Bullet.Security.Ssrf.ISsrfGuard? _ssrfGuard;
 
-    public OAuthService(HttpClient? httpClient = null)
+    public OAuthService(HttpClient? httpClient = null, Bullet.Security.Ssrf.ISsrfGuard? ssrfGuard = null)
     {
+        _ssrfGuard = ssrfGuard ?? new Bullet.Security.Ssrf.SsrfGuard();
         _httpClient = httpClient ?? new HttpClient();
     }
 
@@ -30,6 +32,38 @@ public class OAuthService : IOAuthService
                 Success = false,
                 ErrorMessage = "Access Token URL is required."
             };
+        }
+
+        if (_ssrfGuard != null)
+        {
+            var isCloudMetadata = request.AccessTokenUrl.Contains("169.254.169.254") ||
+                                  request.AccessTokenUrl.Contains("metadata.google.internal") ||
+                                  request.AccessTokenUrl.Contains("instance-data");
+            if (isCloudMetadata)
+            {
+                return new OAuthTokenResponse
+                {
+                    Success = false,
+                    ErrorMessage = "SSRF Protection: Access to cloud metadata service is strictly prohibited."
+                };
+            }
+
+            var (isAllowed, blockReason) = await _ssrfGuard.ValidateUrlAsync(request.AccessTokenUrl, request.BypassSsrfProtection);
+            if (!isAllowed && !request.BypassSsrfProtection)
+            {
+                var isLocalHost = Uri.TryCreate(request.AccessTokenUrl, UriKind.Absolute, out var u) &&
+                                  (u.DnsSafeHost.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+                                   u.DnsSafeHost.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
+                                   u.DnsSafeHost.Equals("::1", StringComparison.OrdinalIgnoreCase));
+                if (!isLocalHost)
+                {
+                    return new OAuthTokenResponse
+                    {
+                        Success = false,
+                        ErrorMessage = blockReason ?? "SSRF Protection: Access to internal IP is restricted. Enable SSRF bypass if this endpoint is trusted."
+                    };
+                }
+            }
         }
 
         try

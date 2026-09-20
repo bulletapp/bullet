@@ -87,13 +87,13 @@ npm.cmd run build
 Copy-Item -Path "dist/*" -Destination "../Bullet.Api/wwwroot" -Recurse -Force
 ```
 
-### Running the Full 34-Phase Automated E2E Browser Suite
+### Running the Full 36-Phase Automated E2E Browser Suite
 ```powershell
 cd src/Bullet.Web
 $env:PATH = "C:\Program Files\nodejs;" + $env:PATH
 node e2e-full-suite.mjs
 ```
-The suite launches a headless browser, connects to the local backend, runs all 34 interaction phases, captures visual screenshots to `src/Bullet.Web/e2e-screenshots/`, and validates with zero console errors.
+The suite launches a headless browser, connects to the local backend, runs all 36 interaction phases, captures visual screenshots to `src/Bullet.Web/e2e-screenshots/`, and validates with zero console errors.
 
 ### Running Native Desktop on Windows
 ```bash

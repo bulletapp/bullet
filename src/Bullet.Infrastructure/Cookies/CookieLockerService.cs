@@ -23,21 +23,32 @@ public class CookieLockerService : ICookieLocker
 
     public async Task<List<CookieRecord>> GetCookiesAsync(Guid rangeId, string? domain = null)
     {
-        var query = _db.Cookies.Where(c => c.RangeId == rangeId);
+        var now = DateTime.UtcNow;
+        var query = _db.Cookies.Where(c => c.RangeId == rangeId && (c.ExpiresUtc == null || c.ExpiresUtc > now));
+        var cookies = await query.OrderBy(c => c.Domain).ThenBy(c => c.Name).ToListAsync();
+
         if (!string.IsNullOrWhiteSpace(domain))
         {
-            query = query.Where(c => c.Domain.Contains(domain));
+            cookies = cookies.Where(c => DomainMatches(c.Domain, domain)).ToList();
         }
-        return await query.OrderBy(c => c.Domain).ThenBy(c => c.Name).ToListAsync();
+
+        return cookies;
     }
 
     public async Task StoreCookieAsync(Guid rangeId, string domain, string name, string value, string? path = "/", DateTime? expires = null, bool secure = false, bool httpOnly = false, string sameSite = "Lax")
     {
-        var existing = await _db.Cookies.FirstOrDefaultAsync(c => c.RangeId == rangeId && c.Domain == domain && c.Name == name);
+        var normalizedPath = string.IsNullOrWhiteSpace(path) ? "/" : path;
+        var normalizedDomain = domain.Trim().ToLowerInvariant();
+
+        var existing = await _db.Cookies.FirstOrDefaultAsync(c => 
+            c.RangeId == rangeId && 
+            c.Domain == normalizedDomain && 
+            c.Name == name && 
+            c.Path == normalizedPath);
+
         if (existing != null)
         {
             existing.Value = value;
-            existing.Path = path ?? "/";
             existing.ExpiresUtc = expires;
             existing.IsSecure = secure;
             existing.IsHttpOnly = httpOnly;
@@ -49,10 +60,10 @@ public class CookieLockerService : ICookieLocker
             _db.Cookies.Add(new CookieRecord
             {
                 RangeId = rangeId,
-                Domain = domain,
+                Domain = normalizedDomain,
                 Name = name,
                 Value = value,
-                Path = path ?? "/",
+                Path = normalizedPath,
                 ExpiresUtc = expires,
                 IsSecure = secure,
                 IsHttpOnly = httpOnly,
@@ -62,6 +73,23 @@ public class CookieLockerService : ICookieLocker
         }
 
         await _db.SaveChangesAsync();
+    }
+
+    public static bool DomainMatches(string cookieDomain, string requestHost)
+    {
+        if (string.IsNullOrWhiteSpace(cookieDomain) || string.IsNullOrWhiteSpace(requestHost))
+            return false;
+
+        var cleanCookieDomain = cookieDomain.Trim().TrimStart('.').ToLowerInvariant();
+        var cleanRequestHost = requestHost.Trim().TrimStart('.').ToLowerInvariant();
+
+        if (cleanCookieDomain == cleanRequestHost)
+            return true;
+
+        if (cleanRequestHost.EndsWith("." + cleanCookieDomain, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
     }
 
     public async Task DeleteCookieAsync(Guid cookieId)

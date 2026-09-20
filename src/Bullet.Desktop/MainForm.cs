@@ -114,11 +114,37 @@ public class MainForm : Form
             _webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = true;
             _webView.CoreWebView2.Settings.AreDevToolsEnabled = true; // Allow F12 devtools
 
-            // Log navigation events
+            // Secure navigation events: isolate WebView2 to local server and open external links in default browser
             _webView.CoreWebView2.NavigationStarting += (s, e) =>
             {
                 File.AppendAllText(logFile, $"[{DateTime.UtcNow:O}] NavigationStarting: {e.Uri}\n");
+                if (!string.IsNullOrEmpty(e.Uri) && 
+                    !e.Uri.StartsWith(_serverUrl, StringComparison.OrdinalIgnoreCase) && 
+                    !e.Uri.StartsWith("about:blank", StringComparison.OrdinalIgnoreCase))
+                {
+                    e.Cancel = true;
+                    try
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(e.Uri) { UseShellExecute = true });
+                    }
+                    catch { }
+                }
             };
+
+            _webView.CoreWebView2.NewWindowRequested += (s, e) =>
+            {
+                e.Handled = true;
+                if (!string.IsNullOrEmpty(e.Uri) && 
+                    (e.Uri.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || e.Uri.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
+                {
+                    try
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(e.Uri) { UseShellExecute = true });
+                    }
+                    catch { }
+                }
+            };
+
             _webView.CoreWebView2.NavigationCompleted += (s, e) =>
             {
                 File.AppendAllText(logFile, $"[{DateTime.UtcNow:O}] NavigationCompleted: Success={e.IsSuccess}, HttpStatusCode={e.HttpStatusCode}, WebErrorStatus={e.WebErrorStatus}\n");

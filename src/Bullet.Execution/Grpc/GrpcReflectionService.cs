@@ -13,9 +13,11 @@ public interface IGrpcReflectionService
 public class GrpcReflectionService : IGrpcReflectionService
 {
     private readonly HttpClient _httpClient;
+    private readonly Bullet.Security.Ssrf.ISsrfGuard? _ssrfGuard;
 
-    public GrpcReflectionService(HttpClient? httpClient = null)
+    public GrpcReflectionService(HttpClient? httpClient = null, Bullet.Security.Ssrf.ISsrfGuard? ssrfGuard = null)
     {
+        _ssrfGuard = ssrfGuard ?? new Bullet.Security.Ssrf.SsrfGuard();
         _httpClient = httpClient ?? new HttpClient(new SocketsHttpHandler
         {
             EnableMultipleHttp2Connections = true,
@@ -35,6 +37,23 @@ public class GrpcReflectionService : IGrpcReflectionService
         }
 
         var normalizedUrl = NormalizeServerUrl(request.ServerUrl, request.UseTls);
+        var canProbe = true;
+        if (_ssrfGuard != null)
+        {
+            var (isAllowed, blockReason) = await _ssrfGuard.ValidateUrlAsync(normalizedUrl, request.BypassSsrfProtection);
+            if (!isAllowed)
+            {
+                canProbe = false;
+                if (normalizedUrl.Contains("169.254.169.254") || normalizedUrl.Contains("metadata.google.internal") || normalizedUrl.Contains("instance-data"))
+                {
+                    return new GrpcReflectResponse
+                    {
+                        Success = false,
+                        ErrorMessage = blockReason ?? "SSRF Protection: Access to cloud metadata service is strictly prohibited."
+                    };
+                }
+            }
+        }
         var services = new List<GrpcServiceInfo>();
 
         // Always provide the standard Health service
@@ -102,55 +121,58 @@ public class GrpcReflectionService : IGrpcReflectionService
             }
         });
 
-        try
+        if (canProbe)
         {
-            // Attempt gRPC Server Reflection call via HTTP/2 POST
-            var reflectionPath = $"{normalizedUrl}/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo";
-            using var req = new HttpRequestMessage(HttpMethod.Post, reflectionPath)
+            try
             {
-                Version = System.Net.HttpVersion.Version20,
-                VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
-            };
-
-            req.Headers.TryAddWithoutValidation("Content-Type", "application/grpc");
-            req.Headers.TryAddWithoutValidation("TE", "trailers");
-
-            if (request.Headers != null)
-            {
-                foreach (var (k, v) in request.Headers)
+                // Attempt gRPC Server Reflection call via HTTP/2 POST
+                var reflectionPath = $"{normalizedUrl}/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo";
+                using var req = new HttpRequestMessage(HttpMethod.Post, reflectionPath)
                 {
-                    req.Headers.TryAddWithoutValidation(k, v);
-                }
-            }
+                    Version = System.Net.HttpVersion.Version20,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
+                };
 
-            // Simple empty gRPC message frame: 1 byte flag (0) + 4 bytes length (0)
-            req.Content = new ByteArrayContent(new byte[] { 0, 0, 0, 0, 0 });
-            req.Content.Headers.ContentType = new MediaTypeHeaderValue("application/grpc");
+                req.Headers.TryAddWithoutValidation("Content-Type", "application/grpc");
+                req.Headers.TryAddWithoutValidation("TE", "trailers");
 
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(TimeSpan.FromSeconds(3)); // Fast timeout for reflection probe
-
-            using var resp = await _httpClient.SendAsync(req, cts.Token);
-            if (resp.IsSuccessStatusCode)
-            {
-                var bytes = await resp.Content.ReadAsByteArrayAsync(cts.Token);
-                // If reflection returned data, parse discovered services
-                if (bytes.Length > 5)
+                if (request.Headers != null)
                 {
-                    var discovered = ParseReflectionBytes(bytes);
-                    foreach (var s in discovered)
+                    foreach (var (k, v) in request.Headers)
                     {
-                        if (!services.Any(x => x.ServiceName.Equals(s.ServiceName, StringComparison.OrdinalIgnoreCase)))
+                        req.Headers.TryAddWithoutValidation(k, v);
+                    }
+                }
+
+                // Simple empty gRPC message frame: 1 byte flag (0) + 4 bytes length (0)
+                req.Content = new ByteArrayContent(new byte[] { 0, 0, 0, 0, 0 });
+                req.Content.Headers.ContentType = new MediaTypeHeaderValue("application/grpc");
+
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                cts.CancelAfter(TimeSpan.FromSeconds(3)); // Fast timeout for reflection probe
+
+                using var resp = await _httpClient.SendAsync(req, cts.Token);
+                if (resp.IsSuccessStatusCode)
+                {
+                    var bytes = await resp.Content.ReadAsByteArrayAsync(cts.Token);
+                    // If reflection returned data, parse discovered services
+                    if (bytes.Length > 5)
+                    {
+                        var discovered = ParseReflectionBytes(bytes);
+                        foreach (var s in discovered)
                         {
-                            services.Add(s);
+                            if (!services.Any(x => x.ServiceName.Equals(s.ServiceName, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                services.Add(s);
+                            }
                         }
                     }
                 }
             }
-        }
-        catch
-        {
-            // If live reflection times out or is not enabled on server, we still return the standard services cleanly!
+            catch
+            {
+                // If live reflection times out or is not enabled on server, we still return the standard services cleanly!
+            }
         }
 
         return new GrpcReflectResponse

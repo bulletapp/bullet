@@ -193,6 +193,17 @@ public class MeshCollaborationService : IMeshCollaborationService
             .Include(r => r.SharedRounds)
             .FirstOrDefaultAsync(r => r.Id == request.RangeId, cancellationToken);
 
+        if (snapshot != null)
+        {
+            // Security hardening: Sanitize sensitive credentials & TLS private keys before transmitting over LAN mesh
+            foreach (var profile in snapshot.TLSProfiles)
+            {
+                profile.ClientKeyPem = null;
+                profile.ClientCertPassword = null;
+                profile.ClientCertPfxBase64 = null;
+            }
+        }
+
         return new MeshJoinResponse
         {
             Success = true,

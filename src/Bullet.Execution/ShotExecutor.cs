@@ -189,8 +189,22 @@ public class ShotExecutor : IShotExecutor
             }
 
             // Apply trigger updates
-            if (!string.IsNullOrEmpty(triggerResult.ModifiedUrl))
+            if (!string.IsNullOrEmpty(triggerResult.ModifiedUrl) && !string.Equals(triggerResult.ModifiedUrl, resolvedUrl, StringComparison.Ordinal))
+            {
                 resolvedUrl = triggerResult.ModifiedUrl;
+                var (isTriggerUrlAllowed, triggerBlockReason) = await _ssrfGuard.ValidateUrlAsync(resolvedUrl, shot.Settings.BypassSsrfProtection);
+                if (!isTriggerUrlAllowed)
+                {
+                    impact.ResolvedUrl = resolvedUrl;
+                    impact.IsSuccess = false;
+                    impact.StatusCode = 403;
+                    impact.StatusText = "Forbidden by SSRF Protection";
+                    impact.ErrorMessage = triggerBlockReason;
+                    AddTrajectory("Security", triggerBlockReason ?? "SSRF Protection blocked trigger-modified request URL.", "Error");
+                    impact.TrajectoryLogs = trajectory;
+                    return impact;
+                }
+            }
 
             resolvedPayloadBody = triggerResult.ModifiedBody;
             foreach (var kvp in triggerResult.ModifiedHeaders)

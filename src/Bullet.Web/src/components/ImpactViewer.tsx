@@ -626,7 +626,7 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
               title="Response Preview"
               srcDoc={bodyContent}
               className="w-full h-full border-none min-h-[400px]"
-              sandbox="allow-same-origin"
+              sandbox=""
             />
           </div>
         )}

@@ -21,7 +21,12 @@ public class SecretMasker : ISecretMasker
         "ApiKey",
         "X-Auth-Token",
         "Token",
-        "Secret"
+        "Secret",
+        "Client-Secret",
+        "X-CSRF-Token",
+        "X-XSRF-Token",
+        "Private-Token",
+        "Access-Token"
     };
 
     private static readonly Regex BearerRegex = new(@"(Bearer\s+)[A-Za-z0-9\-\._~\+\/]+=*", RegexOptions.Compiled | RegexOptions.IgnoreCase);

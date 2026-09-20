@@ -53,10 +53,40 @@ public class SentinelsController : ControllerBase
     [HttpPost("{id:guid}/run")]
     public async Task<IActionResult> TriggerRun(Guid id, CancellationToken cancellationToken)
     {
-        var sentinel = await _db.Sentinels.Include(s => s.Shot).FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+        var sentinel = await _db.Sentinels
+            .Include(s => s.Shot)
+                .ThenInclude(sh => sh.Arsenal)
+                    .ThenInclude(a => a!.Range)
+            .Include(s => s.Shot)
+                .ThenInclude(sh => sh.Squad)
+            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
         if (sentinel == null) return NotFound();
 
-        var impact = await _executor.FireAsync(new ShotExecutionRequest { Shot = sentinel.Shot }, cancellationToken);
+        var targetLoadoutId = sentinel.Shot.LoadoutId ?? sentinel.Shot.Arsenal?.DefaultLoadoutId;
+        Loadout? loadout = null;
+        if (targetLoadoutId.HasValue)
+        {
+            loadout = await _db.Loadouts
+                .Include(l => l.Rounds)
+                .FirstOrDefaultAsync(l => l.Id == targetLoadoutId.Value, cancellationToken);
+        }
+        else if (sentinel.Shot.Arsenal != null)
+        {
+            loadout = await _db.Loadouts
+                .Include(l => l.Rounds)
+                .FirstOrDefaultAsync(l => l.RangeId == sentinel.Shot.Arsenal.RangeId, cancellationToken);
+        }
+
+        var req = new ShotExecutionRequest
+        {
+            Shot = sentinel.Shot,
+            Squad = sentinel.Shot.Squad,
+            Arsenal = sentinel.Shot.Arsenal,
+            Range = sentinel.Shot.Arsenal?.Range,
+            Loadout = loadout
+        };
+
+        var impact = await _executor.FireAsync(req, cancellationToken);
         var allPassed = impact.IsSuccess && (impact.Verifications.Count == 0 || impact.Verifications.All(v => v.Passed));
 
         sentinel.LastRunAtUtc = DateTime.UtcNow;

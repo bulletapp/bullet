@@ -21,17 +21,20 @@ public class ShotsController : ControllerBase
     private readonly IShotExecutor _executor;
     private readonly ICookieLocker _cookieLocker;
     private readonly IHubContext<ExecutionHub> _hubContext;
+    private readonly Bullet.Execution.Resolvers.ITokenResolver _tokenResolver;
 
     public ShotsController(
         BulletDbContext db,
         IShotExecutor executor,
         ICookieLocker cookieLocker,
-        IHubContext<ExecutionHub> hubContext)
+        IHubContext<ExecutionHub> hubContext,
+        Bullet.Execution.Resolvers.ITokenResolver tokenResolver)
     {
         _db = db;
         _executor = executor;
         _cookieLocker = cookieLocker;
         _hubContext = hubContext;
+        _tokenResolver = tokenResolver;
     }
 
     [HttpGet("{id:guid}")]
@@ -209,9 +212,18 @@ public class ShotsController : ControllerBase
         var initialCookies = new Dictionary<string, string>();
         if (shot.Arsenal != null)
         {
-            var host = Uri.TryCreate(shot.Url, UriKind.Absolute, out var uri) ? uri.Host : null;
-            var cookies = await _cookieLocker.GetCookiesAsync(shot.Arsenal.RangeId, host);
-            foreach (var c in cookies) initialCookies[c.Name] = c.Value;
+            var rounds = _tokenResolver.MergeRoundsByPrecedence(
+                null, null, null,
+                loadout?.Rounds,
+                shot.Arsenal.Range?.SharedRounds,
+                null);
+            var resolvedTargetUrl = _tokenResolver.Resolve(shot.Url, rounds);
+            var host = Uri.TryCreate(resolvedTargetUrl, UriKind.Absolute, out var uri) ? uri.Host : null;
+            if (!string.IsNullOrEmpty(host))
+            {
+                var cookies = await _cookieLocker.GetCookiesAsync(shot.Arsenal.RangeId, host);
+                foreach (var c in cookies) initialCookies[c.Name] = c.Value;
+            }
         }
 
         var execRequest = new ShotExecutionRequest
@@ -337,15 +349,56 @@ public class ShotsController : ControllerBase
             tls = await _db.TLSProfiles.FindAsync(req.TlsProfileId.Value);
         }
 
+        var initialCookies = new Dictionary<string, string>();
+        if (req.RangeId.HasValue)
+        {
+            var rounds = _tokenResolver.MergeRoundsByPrecedence(
+                null, null, null,
+                loadout?.Rounds,
+                null, null);
+            if (req.AdHocRounds != null)
+            {
+                foreach (var (k, v) in req.AdHocRounds) rounds[k] = v;
+            }
+            var resolvedTargetUrl = _tokenResolver.Resolve(shot.Url, rounds);
+            var host = Uri.TryCreate(resolvedTargetUrl, UriKind.Absolute, out var uri) ? uri.Host : null;
+            if (!string.IsNullOrEmpty(host))
+            {
+                var cookies = await _cookieLocker.GetCookiesAsync(req.RangeId.Value, host);
+                foreach (var c in cookies) initialCookies[c.Name] = c.Value;
+            }
+        }
+
         var execReq = new ShotExecutionRequest
         {
             Shot = shot,
             Loadout = loadout,
             TlsProfile = tls,
-            AdHocRounds = req.AdHocRounds
+            AdHocRounds = req.AdHocRounds,
+            InitialCookies = initialCookies
         };
 
         var impact = await _executor.FireAsync(execReq, cancellationToken);
+
+        // Store returned cookies if range is specified
+        if (impact.Cookies.Count > 0 && req.RangeId.HasValue)
+        {
+            var defaultDomain = Uri.TryCreate(impact.ResolvedUrl, UriKind.Absolute, out var u) ? u.Host : "localhost";
+            foreach (var c in impact.Cookies)
+            {
+                var cookieDomain = !string.IsNullOrEmpty(c.Domain) ? c.Domain : defaultDomain;
+                await _cookieLocker.StoreCookieAsync(
+                    req.RangeId.Value,
+                    cookieDomain,
+                    c.Name,
+                    c.Value,
+                    c.Path ?? "/",
+                    c.Expires,
+                    c.Secure,
+                    c.HttpOnly,
+                    c.SameSite ?? "Lax");
+            }
+        }
 
         // Save ad-hoc log if range specified
         if (req.RangeId.HasValue)

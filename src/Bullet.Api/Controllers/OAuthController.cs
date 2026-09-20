@@ -38,6 +38,8 @@ public class OAuthController : ControllerBase
     {
         if (!string.IsNullOrEmpty(error))
         {
+            var safeError = System.Net.WebUtility.HtmlEncode(error);
+            var safeErrorDesc = System.Net.WebUtility.HtmlEncode(error_description ?? error);
             var errorHtml = $@"<!DOCTYPE html>
 <html>
 <head><title>BULLET — OAuth Authorization Failed</title>
@@ -48,10 +50,11 @@ h2 {{ color: #f43f5e; margin-top: 0; }}
 p {{ color: #94a3b8; font-size: 14px; line-height: 1.5; }}
 .code {{ background: #020617; padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 12px; color: #f43f5e; margin: 16px 0; word-break: break-all; }}
 </style></head>
-<body><div class='card'><h2>Authorization Error</h2><p>{error_description ?? error}</p><div class='code'>{error}</div><p>You can close this window and return to BULLET.</p></div></body></html>";
+<body><div class='card'><h2>Authorization Error</h2><p>{safeErrorDesc}</p><div class='code'>{safeError}</div><p>You can close this window and return to BULLET.</p></div></body></html>";
             return Content(errorHtml, "text/html");
         }
 
+        var safeCode = System.Net.WebUtility.HtmlEncode(code ?? "");
         var successHtml = $@"<!DOCTYPE html>
 <html>
 <head><title>BULLET — OAuth Authorization Successful</title>
@@ -62,7 +65,7 @@ h2 {{ color: #10b981; margin-top: 0; }}
 p {{ color: #94a3b8; font-size: 14px; line-height: 1.5; }}
 .code {{ background: #020617; padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 12px; color: #fbbf24; margin: 16px 0; word-break: break-all; }}
 </style></head>
-<body><div class='card'><h2>Authorization Received!</h2><p>Your authorization code was received successfully:</p><div class='code'>{code}</div><p>You can copy this code back to BULLET or close this window.</p></div></body></html>";
+<body><div class='card'><h2>Authorization Received!</h2><p>Your authorization code was received successfully:</p><div class='code'>{safeCode}</div><p>You can copy this code back to BULLET or close this window.</p></div></body></html>";
         return Content(successHtml, "text/html");
     }
 }

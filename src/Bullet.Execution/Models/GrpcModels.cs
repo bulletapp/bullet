@@ -34,6 +34,7 @@ public class GrpcReflectRequest
 {
     public string ServerUrl { get; set; } = string.Empty;
     public bool UseTls { get; set; } = false;
+    public bool BypassSsrfProtection { get; set; } = false;
     public Dictionary<string, string>? Headers { get; set; }
 }
 

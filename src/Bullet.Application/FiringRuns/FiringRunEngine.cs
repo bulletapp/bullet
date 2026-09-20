@@ -100,6 +100,9 @@ public class FiringRunEngine : IFiringRunEngine
                 var execRequest = new ShotExecutionRequest
                 {
                     Shot = shot,
+                    Squad = shot.Squad,
+                    Arsenal = shot.Arsenal,
+                    Range = shot.Arsenal?.Range,
                     Loadout = options.Loadout,
                     TlsProfile = options.TlsProfile,
                     AdHocRounds = rowRounds

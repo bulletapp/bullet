@@ -1634,6 +1634,93 @@ async function runFullTestSuite() {
     console.log('  ✓ Closed Field Manual modal.');
 
     console.log('  ★ TEST 35 PASSED: Arsenal Field Manual & Documentation Modal verified!');
+
+    // -------------------------------------------------------------
+    // TEST 36: POSTMAN SCRIPTING BRIDGE (pm.* ASSERTIONS & VERIFIERS)
+    // -------------------------------------------------------------
+    console.log('\n[TEST 36] Testing Postman Scripting Bridge (pm.test, pm.expect, pm.response)...');
+
+    // Ensure method is GET
+    const methodSelect36 = await page.waitForSelector('[data-testid="method-select"]');
+    await methodSelect36.select('GET');
+    console.log('  ✓ Set method to GET for Postman scripting bridge test.');
+
+    // Switch URL to local test-api health check
+    await clearAndType('[data-testid="url-input"]', `${APP_URL}/api/test-api/health`);
+    console.log(`  ✓ Set URL to ${APP_URL}/api/test-api/health.`);
+
+    // Switch to Settings tab and ensure SSRF bypass is enabled for local endpoint
+    const settingsTab36 = await page.waitForSelector('[data-testid="tab-settings"]');
+    await settingsTab36.click();
+    const ssrfToggle36 = await page.waitForSelector('[data-testid="bypass-ssrf-toggle"]');
+    const isSsrfBypassed36 = await page.evaluate((el) => el.checked, ssrfToggle36);
+    if (!isSsrfBypassed36) {
+      await ssrfToggle36.click();
+      console.log('  ✓ Enabled SSRF bypass for local test-api health check.');
+    }
+
+    // Switch to Tests tab (Verifiers)
+    const testsTab36 = await page.waitForSelector('[data-testid="tab-tests"]');
+    await testsTab36.click();
+    console.log('  ✓ Navigated to Tests tab.');
+
+    // Write Postman pm.* test script
+    const postmanScript = [
+      "pm.test('Status code is 200', function() {",
+      "    pm.response.to.have.status(200);",
+      "});",
+      "",
+      "pm.test('Response contains healthy status', function() {",
+      "    var data = pm.response.json();",
+      "    pm.expect(data.status).toBe('healthy');",
+      "    pm.expect(pm.response.code).toBe(200);",
+      "});",
+      "",
+      "pm.test('Engine identity is verified', function() {",
+      "    var data = pm.response.json();",
+      "    pm.expect(data.engine).toBe('BULLET Execution Target');",
+      "});"
+    ].join('\n');
+
+    await clearAndType('[data-testid="verifier-script-textarea"]', postmanScript);
+    console.log('  ✓ Injected Postman pm.* verifier test script.');
+
+    // Fire the shot
+    const fireBtn36 = await page.waitForSelector('[data-testid="fire-btn"]');
+    await fireBtn36.click();
+    console.log('  ✓ Fired shot to evaluate Postman verifier assertions.');
+
+    // Wait for response status 200
+    await page.waitForSelector('[data-testid="status-code"]', { timeout: 15000 });
+    const statusCode36 = await page.$eval('[data-testid="status-code"]', (el) => el.textContent.trim());
+    if (!statusCode36.includes('200')) {
+      throw new Error(`Expected status 200, got: ${statusCode36}`);
+    }
+    console.log(`  ✓ Received response: Status ${statusCode36}`);
+
+    // Wait for Test Results tab to appear with 3/3 passed
+    await page.waitForSelector('[data-testid="tab-test-results"]', { timeout: 15000 });
+    await page.waitForFunction(() => {
+      const el = document.querySelector('[data-testid="tab-test-results"]');
+      return el && el.innerText.includes('3/3');
+    }, { timeout: 15000 });
+
+    const testResultsTab36 = await page.waitForSelector('[data-testid="tab-test-results"]');
+    await testResultsTab36.click();
+    console.log('  ✓ Clicked Test Results tab.');
+
+    // Verify individual test assertions in ImpactViewer
+    await page.waitForFunction(() => {
+      const text = document.body.innerText;
+      return text.includes('Status code is 200') &&
+             text.includes('Response contains healthy status') &&
+             text.includes('Engine identity is verified');
+    }, { timeout: 15000 });
+    console.log('  ✓ Verified all 3 Postman pm.* assertions passed and displayed in Impact Viewer.');
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '32-pm-assertions-bridge.png') });
+    console.log('  ★ TEST 36 PASSED: Postman pm.* Compatibility Bridge & Assertions verified!');
+
     console.log(`TOTAL UNCAUGHT ERRORS: ${uncaughtErrors.length}`);
     if (uncaughtErrors.length > 0) {
       console.error('Errors encountered:', uncaughtErrors);

@@ -14,6 +14,7 @@ public class OAuthTokenRequest
     public string? CodeVerifier { get; set; }
     public string? RefreshToken { get; set; }
     public string ClientAuth { get; set; } = "header"; // "header" (Basic auth) or "body"
+    public bool BypassSsrfProtection { get; set; } = false;
     public Dictionary<string, string>? CustomParameters { get; set; }
 }
 

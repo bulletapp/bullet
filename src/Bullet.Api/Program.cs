@@ -122,15 +122,32 @@ public static class BulletServer
         // Real-time SignalR
         builder.Services.AddSignalR();
 
-        // CORS for local development and desktop clients
+        // CORS for local development, desktop WebView2, and LAN mesh peers
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowBulletClients", policy =>
             {
-                policy.SetIsOriginAllowed(_ => true)
-                      .AllowAnyHeader()
-                      .AllowAnyMethod()
-                      .AllowCredentials();
+                policy.SetIsOriginAllowed(origin =>
+                {
+                    if (string.IsNullOrEmpty(origin) || origin == "null") return true;
+                    if (Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                    {
+                        var host = uri.DnsSafeHost;
+                        if (host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+                            host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
+                            host.Equals("::1", StringComparison.OrdinalIgnoreCase))
+                            return true;
+
+                        if (System.Net.IPAddress.TryParse(host, out var ip))
+                        {
+                            return SsrfGuard.IsRestrictedIp(ip); // Allow local LAN IP addresses for mesh collaboration
+                        }
+                    }
+                    return false;
+                })
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
             });
         });
 

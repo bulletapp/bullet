@@ -2,6 +2,7 @@ using Bullet.Application.ArmoryTransfer;
 using Bullet.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace Bullet.Api.Controllers;
 
@@ -21,51 +22,81 @@ public class ArmoryTransferController : ControllerBase
     [HttpPost("import-native")]
     public async Task<IActionResult> ImportNative([FromQuery] Guid rangeId, [FromBody] ImportRawRequest req)
     {
-        var arsenal = _transferService.ImportNative(req.Content, rangeId);
-        _db.Arsenals.Add(arsenal);
-        await _db.SaveChangesAsync();
-
-        return Ok(arsenal);
+        try
+        {
+            var arsenal = _transferService.ImportNative(req.Content, rangeId);
+            _db.Arsenals.Add(arsenal);
+            await _db.SaveChangesAsync();
+            return Ok(arsenal);
+        }
+        catch (Exception ex) when (ex is JsonException or ArgumentException or FormatException)
+        {
+            return BadRequest(new { error = $"Failed to import native collection: {ex.Message}" });
+        }
     }
 
     [HttpPost("import-postman")]
     public async Task<IActionResult> ImportPostman([FromQuery] Guid rangeId, [FromBody] ImportRawRequest req)
     {
-        var arsenal = _transferService.ImportPostmanCollection(req.Content, rangeId);
-        _db.Arsenals.Add(arsenal);
-        await _db.SaveChangesAsync();
-
-        return Ok(arsenal);
+        try
+        {
+            var arsenal = _transferService.ImportPostmanCollection(req.Content, rangeId);
+            _db.Arsenals.Add(arsenal);
+            await _db.SaveChangesAsync();
+            return Ok(arsenal);
+        }
+        catch (Exception ex) when (ex is JsonException or ArgumentException or FormatException)
+        {
+            return BadRequest(new { error = $"Failed to import Postman collection: {ex.Message}" });
+        }
     }
 
     [HttpPost("import-postman-environment")]
     public async Task<IActionResult> ImportPostmanEnvironment([FromQuery] Guid rangeId, [FromBody] ImportRawRequest req)
     {
-        var loadout = _transferService.ImportPostmanEnvironment(req.Content, rangeId);
-        _db.Loadouts.Add(loadout);
-        await _db.SaveChangesAsync();
-
-        return Ok(loadout);
+        try
+        {
+            var loadout = _transferService.ImportPostmanEnvironment(req.Content, rangeId);
+            _db.Loadouts.Add(loadout);
+            await _db.SaveChangesAsync();
+            return Ok(loadout);
+        }
+        catch (Exception ex) when (ex is JsonException or ArgumentException or FormatException)
+        {
+            return BadRequest(new { error = $"Failed to import Postman environment: {ex.Message}" });
+        }
     }
 
     [HttpPost("import-curl")]
     public async Task<IActionResult> ImportCurl([FromQuery] Guid arsenalId, [FromBody] ImportRawRequest req)
     {
-        var shot = _transferService.ImportCurl(req.Content, arsenalId);
-        _db.Shots.Add(shot);
-        await _db.SaveChangesAsync();
-
-        return Ok(shot);
+        try
+        {
+            var shot = _transferService.ImportCurl(req.Content, arsenalId);
+            _db.Shots.Add(shot);
+            await _db.SaveChangesAsync();
+            return Ok(shot);
+        }
+        catch (Exception ex) when (ex is ArgumentException or FormatException)
+        {
+            return BadRequest(new { error = $"Failed to import cURL: {ex.Message}" });
+        }
     }
 
     [HttpPost("import-openapi")]
     public async Task<IActionResult> ImportOpenApi([FromQuery] Guid rangeId, [FromBody] ImportRawRequest req)
     {
-        var arsenal = _transferService.ImportOpenApi(req.Content, rangeId);
-        _db.Arsenals.Add(arsenal);
-        await _db.SaveChangesAsync();
-
-        return Ok(arsenal);
+        try
+        {
+            var arsenal = _transferService.ImportOpenApi(req.Content, rangeId);
+            _db.Arsenals.Add(arsenal);
+            await _db.SaveChangesAsync();
+            return Ok(arsenal);
+        }
+        catch (Exception ex) when (ex is JsonException or ArgumentException or FormatException)
+        {
+            return BadRequest(new { error = $"Failed to import OpenAPI spec: {ex.Message}" });
+        }
     }
 
     [HttpGet("export-native/{arsenalId:guid}")]

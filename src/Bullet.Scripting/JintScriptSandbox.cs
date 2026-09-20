@@ -330,17 +330,41 @@ public class JintScriptSandbox : IScriptSandbox
                     }
                 }
             };
+
+            const pm = {
+                test: bullet.test,
+                expect: bullet.expect,
+                response: bullet.response ? {
+                    ...bullet.response,
+                    code: bullet.response.status,
+                    status: bullet.response.statusText,
+                    responseTime: bullet.response.time,
+                    responseSize: bullet.response.size,
+                    to: {
+                        have: {
+                            status: (code) => {
+                                if (bullet.response.status !== code)
+                                    throw new Error(`Expected status ${code} but got ${bullet.response.status}`);
+                            }
+                        }
+                    }
+                } : null,
+                request: bullet.request,
+                environment: bullet.loadout,
+                collectionVariables: bullet.rounds,
+                variables: bullet.rounds
+            };
             """;
 
             engine.Execute(bootstrapSdk);
             engine.Execute(script);
 
             // Sync back modifications to request url and body if modified in script
-            var updatedUrl = engine.Evaluate("bullet.request.url").AsString();
+            var updatedUrl = engine.Evaluate("pm?.request?.url || bullet.request.url").AsString();
             if (!string.IsNullOrEmpty(updatedUrl))
                 result.ModifiedUrl = updatedUrl;
 
-            var updatedBody = engine.Evaluate("bullet.request.body").AsString();
+            var updatedBody = engine.Evaluate("pm?.request?.body || bullet.request.body").AsString();
             if (updatedBody != null)
                 result.ModifiedBody = updatedBody;
         }

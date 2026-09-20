@@ -52,10 +52,7 @@ public class GrpcShotExecutor : IGrpcShotExecutor
             var handler = new SocketsHttpHandler
             {
                 EnableMultipleHttp2Connections = true,
-                PooledConnectionLifetime = TimeSpan.FromMinutes(2),
-                SslOptions = {
-                    RemoteCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true // Permissive for local dev & self-signed test endpoints
-                }
+                PooledConnectionLifetime = TimeSpan.FromMinutes(2)
             };
 
             _httpClient = new HttpClient(handler);
