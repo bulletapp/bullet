@@ -135,7 +135,9 @@ public static class BulletServer
                         var host = uri.DnsSafeHost;
                         if (host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
                             host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
-                            host.Equals("::1", StringComparison.OrdinalIgnoreCase))
+                            host.Equals("::1", StringComparison.OrdinalIgnoreCase) ||
+                            host.EndsWith(".local", StringComparison.OrdinalIgnoreCase) ||
+                            !host.Contains('.'))
                             return true;
 
                         if (System.Net.IPAddress.TryParse(host, out var ip))
