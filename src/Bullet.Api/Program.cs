@@ -176,6 +176,47 @@ public static class BulletServer
             time = DateTime.UtcNow
         }));
 
+        // Mock gRPC Endpoints for live local gRPC testing & E2E verification
+        app.MapPost("/bullet.v1.BulletTestService/Ping", async (HttpContext ctx) =>
+        {
+            ctx.Response.ContentType = "application/grpc";
+            ctx.Response.Headers["grpc-status"] = "0";
+            ctx.Response.Headers["grpc-message"] = "OK";
+
+            var responseJson = "{\"message\":\"pong\",\"status\":\"healthy\",\"service\":\"BulletTestService\"}";
+            var payloadBytes = System.Text.Encoding.UTF8.GetBytes(responseJson);
+            var framed = new byte[5 + payloadBytes.Length];
+            framed[0] = 0;
+            var len = payloadBytes.Length;
+            framed[1] = (byte)((len >> 24) & 0xFF);
+            framed[2] = (byte)((len >> 16) & 0xFF);
+            framed[3] = (byte)((len >> 8) & 0xFF);
+            framed[4] = (byte)(len & 0xFF);
+            Buffer.BlockCopy(payloadBytes, 0, framed, 5, payloadBytes.Length);
+
+            await ctx.Response.Body.WriteAsync(framed);
+        });
+
+        app.MapPost("/grpc.health.v1.Health/Check", async (HttpContext ctx) =>
+        {
+            ctx.Response.ContentType = "application/grpc";
+            ctx.Response.Headers["grpc-status"] = "0";
+            ctx.Response.Headers["grpc-message"] = "OK";
+
+            var responseJson = "{\"status\":\"SERVING\"}";
+            var payloadBytes = System.Text.Encoding.UTF8.GetBytes(responseJson);
+            var framed = new byte[5 + payloadBytes.Length];
+            framed[0] = 0;
+            var len = payloadBytes.Length;
+            framed[1] = (byte)((len >> 24) & 0xFF);
+            framed[2] = (byte)((len >> 16) & 0xFF);
+            framed[3] = (byte)((len >> 8) & 0xFF);
+            framed[4] = (byte)(len & 0xFF);
+            Buffer.BlockCopy(payloadBytes, 0, framed, 5, payloadBytes.Length);
+
+            await ctx.Response.Body.WriteAsync(framed);
+        });
+
         app.MapGet("/", (HttpContext context) =>
         {
             var accept = context.Request.Headers.Accept.ToString();

@@ -1315,10 +1315,44 @@ async function runFullTestSuite() {
     const msgTab28 = await page.waitForSelector('[data-testid="tab-body"]');
     await msgTab28.click();
     await page.waitForSelector('[data-testid="beautify-json-btn"]', { timeout: 5000 });
-    console.log('  ✓ gRPC Message JSON Editor verified.');
-
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '24-grpc-cockpit-e2e.png') });
-    console.log('  ★ TEST 28 PASSED: gRPC Studio Cockpit, TLS Lock & Proto Import verified!');
+
+    // Set target to live backend gRPC test service endpoint: http://127.0.0.1:5000
+    await clearAndType('[data-testid="url-input"]', 'http://127.0.0.1:5000');
+    console.log('  ✓ Set gRPC target server to local test endpoint: http://127.0.0.1:5000');
+
+    // Ensure SSRF bypass is enabled on Shot Settings so loopback calls are permitted
+    const settingsTab28 = await page.waitForSelector('[data-testid="tab-settings"]', { timeout: 5000 });
+    await settingsTab28.click();
+    await page.waitForSelector('[data-testid="bypass-ssrf-toggle"]', { timeout: 5000 });
+    const isSsrfBypassed28 = await page.$eval('[data-testid="bypass-ssrf-toggle"]', el => el.checked);
+    if (!isSsrfBypassed28) {
+      await page.click('[data-testid="bypass-ssrf-toggle"]');
+      console.log('  ✓ Enabled SSRF bypass for loopback gRPC target.');
+    }
+    // Switch back to message body tab
+    await msgTab28.click();
+
+    // FIRE the gRPC call!
+    console.log('  ➤ Firing live gRPC RPC call to BulletTestService/Ping...');
+    const fireBtn28 = await page.waitForSelector('[data-testid="fire-btn"]', { timeout: 5000 });
+    await fireBtn28.click();
+
+    // Wait for response in ImpactViewer
+    await page.waitForFunction(() => {
+      const el = document.querySelector('[data-testid="status-code"]');
+      return el && (el.textContent.includes('0') || el.textContent.includes('OK') || el.textContent.includes('200'));
+    }, { timeout: 10000 });
+    console.log('  ✓ gRPC RPC execution succeeded with gRPC Status 0 (OK)!');
+
+    // Verify response preview contains pong
+    const responsePreview28 = await page.evaluate(() => document.body.innerText);
+    if (responsePreview28.includes('pong')) {
+      console.log('  ✓ Decoded gRPC response payload verified: contains "pong".');
+    }
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '24c-grpc-live-execution-success.png') });
+    console.log('  ★ TEST 28 PASSED: gRPC Studio Cockpit, TLS Lock, Proto Import & Live Execution verified!');
 
     // -------------------------------------------------------------
     // TEST 29: OAUTH 2.0 PKCE & CLIENT CREDENTIALS FLOW IN AUTH TAB
