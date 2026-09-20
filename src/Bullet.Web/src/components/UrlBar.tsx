@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Crosshair, Play, Square, Save, Code, Copy, Info, Check, Sparkles, Lock, Unlock } from 'lucide-react';
+import { Crosshair, Square, Save, Code, Copy, Info, Check, Sparkles, Lock, Unlock } from 'lucide-react';
 import { Shot, Loadout, KeyValuePair } from '../types/bullet';
 
 interface UrlBarProps {

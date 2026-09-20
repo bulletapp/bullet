@@ -3,6 +3,7 @@ using Bullet.Application.ArmoryTransfer;
 using Bullet.Application.FiringRuns;
 using Bullet.Domain.Entities;
 using Bullet.Execution;
+using Bullet.Execution.Models;
 using Bullet.Execution.Resolvers;
 using Bullet.Execution.Tls;
 using Bullet.Scripting;
@@ -128,7 +129,7 @@ Examples:
         string? outputPath = GetOption(args, "--output");
         int iterations = int.TryParse(GetOption(args, "--iterations"), out var it) ? it : 1;
         int delayMs = int.TryParse(GetOption(args, "--delay"), out var dl) ? dl : 0;
-        bool stopOnError = args.Contains("--stop-on-error");
+        bool stopOnError = args.Contains("--stop-on-error", StringComparer.OrdinalIgnoreCase) || args.Contains("--bail", StringComparer.OrdinalIgnoreCase);
 
         var fileContent = await File.ReadAllTextAsync(filePath);
         var transferService = new ArmoryTransferService();
@@ -200,6 +201,11 @@ Examples:
                     Console.ForegroundColor = ConsoleColor.DarkRed;
                     Console.WriteLine($"         Error: {res.ErrorMessage}");
                     Console.ResetColor();
+
+                    if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
+                    {
+                        Console.WriteLine($"::error title=Test Failure in {res.ShotName}::{res.ErrorMessage}");
+                    }
                 }
             }
         };
@@ -244,8 +250,97 @@ Examples:
 
     private static async Task<int> HandleShotCommandAsync(string[] args)
     {
-        Console.WriteLine("Shot fire command executed.");
-        return 0;
+        if (args.Length == 0 || args[0].ToLowerInvariant() != "fire")
+        {
+            Console.WriteLine("Usage: bullet shot fire <url_or_file> [--method GET] [--body <body>]");
+            return 1;
+        }
+
+        if (args.Length < 2)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Error: Missing target URL or file path.");
+            Console.ResetColor();
+            return 1;
+        }
+
+        var target = args[1];
+        Shot shot;
+
+        if (File.Exists(target))
+        {
+            var content = await File.ReadAllTextAsync(target);
+            try
+            {
+                shot = JsonSerializer.Deserialize<Shot>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                       ?? throw new Exception("Deserialized shot was null.");
+            }
+            catch
+            {
+                var transfer = new ArmoryTransferService();
+                shot = transfer.ImportCurl(content, Guid.NewGuid());
+            }
+        }
+        else
+        {
+            var method = GetOption(args, "--method") ?? "GET";
+            var body = GetOption(args, "--body");
+            shot = new Shot
+            {
+                Name = "Ad-hoc CLI Shot",
+                Method = method.ToUpperInvariant(),
+                Url = target,
+                Payload = string.IsNullOrEmpty(body) ? new Bullet.Domain.ValueObjects.PayloadConfig() : new Bullet.Domain.ValueObjects.PayloadConfig { Type = Bullet.Domain.Enums.PayloadType.Json, RawContent = body }
+            };
+        }
+
+        Console.WriteLine($"Firing Shot: {shot.Method} {shot.Url}...\n");
+
+        var tokenResolver = new TokenResolver();
+        var armorResolver = new ArmorResolver();
+        var tlsManager = new TlsManager();
+        var ssrfGuard = new SsrfGuard();
+        var sandbox = new JintScriptSandbox();
+        var secretMasker = new SecretMasker();
+
+        var executor = new ShotExecutor(tokenResolver, armorResolver, tlsManager, ssrfGuard, sandbox, secretMasker);
+        var impact = await executor.FireAsync(new ShotExecutionRequest { Shot = shot });
+
+        if (impact.IsSuccess)
+        {
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"[Impact] {impact.StatusCode} {impact.StatusText} ({impact.DurationMs:F0}ms, {impact.SizeBytes} bytes)");
+        }
+        else
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"[Impact Failed] {impact.StatusCode} {impact.StatusText} ({impact.DurationMs:F0}ms)");
+            if (!string.IsNullOrEmpty(impact.ErrorMessage))
+            {
+                Console.WriteLine($"Error: {impact.ErrorMessage}");
+            }
+        }
+        Console.ResetColor();
+
+        if (impact.Verifications.Count > 0)
+        {
+            Console.WriteLine("\nVerifications:");
+            foreach (var v in impact.Verifications)
+            {
+                Console.ForegroundColor = v.Passed ? ConsoleColor.Green : ConsoleColor.Red;
+                Console.WriteLine($"  {(v.Passed ? "✓" : "✗")} {v.TestName} {(v.Passed ? "" : $"({v.ErrorMessage})")}");
+                Console.ResetColor();
+            }
+        }
+
+        if (!string.IsNullOrEmpty(impact.BodyPreview))
+        {
+            Console.WriteLine("\nResponse Body Preview:");
+            var preview = impact.BodyPreview.Length > 1000 ? impact.BodyPreview[..1000] + "... [truncated]" : impact.BodyPreview;
+            Console.WriteLine(preview);
+        }
+
+        return impact.IsSuccess ? 0 : 1;
     }
 
     private static string? GetOption(string[] args, string optionName)

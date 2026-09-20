@@ -24,7 +24,55 @@ public class CodeShotService : ICodeShotService
         var method = shot.Method.ToUpperInvariant();
         var body = shot.Payload.RawContent ?? "";
 
-        var headers = resolvedHeaders ?? shot.Headers.Where(h => h.Enabled).ToDictionary(h => h.Key, h => h.Value);
+        var headers = resolvedHeaders != null 
+            ? new Dictionary<string, string>(resolvedHeaders, StringComparer.OrdinalIgnoreCase)
+            : shot.Headers.Where(h => h.Enabled).ToDictionary(h => h.Key, h => h.Value, StringComparer.OrdinalIgnoreCase);
+
+        // Apply Armor credentials to headers if not already set
+        if (shot.Armor != null && shot.Armor.Type != ArmorType.None && shot.Armor.Type != ArmorType.Inherit)
+        {
+            if (shot.Armor.Type == ArmorType.Bearer)
+            {
+                var token = shot.Armor.GetProperty("token");
+                if (!string.IsNullOrEmpty(token) && !headers.ContainsKey("Authorization"))
+                {
+                    headers["Authorization"] = $"Bearer {token}";
+                }
+            }
+            else if (shot.Armor.Type == ArmorType.Basic)
+            {
+                var username = shot.Armor.GetProperty("username") ?? "";
+                var password = shot.Armor.GetProperty("password") ?? "";
+                if ((!string.IsNullOrEmpty(username) || !string.IsNullOrEmpty(password)) && !headers.ContainsKey("Authorization"))
+                {
+                    var creds = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
+                    headers["Authorization"] = $"Basic {creds}";
+                }
+            }
+            else if (shot.Armor.Type == ArmorType.ApiKey)
+            {
+                var key = shot.Armor.GetProperty("key");
+                var val = shot.Armor.GetProperty("value") ?? "";
+                var addTo = shot.Armor.GetProperty("addTo") ?? "header";
+                if (!string.IsNullOrEmpty(key))
+                {
+                    if (addTo.Equals("header", StringComparison.OrdinalIgnoreCase) && !headers.ContainsKey(key))
+                    {
+                        headers[key] = val;
+                    }
+                    else if (addTo.Equals("query", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var sep = url.Contains('?') ? "&" : "?";
+                        url += $"{sep}{Uri.EscapeDataString(key)}={Uri.EscapeDataString(val)}";
+                    }
+                }
+            }
+        }
+
+        if (string.Equals(method, "GRPC", StringComparison.OrdinalIgnoreCase))
+        {
+            return GenerateGrpc(shot, language, url, body);
+        }
 
         return language.ToLowerInvariant() switch
         {
@@ -39,6 +87,24 @@ public class CodeShotService : ICodeShotService
             "swift" => GenerateSwift(method, url, headers, body),
             _ => GenerateCurl(method, url, headers, body)
         };
+    }
+
+    private static string GenerateGrpc(Shot shot, string language, string url, string body)
+    {
+        var cleanTarget = url.Replace("http://", "").Replace("https://", "").TrimEnd('/');
+        var serviceMethod = $"{shot.GrpcService}/{shot.GrpcMethod}";
+        var plaintextFlag = shot.GrpcUseTls ? "" : "-plaintext ";
+        var escapedBody = string.IsNullOrWhiteSpace(body) ? "{}" : body.Replace("\"", "\\\"");
+
+        if (language.Equals("curl", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"grpcurl {plaintextFlag}-d \"{escapedBody}\" {cleanTarget} {serviceMethod}";
+        }
+
+        return $"// BULLET gRPC Invocation ({cleanTarget})\n" +
+               $"// Service: {shot.GrpcService} | Method: {shot.GrpcMethod}\n" +
+               $"// CLI Command (grpcurl):\n" +
+               $"grpcurl {plaintextFlag}-d \"{escapedBody}\" {cleanTarget} {serviceMethod}";
     }
 
     private static string GenerateCurl(string method, string url, Dictionary<string, string> headers, string body)

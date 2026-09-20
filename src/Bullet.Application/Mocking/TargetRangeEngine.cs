@@ -108,10 +108,26 @@ public class TargetRangeEngine : ITargetRangeEngine
 
     private static bool IsPathMatch(string pattern, string path)
     {
-        if (pattern.Equals(path, StringComparison.OrdinalIgnoreCase)) return true;
+        if (string.Equals(pattern, path, StringComparison.OrdinalIgnoreCase)) return true;
 
-        // Convert /users/{id} to regex ^/users/[^/]+$
-        var regexPattern = "^" + System.Text.RegularExpressions.Regex.Replace(pattern, @"\{[a-zA-Z0-9_]+\}", "[^/]+") + "$";
-        return System.Text.RegularExpressions.Regex.IsMatch(path, regexPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        var cleanPattern = pattern.Trim();
+        if (!cleanPattern.StartsWith('/')) cleanPattern = "/" + cleanPattern;
+
+        // Support :param (e.g. /users/:id) and {param} (e.g. /users/{id})
+        var regexPattern = System.Text.RegularExpressions.Regex.Replace(cleanPattern, @":([a-zA-Z0-9_]+)", "[^/]+");
+        regexPattern = System.Text.RegularExpressions.Regex.Replace(regexPattern, @"\{[a-zA-Z0-9_]+\}", "[^/]+");
+
+        // Support wildcard * (e.g. /api/*)
+        regexPattern = regexPattern.Replace("*", ".*");
+
+        regexPattern = "^" + regexPattern + "$";
+        try
+        {
+            return System.Text.RegularExpressions.Regex.IsMatch(path, regexPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

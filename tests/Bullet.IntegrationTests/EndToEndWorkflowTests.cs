@@ -156,6 +156,48 @@ public class EndToEndWorkflowTests : IClassFixture<WebApplicationFactory<Program
         Assert.Contains("<testsuites", junitXml);
         Assert.Contains("<testcase", junitXml);
     }
+
+    [Fact]
+    public async Task TargetRange_ParameterizedRoute_AndCustomStatus_ShouldMatchCorrectly()
+    {
+        var client = CreateCustomClient();
+
+        // 1. Get ranges
+        var rangesRes = await client.GetAsync("/api/ranges");
+        rangesRes.EnsureSuccessStatusCode();
+        var ranges = await rangesRes.Content.ReadFromJsonAsync<List<JsonElement>>();
+        Assert.NotNull(ranges);
+        var demoRangeId = ranges[0].GetProperty("id").GetGuid();
+
+        // 2. Create TargetRange with parameterized route /users/:id and StatusCode 201
+        var createMockRes = await client.PostAsJsonAsync("/api/target-ranges", new
+        {
+            rangeId = demoRangeId,
+            name = "Users Mock Server",
+            basePath = "",
+            isEnabled = true,
+            endpoints = new[]
+            {
+                new
+                {
+                    method = "GET",
+                    path = "/users/:id",
+                    statusCode = 201,
+                    responseContentType = "application/json",
+                    responseBody = "{\"status\":\"created_or_found\",\"id\":123}"
+                }
+            }
+        });
+        createMockRes.EnsureSuccessStatusCode();
+        var mockObj = await createMockRes.Content.ReadFromJsonAsync<TargetRange>(JsonOptions);
+        Assert.NotNull(mockObj);
+
+        // 3. Request parameterized route
+        var mockReqRes = await client.GetAsync($"/api/mock/{mockObj.Id}/users/999");
+        Assert.Equal(System.Net.HttpStatusCode.Created, mockReqRes.StatusCode);
+        var body = await mockReqRes.Content.ReadAsStringAsync();
+        Assert.Contains("created_or_found", body);
+    }
 }
 
 public class TestServerHandlerProvider : Bullet.Execution.IHttpMessageHandlerProvider

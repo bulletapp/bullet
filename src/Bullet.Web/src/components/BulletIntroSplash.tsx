@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Crosshair, Zap, Check } from 'lucide-react';
+import { Crosshair, Zap } from 'lucide-react';
 import { playSonicBoom } from '../utils/audioFx';
 import { BulletLogo } from './BulletLogo';
 
@@ -52,7 +52,7 @@ export const BulletIntroSplash: React.FC<BulletIntroSplashProps> = ({ onFinish }
   };
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (_e: KeyboardEvent) => {
       handleDismiss();
     };
     window.addEventListener('keydown', handleKeyDown);

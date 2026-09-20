@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Download, Upload, Copy, Check, FileJson, AlertCircle } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Download, Upload, Copy, AlertCircle } from 'lucide-react';
 import { Arsenal } from '../../types/bullet';
 import { bulletApi } from '../../api/bulletApi';
 
@@ -20,6 +20,7 @@ export const ArmoryTransferModal: React.FC<ArmoryTransferModalProps> = ({
   onImportSuccess,
   initialContent,
 }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<'import' | 'export'>('import');
   const [importFormat, setImportFormat] = useState<'postman' | 'postman-env' | 'openapi' | 'curl' | 'native'>('postman');
   const [importContent, setImportContent] = useState('');
@@ -278,8 +279,16 @@ export const ArmoryTransferModal: React.FC<ArmoryTransferModalProps> = ({
               )}
 
               {/* Drag and Drop Zone */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleFileUpload}
+                className="hidden"
+                accept=".json,.yaml,.yml,.txt"
+              />
               <div
                 data-testid="import-dropzone"
+                onClick={() => fileInputRef.current?.click()}
                 onDragOver={(e) => {
                   e.preventDefault();
                   setIsHoveringDropzone(true);
@@ -308,7 +317,7 @@ export const ArmoryTransferModal: React.FC<ArmoryTransferModalProps> = ({
                   Drag & drop Postman Collection (.json) or Environment file here
                 </div>
                 <div className="text-[10px] text-slate-500 mt-0.5">
-                  or choose a file / paste JSON into the editor below
+                  or click to choose a file / paste JSON into the editor below
                 </div>
               </div>
 

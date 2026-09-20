@@ -121,4 +121,54 @@ public class ResolversAndMaskingTests
         Assert.Single(imported.Squads);
         Assert.Equal("Get Order", imported.Squads[0].Shots[0].Name);
     }
+
+    [Fact]
+    public void CodeShot_WithArmorBearerAndBasic_ShouldInjectAuthenticationHeaders()
+    {
+        var service = new CodeShotService();
+
+        // 1. Bearer Token
+        var bearerShot = new Shot
+        {
+            Name = "Get Protected Data",
+            Method = "GET",
+            Url = "https://api.example.com/secure",
+            Armor = ArmorConfig.Bearer("secret-token-xyz")
+        };
+        var curlBearer = service.Generate(bearerShot, "curl");
+        Assert.Contains("Authorization: Bearer secret-token-xyz", curlBearer);
+
+        // 2. Basic Auth
+        var basicShot = new Shot
+        {
+            Name = "Basic Auth Request",
+            Method = "POST",
+            Url = "https://api.example.com/login",
+            Armor = ArmorConfig.Basic("admin", "p@ssword")
+        };
+        var pythonBasic = service.Generate(basicShot, "python");
+        Assert.Contains("Authorization", pythonBasic);
+        Assert.Contains("Basic", pythonBasic);
+    }
+
+    [Fact]
+    public void CodeShot_Grpc_ShouldGenerateGrpcurlCommand()
+    {
+        var service = new CodeShotService();
+        var grpcShot = new Shot
+        {
+            Name = "Get User Profile",
+            Method = "GRPC",
+            Url = "localhost:50051",
+            GrpcService = "bullet.UserService",
+            GrpcMethod = "GetUser",
+            Payload = new PayloadConfig { RawContent = "{\"userId\": \"u-123\"}" },
+            GrpcUseTls = false
+        };
+
+        var curlSnippet = service.Generate(grpcShot, "curl");
+        Assert.Contains("grpcurl -plaintext", curlSnippet);
+        Assert.Contains("bullet.UserService/GetUser", curlSnippet);
+        Assert.Contains("localhost:50051", curlSnippet);
+    }
 }

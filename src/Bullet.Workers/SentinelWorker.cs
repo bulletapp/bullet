@@ -49,6 +49,10 @@ public class SentinelWorker : BackgroundService
         var now = DateTime.UtcNow;
         var sentinels = await db.Sentinels
             .Include(s => s.Shot)
+                .ThenInclude(sh => sh.Arsenal)
+                    .ThenInclude(a => a!.Range)
+            .Include(s => s.Shot)
+                .ThenInclude(sh => sh.Squad)
             .Where(s => s.IsEnabled)
             .ToListAsync(cancellationToken);
 
@@ -63,9 +67,28 @@ public class SentinelWorker : BackgroundService
             {
                 _logger.LogInformation("Running Sentinel check: {SentinelName} (Shot: {ShotName})", sentinel.Name, sentinel.Shot.Name);
 
+                var targetLoadoutId = sentinel.Shot.LoadoutId ?? sentinel.Shot.Arsenal?.DefaultLoadoutId;
+                Loadout? loadout = null;
+                if (targetLoadoutId.HasValue)
+                {
+                    loadout = await db.Loadouts
+                        .Include(l => l.Rounds)
+                        .FirstOrDefaultAsync(l => l.Id == targetLoadoutId.Value, cancellationToken);
+                }
+                else if (sentinel.Shot.Arsenal != null)
+                {
+                    loadout = await db.Loadouts
+                        .Include(l => l.Rounds)
+                        .FirstOrDefaultAsync(l => l.RangeId == sentinel.Shot.Arsenal.RangeId, cancellationToken);
+                }
+
                 var req = new ShotExecutionRequest
                 {
-                    Shot = sentinel.Shot
+                    Shot = sentinel.Shot,
+                    Squad = sentinel.Shot.Squad,
+                    Arsenal = sentinel.Shot.Arsenal,
+                    Range = sentinel.Shot.Arsenal?.Range,
+                    Loadout = loadout
                 };
 
                 var impact = await executor.FireAsync(req, cancellationToken);

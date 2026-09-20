@@ -187,4 +187,22 @@ public class ScriptingAndExecutionTests
         var camelJson = System.Text.Json.JsonSerializer.Serialize(shot, opt);
         Assert.Contains("\"id\":", camelJson);
     }
+
+    [Fact]
+    public void ParseSetCookieHeader_ShouldParseDirectivesAndAttributes()
+    {
+        var rawCookie = "sessionId=abc123xyz; Domain=.example.com; Path=/api; Secure; HttpOnly; SameSite=Strict; Max-Age=3600";
+        var parsed = Bullet.Execution.ShotExecutor.ParseSetCookieHeader(rawCookie);
+
+        Assert.NotNull(parsed);
+        Assert.Equal("sessionId", parsed.Name);
+        Assert.Equal("abc123xyz", parsed.Value);
+        Assert.Equal("example.com", parsed.Domain);
+        Assert.Equal("/api", parsed.Path);
+        Assert.True(parsed.Secure);
+        Assert.True(parsed.HttpOnly);
+        Assert.Equal("Strict", parsed.SameSite);
+        Assert.NotNull(parsed.Expires);
+        Assert.True(parsed.Expires > DateTime.UtcNow);
+    }
 }

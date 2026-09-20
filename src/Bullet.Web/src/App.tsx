@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Upload } from 'lucide-react';
 import { 
-  Range, Arsenal, Squad, Shot, Loadout, TLSProfile, 
+  Range, Arsenal, Shot, Loadout, TLSProfile, 
   Impact, TrajectoryLogEntry, MeshJoinResponse 
 } from './types/bullet';
 import { bulletApi, createExecutionHubConnection, createMeshHubConnection } from './api/bulletApi';
@@ -27,6 +27,7 @@ import { NewArsenalModal } from './components/modals/NewArsenalModal';
 import { NewSquadModal } from './components/modals/NewSquadModal';
 import { NewShotModal } from './components/modals/NewShotModal';
 import { MeshCollaborationModal } from './components/modals/MeshCollaborationModal';
+import { FieldManualModal } from './components/modals/FieldManualModal';
 
 // Dedicated Views
 import { LoadoutsView } from './components/views/LoadoutsView';
@@ -76,7 +77,8 @@ export function App() {
   const [newShotOpen, setNewShotOpen] = useState(false);
   const [newShotTarget, setNewShotTarget] = useState<{ arsenalId?: string; squadId?: string }>({});
   const [meshCollabOpen, setMeshCollabOpen] = useState(false);
-  const [isMeshBroadcasting, setIsMeshBroadcasting] = useState(false);
+  const [isMeshBroadcasting] = useState(false);
+  const [fieldManualArsenal, setFieldManualArsenal] = useState<{ id: string; name: string } | null>(null);
   const [meshSession, setMeshSession] = useState<{
     isConnected: boolean;
     isHost: boolean;
@@ -604,7 +606,7 @@ export function App() {
     try {
       let updated: Shot;
       if (selectedShot.id.startsWith('draft-')) {
-        const { id, ...shotData } = selectedShot;
+        const { id: _id, ...shotData } = selectedShot;
         updated = await bulletApi.createShot({
           ...shotData,
           arsenalId: shotData.arsenalId || (arsenals[0]?.id ?? ''),
@@ -808,6 +810,7 @@ export function App() {
           onExportArsenal={() => setArmoryTransferOpen(true)}
           onOpenImport={() => setArmoryTransferOpen(true)}
           onMoveShot={handleMoveShot}
+          onOpenFieldManual={(id, name) => setFieldManualArsenal({ id, name })}
         />
 
         {/* Center Canvas */}
@@ -1073,6 +1076,14 @@ export function App() {
         selectedRangeId={selectedRange?.id || null}
         selectedRangeName={selectedRange?.name || null}
         onJoinedWorkspace={handleJoinedMeshWorkspace}
+      />
+
+      {/* Field Manual (Documentation) Modal */}
+      <FieldManualModal
+        isOpen={fieldManualArsenal !== null}
+        onClose={() => setFieldManualArsenal(null)}
+        arsenalId={fieldManualArsenal?.id ?? null}
+        arsenalName={fieldManualArsenal?.name ?? ''}
       />
     </div>
   );

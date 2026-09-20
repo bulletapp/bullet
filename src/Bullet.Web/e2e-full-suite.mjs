@@ -1580,6 +1580,60 @@ async function runFullTestSuite() {
 
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '30-path-variables-substitution.png') });
     console.log('  ★ TEST 34 PASSED: URL Path Variables Auto-Detection & Substitution verified!');
+
+    // -------------------------------------------------------------
+    // TEST 35: ARSENAL FIELD MANUAL & DOCUMENTATION MODAL
+    // -------------------------------------------------------------
+    console.log('\n[TEST 35] Testing Arsenal Field Manual / Documentation Modal...');
+
+    // Locate and click the Field Manual button on an Arsenal in the sidebar
+    await page.waitForSelector('button[title="Field Manual / Documentation"]', { timeout: 15000 });
+    await page.$eval('button[title="Field Manual / Documentation"]', el => el.click());
+    console.log('  ✓ Opened Arsenal Field Manual modal from sidebar.');
+
+    // Verify documentation content is rendered
+    await page.waitForSelector('[data-testid="field-manual-content"]', { timeout: 15000 });
+    await page.waitForFunction(() => {
+      const el = document.querySelector('[data-testid="field-manual-content"]');
+      return el && el.innerText && el.innerText.length > 5;
+    }, { timeout: 15000 });
+    const mdContent35 = await page.$eval('[data-testid="field-manual-content"]', el => el.innerText);
+    console.log(`  ✓ Field Manual Markdown documentation generated (${mdContent35.length} bytes).`);
+
+    // Switch format to JSON
+    await page.waitForSelector('[data-testid="field-manual-format-json"]', { timeout: 15000 });
+    await page.$eval('[data-testid="field-manual-format-json"]', el => el.click());
+    await page.waitForFunction(() => {
+      const el = document.querySelector('[data-testid="field-manual-content"]');
+      return el && el.innerText && el.innerText.includes('{');
+    }, { timeout: 15000 });
+
+    const jsonContent35 = await page.$eval('[data-testid="field-manual-content"]', el => el.innerText);
+    console.log('  ✓ Switched format to JSON Spec and verified output.');
+
+    // Switch back to Markdown
+    await page.waitForSelector('[data-testid="field-manual-format-md"]', { timeout: 15000 });
+    await page.$eval('[data-testid="field-manual-format-md"]', el => el.click());
+    await page.waitForFunction(() => {
+      const el = document.querySelector('[data-testid="field-manual-content"]');
+      return el && el.innerText && !el.innerText.trim().startsWith('{');
+    }, { timeout: 15000 });
+
+    // Test Copy button
+    await page.waitForSelector('[data-testid="field-manual-copy-btn"]', { timeout: 15000 });
+    await page.$eval('[data-testid="field-manual-copy-btn"]', el => el.click());
+    await new Promise(r => setTimeout(r, 400));
+    console.log('  ✓ Verified Field Manual copy to clipboard.');
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '31-field-manual-documentation.png') });
+
+    // Close modal
+    await page.waitForSelector('[data-testid="field-manual-close-btn"]', { timeout: 15000 });
+    await page.$eval('[data-testid="field-manual-close-btn"]', el => el.click());
+    await new Promise(r => setTimeout(r, 500));
+    console.log('  ✓ Closed Field Manual modal.');
+
+    console.log('  ★ TEST 35 PASSED: Arsenal Field Manual & Documentation Modal verified!');
     console.log(`TOTAL UNCAUGHT ERRORS: ${uncaughtErrors.length}`);
     if (uncaughtErrors.length > 0) {
       console.error('Errors encountered:', uncaughtErrors);

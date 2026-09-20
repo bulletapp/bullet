@@ -123,7 +123,13 @@ public class TargetRangesController : ControllerBase
         foreach (var h in result.Headers)
             Response.Headers[h.Key] = h.Value;
 
-        return Content(result.Body, result.ContentType, System.Text.Encoding.UTF8);
+        Response.StatusCode = result.StatusCode;
+        return new ContentResult
+        {
+            Content = result.Body,
+            ContentType = result.ContentType,
+            StatusCode = result.StatusCode
+        };
     }
 }
 

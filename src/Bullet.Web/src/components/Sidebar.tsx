@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import {
-  Folder, Sliders, Clock, ShieldCheck, Radio, 
+  Folder, Sliders, Clock, Radio, 
   Activity, Cookie, BookOpen, ChevronRight, ChevronDown, 
-  Plus, MoreVertical, Search, Trash2, Play, FileDown,
-  Lock, Key, Upload
+  Plus, Search, Trash2, Play, FileDown,
+  Lock, Upload
 } from 'lucide-react';
-import { Arsenal, Squad, Shot } from '../types/bullet';
+import { Arsenal, Shot } from '../types/bullet';
 
 export type ActiveSidebarTab = 
   | 'arsenals' 
@@ -33,6 +33,7 @@ interface SidebarProps {
   onExportArsenal: (arsenalId: string) => void;
   onOpenImport?: () => void;
   onMoveShot?: (shotId: string, targetSquadId: string | null, targetArsenalId?: string) => void;
+  onOpenFieldManual?: (arsenalId: string, arsenalName: string) => void;
 }
 
 const methodColors: Record<string, string> = {
@@ -61,6 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onExportArsenal,
   onOpenImport,
   onMoveShot,
+  onOpenFieldManual,
 }) => {
   const [draggedShotId, setDraggedShotId] = useState<string | null>(null);
   const [dragOverTarget, setDragOverTarget] = useState<{ type: 'squad' | 'arsenal'; id: string } | null>(null);
@@ -349,6 +351,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         >
                           <FileDown className="w-3 h-3" />
                         </button>
+                        {onOpenFieldManual && (
+                          <button
+                            data-testid={`field-manual-arsenal-${arsenal.id}`}
+                            onClick={() => onOpenFieldManual(arsenal.id, arsenal.name)}
+                            className="p-1 hover:text-purple-400 text-slate-400"
+                            title="Field Manual / Documentation"
+                          >
+                            <BookOpen className="w-3 h-3" />
+                          </button>
+                        )}
                         <button
                           onClick={() => onDeleteArsenal(arsenal.id)}
                           className="p-1 hover:text-rose-400 text-slate-400"

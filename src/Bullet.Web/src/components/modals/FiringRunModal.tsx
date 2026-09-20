@@ -3,7 +3,7 @@ import {
   X, Play, CheckCircle2, XCircle, Clock, Download, 
   FileCode, Layers, Sliders, AlertTriangle 
 } from 'lucide-react';
-import { Arsenal, Squad, Loadout, TLSProfile, FiringRun } from '../../types/bullet';
+import { Arsenal, Loadout, TLSProfile, FiringRun } from '../../types/bullet';
 import { bulletApi } from '../../api/bulletApi';
 
 interface FiringRunModalProps {

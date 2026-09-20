@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { 
-  CheckCircle2, XCircle, Clock, Database, Copy, 
-  ExternalLink, FileText, Activity, Eye,
-  Lock, Unlock, AlertTriangle, RefreshCw, Terminal, Info,
-  Search, Download, Check, Sparkles, Zap
+  CheckCircle2, XCircle, Database, Copy, 
+  Activity, Lock, AlertTriangle, RefreshCw, Info,
+  Search, Download, Check, Zap
 } from 'lucide-react';
 import { Impact } from '../types/bullet';
 
@@ -17,7 +16,7 @@ type ImpactTab = 'pretty' | 'raw' | 'preview' | 'headers' | 'cookies' | 'timing'
 
 const renderHighlightedJson = (jsonStr: string, searchTerm: string) => {
   if (!jsonStr) return null;
-  const tokenRegex = /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?|[{}[\],:])/g;
+  const tokenRegex = /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?|[{}[\],:])/g;
 
   const highlightSearch = (text: string, keyPrefix: string) => {
     if (!searchTerm.trim()) return text;

@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { 
-  ShieldAlert, ShieldCheck, Sparkles, Plus, Trash2, Code2, 
-  HelpCircle, Eye, EyeOff, CheckSquare, Square,
+  ShieldCheck, Sparkles, Plus, Trash2, Code2, 
+  Eye, EyeOff,
   Lock, AlertTriangle, Radio, FileCode, CheckCircle2,
-  RefreshCw, Copy, Check, Terminal, Play, X, Zap,
-  UploadCloud, FileUp, File, FolderOpen
+  RefreshCw, Copy, Check, X, Zap,
+  UploadCloud, FileUp, File
 } from 'lucide-react';
-import { Shot, KeyValuePair, ArmorConfig, PayloadConfig, ShotSettings, TLSProfile } from '../types/bullet';
+import { Shot, KeyValuePair, TLSProfile } from '../types/bullet';
 import { bulletApi } from '../api/bulletApi';
 
 interface ShotEditorProps {

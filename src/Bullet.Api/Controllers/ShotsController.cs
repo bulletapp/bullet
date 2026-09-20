@@ -209,7 +209,8 @@ public class ShotsController : ControllerBase
         var initialCookies = new Dictionary<string, string>();
         if (shot.Arsenal != null)
         {
-            var cookies = await _cookieLocker.GetCookiesAsync(shot.Arsenal.RangeId);
+            var host = Uri.TryCreate(shot.Url, UriKind.Absolute, out var uri) ? uri.Host : null;
+            var cookies = await _cookieLocker.GetCookiesAsync(shot.Arsenal.RangeId, host);
             foreach (var c in cookies) initialCookies[c.Name] = c.Value;
         }
 
@@ -229,10 +230,20 @@ public class ShotsController : ControllerBase
         // Update cookie locker if Set-Cookie headers returned
         if (impact.Cookies.Count > 0 && shot.Arsenal != null)
         {
-            var domain = Uri.TryCreate(impact.ResolvedUrl, UriKind.Absolute, out var u) ? u.Host : "localhost";
+            var defaultDomain = Uri.TryCreate(impact.ResolvedUrl, UriKind.Absolute, out var u) ? u.Host : "localhost";
             foreach (var c in impact.Cookies)
             {
-                await _cookieLocker.StoreCookieAsync(shot.Arsenal.RangeId, domain, c.Name, c.Value, c.Path, c.Expires, c.Secure, c.HttpOnly, c.SameSite ?? "Lax");
+                var cookieDomain = !string.IsNullOrEmpty(c.Domain) ? c.Domain : defaultDomain;
+                await _cookieLocker.StoreCookieAsync(
+                    shot.Arsenal.RangeId,
+                    cookieDomain,
+                    c.Name,
+                    c.Value,
+                    c.Path ?? "/",
+                    c.Expires,
+                    c.Secure,
+                    c.HttpOnly,
+                    c.SameSite ?? "Lax");
             }
         }
 

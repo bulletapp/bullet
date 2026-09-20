@@ -1,8 +1,8 @@
 import React from 'react';
 import { 
   Lock, Unlock, AlertTriangle, Terminal, Layers, Play, 
-  Download, Upload, Command, Plus, RefreshCw, CheckCircle2,
-  Sun, Moon, Volume2, VolumeX, Crosshair, Wifi
+  Download, Upload, Command, Plus,
+  Sun, Moon, Volume2, VolumeX, Wifi
 } from 'lucide-react';
 import { Range, Loadout } from '../types/bullet';
 import { BulletLogo } from './BulletLogo';

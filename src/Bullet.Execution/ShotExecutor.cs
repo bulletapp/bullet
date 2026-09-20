@@ -88,9 +88,20 @@ public class ShotExecutor : IShotExecutor
                 resolvedRounds[kvp.Key] = kvp.Value;
         }
 
-        // Step 3: Resolve Tokens in URL
+        // Step 3: Resolve Tokens & Path Parameters in URL
         var rawUrl = shot.Url;
         var resolvedUrl = _tokenResolver.Resolve(rawUrl, resolvedRounds);
+
+        // Substitute Path Parameters (e.g. :userId or {userId}) from shot.Parameters
+        var pathParams = shot.Parameters.Where(p => p.Enabled && p.Type == ParameterType.Path && !string.IsNullOrWhiteSpace(p.Key)).ToList();
+        foreach (var p in pathParams)
+        {
+            var pKey = _tokenResolver.Resolve(p.Key, resolvedRounds).TrimStart(':');
+            var pVal = _tokenResolver.Resolve(p.Value, resolvedRounds);
+            resolvedUrl = resolvedUrl.Replace($":{pKey}", Uri.EscapeDataString(pVal))
+                                     .Replace($"{{{pKey}}}", Uri.EscapeDataString(pVal));
+        }
+
         impact.ResolvedUrl = resolvedUrl;
 
         // Step 4: SSRF Check
@@ -208,6 +219,14 @@ public class ShotExecutor : IShotExecutor
             httpRequest.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value);
         }
 
+        // Inject Cookie Locker session cookies if not explicitly set in headers
+        if (!headersDict.ContainsKey("Cookie") && request.InitialCookies != null && request.InitialCookies.Count > 0)
+        {
+            var cookieHeader = string.Join("; ", request.InitialCookies.Select(c => $"{c.Key}={c.Value}"));
+            httpRequest.Headers.TryAddWithoutValidation("Cookie", cookieHeader);
+            AddTrajectory("Cookie", $"Injected {request.InitialCookies.Count} session cookie(s)");
+        }
+
         // Apply Body
         if (shot.Payload.Type != PayloadType.None && (httpMethod != HttpMethod.Get && httpMethod != HttpMethod.Head))
         {
@@ -303,10 +322,28 @@ public class ShotExecutor : IShotExecutor
                 impact.ContentType = httpResponse.Content.Headers.ContentType?.MediaType;
             }
 
-            // Extract cookies
-            if (impact.ResponseHeaders.TryGetValue("Set-Cookie", out var setCookieVal))
+            // Extract cookies according to RFC 6265
+            var setCookieHeaders = new List<string>();
+            if (httpResponse.Headers.TryGetValues("Set-Cookie", out var scValues))
             {
-                impact.Cookies.Add(new ImpactCookie { Name = "Cookie", Value = setCookieVal });
+                setCookieHeaders.AddRange(scValues);
+            }
+            if (httpResponse.Content?.Headers != null && httpResponse.Content.Headers.TryGetValues("Set-Cookie", out var cscValues))
+            {
+                setCookieHeaders.AddRange(cscValues);
+            }
+            if (setCookieHeaders.Count == 0 && impact.ResponseHeaders.TryGetValue("Set-Cookie", out var fallbackSc))
+            {
+                setCookieHeaders.Add(fallbackSc);
+            }
+
+            foreach (var sc in setCookieHeaders)
+            {
+                var parsedCookie = ParseSetCookieHeader(sc);
+                if (parsedCookie != null)
+                {
+                    impact.Cookies.Add(parsedCookie);
+                }
             }
 
             // Read response body (capped at 2MB for memory safety)
@@ -432,5 +469,73 @@ public class ShotExecutor : IShotExecutor
 
         impact.TrajectoryLogs = trajectory;
         return impact;
+    }
+
+    public static ImpactCookie? ParseSetCookieHeader(string rawHeader)
+    {
+        if (string.IsNullOrWhiteSpace(rawHeader)) return null;
+
+        var parts = rawHeader.Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return null;
+
+        // First part is name=value
+        var nameValuePart = parts[0];
+        var eqIdx = nameValuePart.IndexOf('=');
+        if (eqIdx <= 0) return null;
+
+        var name = nameValuePart[..eqIdx].Trim();
+        var val = nameValuePart[(eqIdx + 1)..].Trim();
+
+        var cookie = new ImpactCookie
+        {
+            Name = name,
+            Value = val,
+            Path = "/"
+        };
+
+        for (var i = 1; i < parts.Length; i++)
+        {
+            var directive = parts[i];
+            var dirEq = directive.IndexOf('=');
+            var dirName = (dirEq > 0 ? directive[..dirEq] : directive).Trim();
+            var dirVal = dirEq > 0 ? directive[(dirEq + 1)..].Trim() : string.Empty;
+
+            if (dirName.Equals("Path", StringComparison.OrdinalIgnoreCase))
+            {
+                cookie.Path = string.IsNullOrEmpty(dirVal) ? "/" : dirVal;
+            }
+            else if (dirName.Equals("Domain", StringComparison.OrdinalIgnoreCase))
+            {
+                cookie.Domain = dirVal.TrimStart('.');
+            }
+            else if (dirName.Equals("Expires", StringComparison.OrdinalIgnoreCase))
+            {
+                if (DateTime.TryParse(dirVal, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AdjustToUniversal, out var dt))
+                {
+                    cookie.Expires = dt;
+                }
+            }
+            else if (dirName.Equals("Max-Age", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(dirVal, out var maxAgeSec))
+                {
+                    cookie.Expires = DateTime.UtcNow.AddSeconds(maxAgeSec);
+                }
+            }
+            else if (dirName.Equals("HttpOnly", StringComparison.OrdinalIgnoreCase))
+            {
+                cookie.HttpOnly = true;
+            }
+            else if (dirName.Equals("Secure", StringComparison.OrdinalIgnoreCase))
+            {
+                cookie.Secure = true;
+            }
+            else if (dirName.Equals("SameSite", StringComparison.OrdinalIgnoreCase))
+            {
+                cookie.SameSite = dirVal;
+            }
+        }
+
+        return cookie;
     }
 }
