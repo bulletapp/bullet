@@ -107,14 +107,20 @@ async function runFullTestSuite() {
 
   async function clearAndType(selector, text) {
     await page.waitForSelector(selector);
-    await page.focus(selector);
-    await page.keyboard.down('Control');
-    await page.keyboard.press('KeyA');
-    await page.keyboard.up('Control');
-    await page.keyboard.press('Backspace');
-    if (text) {
-      await page.keyboard.type(text);
-    }
+    await page.evaluate((sel, val) => {
+      const el = document.querySelector(sel);
+      if (el) {
+        const proto = el instanceof HTMLTextAreaElement ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+        const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+        if (setter) {
+          setter.call(el, val || '');
+        } else {
+          el.value = val || '';
+        }
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }, selector, text);
   }
 
   try {
@@ -1466,8 +1472,12 @@ async function runFullTestSuite() {
     console.log('  ✓ Environment Quick-Look Popover opened.');
 
     // Test Search input inside popover
-    await page.type('[data-testid="env-quick-search-input"]', 'base');
+    await clearAndType('[data-testid="env-quick-search-input"]', 'base');
     console.log('  ✓ Filtered variables using quick search input.');
+
+    // Clear search filter so newly added variable is visible
+    await clearAndType('[data-testid="env-quick-search-input"]', '');
+    await new Promise((r) => setTimeout(r, 500));
 
     // Add a quick variable directly from the popover
     await clearAndType('[data-testid="env-quick-key-input"]', 'api_secret_token');
@@ -1477,8 +1487,9 @@ async function runFullTestSuite() {
     await quickAddBtn32.click();
     console.log('  ✓ Added new secret variable via popover quick form.');
 
-    // Clear search filter so newly added variable is visible
+    // Ensure search filter is completely empty
     await clearAndType('[data-testid="env-quick-search-input"]', '');
+    await new Promise((r) => setTimeout(r, 500));
 
     // Toggle secret visibility
     await page.waitForFunction(() => {
