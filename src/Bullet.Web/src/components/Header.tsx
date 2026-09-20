@@ -133,7 +133,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">
               <span className="font-mono font-bold tracking-wider text-sm text-slate-100">BULLET</span>
-              <span className="text-[10px] uppercase font-mono px-1 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">v1.0</span>
+              <span className="text-[10px] uppercase font-mono px-1 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">v0.0.1</span>
             </div>
             <span className="text-[9px] text-slate-400 font-mono tracking-wide">Load. Aim. API.</span>
           </div>

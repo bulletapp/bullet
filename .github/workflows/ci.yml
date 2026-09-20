@@ -58,7 +58,7 @@ jobs:
         run: npm run build
 
   e2e-click-through-tests:
-    name: 30-Phase Automated E2E Browser Suite
+    name: 34-Phase Automated E2E Browser Suite
     needs: lint-and-format
     runs-on: windows-latest
 
@@ -351,7 +351,7 @@ jobs:
             $changelog = "#### Commits since $prevTag`n`n$commitList"
           } else {
             Write-Host "No previous tag found. Generating recent commit history..."
-            $rawList = git log -n 50 --pretty=format:"%s|%h|%H|%an|%ae"
+            $rawList = git log -n 100 --pretty=format:"%s|%h|%H|%an|%ae"
             $commitList = ($rawList | ForEach-Object { & $formatCommitLine $_ }) -join "`n"
             $changelog = "#### Commits Included in this Release`n`n$commitList"
           }
