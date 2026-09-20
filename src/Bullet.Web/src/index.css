@@ -51,6 +51,134 @@ html.light .text-slate-400 {
   color: #334155 !important;
 }
 
+html.light .text-slate-500 {
+  color: #475569 !important;
+}
+
+html.light .text-slate-600 {
+  color: #334155 !important;
+}
+
+/* High-contrast status accents for light mode (WCAG AA compliant) */
+html.light .text-amber-400,
+html.light .text-amber-500 {
+  color: #b45309 !important; /* amber-700 */
+}
+
+html.light .text-amber-300 {
+  color: #92400e !important; /* amber-800 */
+}
+
+html.light .fill-amber-400 {
+  fill: #b45309 !important;
+}
+
+html.light .text-cyan-400,
+html.light .text-cyan-500 {
+  color: #0e7490 !important; /* cyan-700 */
+}
+
+html.light .text-cyan-300 {
+  color: #155e75 !important; /* cyan-800 */
+}
+
+html.light .text-emerald-400,
+html.light .text-emerald-500 {
+  color: #047857 !important; /* emerald-700 */
+}
+
+html.light .text-emerald-300 {
+  color: #065f46 !important; /* emerald-800 */
+}
+
+html.light .text-purple-400,
+html.light .text-purple-500 {
+  color: #7e22ce !important; /* purple-700 */
+}
+
+html.light .text-purple-300 {
+  color: #6b21a8 !important; /* purple-800 */
+}
+
+html.light .text-rose-400,
+html.light .text-rose-500 {
+  color: #be123c !important; /* rose-700 */
+}
+
+html.light .text-rose-300 {
+  color: #9f1239 !important; /* rose-800 */
+}
+
+html.light .text-blue-400,
+html.light .text-blue-500 {
+  color: #1d4ed8 !important; /* blue-700 */
+}
+
+html.light .text-blue-300 {
+  color: #1e40af !important; /* blue-800 */
+}
+
+html.light .text-red-400 {
+  color: #b91c1c !important; /* red-700 */
+}
+
+/* Crisp tinted backgrounds and borders for badges and pills in light mode */
+html.light .bg-amber-500\/10,
+html.light .bg-amber-500\/20,
+html.light .bg-amber-950\/40,
+html.light .bg-amber-950\/50,
+html.light .bg-amber-950\/60 {
+  background-color: #fef3c7 !important;
+}
+
+html.light .border-amber-500\/30,
+html.light .border-amber-500\/40,
+html.light .border-amber-500\/50,
+html.light .border-amber-500\/60 {
+  border-color: #d97706 !important;
+}
+
+html.light .bg-cyan-500\/10,
+html.light .bg-cyan-500\/20,
+html.light .bg-cyan-950\/50,
+html.light .bg-cyan-950\/60 {
+  background-color: #e0f2fe !important;
+}
+
+html.light .border-cyan-500\/40,
+html.light .border-cyan-500\/50 {
+  border-color: #0284c7 !important;
+}
+
+html.light .bg-emerald-500\/10,
+html.light .bg-emerald-500\/20 {
+  background-color: #d1fae5 !important;
+}
+
+html.light .border-emerald-500\/40 {
+  border-color: #059669 !important;
+}
+
+html.light .bg-purple-500\/10,
+html.light .bg-purple-500\/20 {
+  background-color: #f3e8ff !important;
+}
+
+html.light .border-purple-500\/40 {
+  border-color: #9333ea !important;
+}
+
+html.light .bg-rose-500\/10,
+html.light .bg-rose-500\/20,
+html.light .bg-red-500\/10 {
+  background-color: #ffe4e6 !important;
+}
+
+html.light .border-rose-500\/40 {
+  border-color: #e11d48 !important;
+}
+
+/* Light mode panels and surfaces */
 html.light .bg-slate-900,
 html.light .bg-slate-950 {
   background-color: #f8fafc !important;
@@ -83,6 +211,23 @@ html.light input,
 html.light select,
 html.light textarea {
   color: #0f172a !important;
+}
+
+html.light option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html.light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 #root {

@@ -80,7 +80,7 @@ export const EnvironmentQuickLook: React.FC<EnvironmentQuickLookProps> = ({
       <button
         data-testid="env-quick-look-btn"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`flex items-center gap-1 px-2 py-1 rounded text-xs border transition ${
+        className={`h-8 flex items-center gap-1.5 px-2.5 rounded-md text-xs border transition ${
           isOpen
             ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm shadow-amber-950'
             : 'bg-bullet-surface hover:bg-slate-800 text-slate-400 hover:text-slate-200 border-bullet-border'
@@ -102,7 +102,7 @@ export const EnvironmentQuickLook: React.FC<EnvironmentQuickLookProps> = ({
       {isOpen && (
         <div
           data-testid="env-quick-look-popover"
-          className="absolute left-0 mt-2 w-96 bg-[#090d16] border border-bullet-border rounded-lg shadow-2xl p-3 z-50 text-xs font-mono text-slate-200 flex flex-col gap-2.5 max-h-[480px] overflow-hidden"
+          className="absolute left-0 mt-2 w-96 bg-bullet-panel border border-bullet-border rounded-lg shadow-2xl p-3 z-50 text-xs font-mono text-slate-200 flex flex-col gap-2.5 max-h-[480px] overflow-hidden"
         >
           {/* Popover Header */}
           <div className="flex items-center justify-between pb-2 border-b border-bullet-border">

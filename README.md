@@ -1,12 +1,30 @@
-# BULLET: Load. Aim. API.
+# BULLET — The Fast, Local-First Postman Alternative 🎯
 
 [![Website](https://img.shields.io/badge/Website-vishalviswanathan03.github.io%2Fbullet-f59e0b?style=flat-square&logo=google-chrome&logoColor=white)](https://vishalviswanathan03.github.io/bullet/)
+[![Postman Alternative](https://img.shields.io/badge/Postman-Alternative-orange?style=flat-square&logo=postman&logoColor=white)](https://github.com/VishalViswanathan03/bullet)
 [![GitHub Release](https://img.shields.io/github/v/release/VishalViswanathan03/bullet?color=10b981&style=flat-square)](https://github.com/VishalViswanathan03/bullet/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 
-> A serious, production-grade API development and automated testing platform for engineering teams. Built on **.NET 10**, **C# 13**, **React 19**, and **Vite**.
+> **BULLET** is the blazing-fast, open-source, local-first alternative to Postman and Insomnia for testing **REST**, **GraphQL**, **gRPC**, and **WebSockets**. Built with **.NET 10**, **C# 13**, **React 19**, and **Vite** — engineered with zero cloud lock-in, absolute offline privacy, mTLS client certificates, and serverless WiFi Mesh LAN collaboration.
 >
 > 🌐 **Official Website & Live Weapon Simulator:** [https://vishalviswanathan03.github.io/bullet/](https://vishalviswanathan03.github.io/bullet/)
+
+---
+
+## ⚔️ Why BULLET vs. Postman?
+
+Frustrated with Postman's forced cloud logins, collection run paywalls (25 runs/month limit), bloated Electron memory usage, and cloud privacy risks? **BULLET** was architected from the ground up as a high-velocity, local-first powerhouse:
+
+| Capability | BULLET | Postman | Insomnia | Bruno |
+|---|:---:|:---:|:---:|:---:|
+| **Data Storage & Privacy** | **100% Local-First** (SQLite / Postgres / JSON) | Forced Cloud Sync | Forced Cloud Account | Git-based / Local |
+| **Forced Login / Paywall** | **None** (Open Source MIT) | Cloud Account Required | Account Required | Paid Pro Features |
+| **Collection Runner Limits** | **Unlimited** (UI & CLI) | 25 runs/month on free tier | Unlimited | Unlimited |
+| **gRPC Studio** | **Full** (Proto Import + Reflection + TLS) | Limited / Cloud | Limited | Basic |
+| **Client mTLS Certificates** | **Full** (Per-host PEM, PFX, Passphrase, CA) | Paid/Cloud Sync | Settings Tab | Limited |
+| **Team Collaboration** | **WiFi Mesh P2P** (Zero Servers) | Cloud Relay | Cloud Relay | Git repo only |
+| **Performance Core** | **.NET 10 & C# 13** (Sub-ms diagnostics) | Electron / Node.js | Electron | Node.js |
+| **Postman v2.1 Import** | **1-Click Instant Translation** | Native | Partial | Partial |
 
 ---
 
@@ -16,12 +34,15 @@ Bullet is a modern, developer-centric, high-performance alternative to tradition
 
 Bullet is **not** a UI mockup, **not** a prototype with placeholder buttons, and **not** a CRUD dashboard. It is a fully operational API platform capable of:
 - Executing real HTTP/REST requests with sub-millisecond connection timing diagnostics.
-- Full **gRPC Studio** support: Server Reflection auto-discovery, `.proto` schema parser, HTTP/2 binary framing, and metadata/trailers inspection.
+- Full **gRPC Studio** support: Server Reflection auto-discovery, `.proto` schema parser & modal upload, HTTP/2 binary framing, and metadata/trailers inspection.
 - Enterprise **OAuth 2.0** engine: Authorization Code (with PKCE `S256`), Client Credentials, Password, and Refresh Token flows with live token acquisition and injection.
 - Running sandboxed JavaScript pre-request triggers and test verifiers with strict memory and CPU boundaries.
 - Protecting systems against SSRF by blocking private ranges, loopback addresses, and cloud metadata APIs.
-- Managing mutual TLS (mTLS) client certificates, custom enterprise CA bundles, and cipher suites.
+- Managing mutual TLS (mTLS) client certificates (PEM, PFX, passphrase), custom enterprise CA bundles, cipher suites, and global/per-request SSL verification toggles.
+- Zero-config **WiFi Mesh LAN Collaboration**: Peer-to-peer workspace sharing and live sync over your local network with zero external servers.
 - Running automated test suites via an embedded runner (Firing Run) and a native CLI for CI/CD pipelines.
+- Multi-Tab Request Workbench with dirty indicator dots and keyboard tab switching.
+- Environment Quick-Look popover for instant variable search and secret inspection.
 - Serving simulated API responses with configurable latency through an integrated mock engine (Target Range).
 - Scheduling autonomous health checks with real-time alerts (Sentinels).
 
@@ -183,7 +204,7 @@ Open [http://localhost:3000](http://localhost:3000) with hot module replacement 
 # Unit & Integration Tests:
 dotnet test Bullet.slnx
 
-# 25-Phase Automated E2E Browser Suite:
+# 34-Phase Automated E2E Browser Suite:
 cd src/Bullet.Web
 node e2e-full-suite.mjs
 ```

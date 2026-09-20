@@ -141,7 +141,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Range Selector or Collaborative Remote Session Indicator */}
         {meshSession?.isConnected ? (
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-cyan-950/60 border border-cyan-500/50 text-xs font-mono">
+          <div className="h-8 flex items-center gap-2 px-2.5 rounded-md bg-cyan-950/60 border border-cyan-500/50 text-xs font-mono">
             <Wifi className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
             <span className="text-slate-400 text-[10px]">Mesh:</span>
             <span className="text-cyan-300 font-bold max-w-[160px] truncate">{meshSession.rangeName}</span>
@@ -163,7 +163,7 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-1.5 bg-bullet-surface border border-bullet-border rounded px-2 py-1 text-xs">
+          <div className="h-8 flex items-center gap-1.5 bg-bullet-surface border border-bullet-border rounded-md px-2.5 text-xs">
             <Layers className="w-3.5 h-3.5 text-slate-400" />
             <span className="text-slate-400 font-mono text-[11px]">Range:</span>
             <select
@@ -192,7 +192,7 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         {/* Loadout Selector with Production Indicator */}
-        <div className={`flex items-center gap-1.5 border rounded px-2 py-1 text-xs transition-colors ${
+        <div className={`h-8 flex items-center gap-1.5 border rounded-md px-2.5 text-xs transition-colors ${
           selectedLoadout?.isProduction
             ? 'bg-amber-950/40 border-amber-500/60 text-amber-300 shadow-sm shadow-amber-950'
             : 'bg-bullet-surface border-bullet-border text-slate-200'
@@ -247,7 +247,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           data-testid="header-new-shot-btn"
           onClick={onOpenNewShot}
-          className="flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
+          className="h-8 flex items-center gap-1.5 px-2.5 text-xs rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
           title="Create New Shot"
         >
           <Plus className="w-3.5 h-3.5 text-amber-400" />
@@ -258,10 +258,10 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           data-testid="header-firing-run-btn"
           onClick={onOpenFiringRun}
-          className="flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/40 transition"
+          className="h-8 flex items-center gap-1.5 px-2.5 text-xs rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/40 transition"
           title="Run Arsenal Firing Run"
         >
-          <Play className="w-3 h-3 fill-amber-400" />
+          <Play className="w-3 h-3 fill-amber-400 text-amber-400" />
           <span className="font-mono font-medium">Firing Run</span>
         </button>
 
@@ -270,7 +270,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             data-testid="header-mesh-btn"
             onClick={onOpenMeshCollab}
-            className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded border transition ${
+            className={`h-8 flex items-center gap-1.5 px-2.5 text-xs rounded-md border transition ${
               isMeshBroadcasting
                 ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300 shadow-sm shadow-emerald-500/20'
                 : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
@@ -290,7 +290,7 @@ export const Header: React.FC<HeaderProps> = ({
           data-testid="header-import-btn"
           data-legacy-testid="header-transfer-btn"
           onClick={onOpenArmoryTransfer}
-          className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
+          className="h-8 flex items-center gap-1.5 px-2.5 text-xs rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
           title="Import (Postman Collection / Environment, OpenAPI, cURL)"
         >
           <Upload className="w-3.5 h-3.5 text-amber-400" />
@@ -301,7 +301,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           data-testid="header-cmd-palette-btn"
           onClick={onOpenCommandPalette}
-          className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition"
+          className="h-8 flex items-center gap-1.5 px-2 text-xs rounded-md bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition"
           title="Command Palette (Ctrl+Shift+P)"
         >
           <Command className="w-3.5 h-3.5" />
@@ -312,7 +312,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           data-testid="header-console-toggle-btn"
           onClick={onToggleConsole}
-          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded border transition ${
+          className={`h-8 flex items-center gap-1.5 px-2.5 text-xs rounded-md border transition ${
             consoleOpen
               ? 'bg-cyan-950/50 border-cyan-500/50 text-cyan-300'
               : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'
@@ -332,7 +332,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           data-testid="global-ssl-toggle-btn"
           onClick={toggleGlobalSsl}
-          className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded border transition cursor-pointer ${
+          className={`h-8 flex items-center gap-1.5 px-2.5 text-xs rounded-md border transition cursor-pointer ${
             globalSsl
               ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
               : 'bg-amber-950/50 border-amber-500/60 text-amber-300 hover:bg-amber-950/70 shadow-sm shadow-amber-950/50'
@@ -352,7 +352,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             data-testid="pwa-install-btn"
             onClick={handleInstallApp}
-            className="flex items-center gap-1.5 px-2 py-1 text-xs rounded bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-300 border border-amber-500/50 hover:bg-amber-500/30 transition shadow-sm animate-pulse cursor-pointer"
+            className="h-8 flex items-center gap-1.5 px-2.5 text-xs rounded-md bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-300 border border-amber-500/50 hover:bg-amber-500/30 transition shadow-sm animate-pulse cursor-pointer"
             title="Install BULLET as a standalone macOS/Desktop application"
           >
             <Download className="w-3.5 h-3.5 text-amber-400" />
@@ -364,7 +364,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           data-testid="header-sound-toggle-btn"
           onClick={toggleSound}
-          className={`flex items-center justify-center w-7 h-7 rounded border transition ${
+          className={`w-8 h-8 flex items-center justify-center rounded-md border transition ${
             soundActive
               ? 'bg-slate-800 hover:bg-slate-700 text-cyan-400 border-slate-700'
               : 'bg-slate-800/60 hover:bg-slate-700 text-slate-500 border-slate-800'
@@ -382,7 +382,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           data-testid="theme-toggle-btn"
           onClick={toggleTheme}
-          className="flex items-center justify-center w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+          className="w-8 h-8 flex items-center justify-center rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
           title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
           {theme === 'dark' ? (
@@ -393,7 +393,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Status Indicator */}
-        <div className="flex items-center gap-1 pl-2 border-l border-slate-800 text-[10px] text-slate-400 font-mono" title="Bullet Core Connected">
+        <div className="h-8 flex items-center gap-1.5 pl-2 border-l border-slate-800 text-[10px] text-slate-400 font-mono" title="Bullet Core Connected">
           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" style={{ animationDuration: '3s' }} />
           <span>LIVE</span>
         </div>
