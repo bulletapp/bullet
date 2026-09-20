@@ -58,7 +58,7 @@ jobs:
         run: npm run build
 
   e2e-click-through-tests:
-    name: 34-Phase Automated E2E Browser Suite
+    name: 36-Phase Automated E2E Browser Suite
     needs: lint-and-format
     runs-on: windows-latest
 

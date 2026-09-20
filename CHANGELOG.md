@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.0.2] - 2026-09-20
+
+### 🛡️ Security Hardening & Vulnerability Remediation
+- **OAuth Reflected XSS Protection**: Strict HTML entity sanitization on callback redirect parameters (`error`, `error_description`, `code`).
+- **Comprehensive SSRF Defense**: Hardened against IPv4-mapped IPv6 evasions, raw IP literals, post-trigger script URL rewrites, and unconditional cloud instance metadata blocking (`169.254.169.254`, `metadata.google.internal`). Added CIDR blocks for Carrier-Grade NAT, Multicast, and Reserved ranges.
+- **RFC 6265 Cookie Locker Scoping**: Implemented domain matching to eliminate cross-domain cookie leakage across different hosts in the same workspace. Expired cookies are automatically filtered.
+- **Response Preview Sandboxing**: Hardened HTML response preview `<iframe>` with null sandboxing (`sandbox=""`) to prevent untrusted responses from executing scripts in the application origin.
+- **Restricted CORS Policy**: Locked down API origins to `localhost`, local private WiFi/LAN subnets (`192.168.x.x`, `10.x.x.x`, `172.16-31.x.x`), local mDNS (`*.local`), and intranet machine names, blocking drive-by CSRF attacks from external websites.
+- **WiFi Mesh Credential Sanitization**: Client TLS private keys, certificates, and passwords are automatically stripped prior to broadcasting workspace snapshots to peers over LAN.
+- **gRPC TLS Enforcement**: Restored full certificate trust chain verification on gRPC channel connections.
+- **Desktop WebView2 Navigation Trapping**: External links and new windows are isolated and delegated directly to the user's default system browser.
+
+### ⚡ New Features & Quality Enhancements
+- **Postman Scripting Bridge (`pm.*`)**: Native support for Postman pre-request and test assertion syntax (`pm.test`, `pm.expect`, `pm.response.to.have.status()`, `pm.response.json()`, `pm.environment`, `pm.variables`), enabling imported collections to run without script modifications.
+- **Arsenal Field Manual**: Interactive documentation modal with 1-click export to Markdown (`.md`) and OpenAPI/JSON (`.json`), clipboard copy, and file downloads.
+- **Target Range Mock Server Status Codes & Dynamic Routing**: Mock servers now return custom HTTP status codes (201, 400, 404, 500, etc.) and match parameterized routes (`/users/:id`, wildcard `/api/*`).
+- **URL Path Variables Substitution**: Full token and variable resolution for `:param` and `{param}` path variables in the execution pipeline.
+- **CLI Single-Shot Runner**: Added `bullet shot fire <url_or_file>` with support for GitHub Actions CI annotations (`::error title=...`) and `--bail` / `--stop-on-error`.
+- **CodeShot Auth Injection**: Generated cURL and multi-language snippets automatically inject configured Bearer, Basic, and API Key credentials, plus `grpcurl` commands.
+- **Sentinel Background Execution**: Eagerly loads environment loadouts and rounds during automated scheduled runs.
+- **36-Phase Automated E2E Suite**: Expanded Puppeteer browser test suite from 34 to 36 end-to-end verification phases covering the Field Manual modal and Postman `pm.*` scripting bridge.
+
+---
+
 ## [0.0.1] - 2026-09-20 (Initial Release)
 
 > **BULLET** is the blazing-fast, open-source, local-first alternative to Postman and Insomnia for testing **REST**, **GraphQL**, **gRPC**, and **WebSockets**. Built with **.NET 10**, **C# 13**, **React 19**, and **Vite** — engineered with zero cloud lock-in, absolute offline privacy, mTLS client certificates, and serverless WiFi Mesh LAN collaboration.
