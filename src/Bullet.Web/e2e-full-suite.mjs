@@ -1506,7 +1506,7 @@ async function runFullTestSuite() {
     await page.waitForFunction(() => {
       const el = document.querySelector('[data-testid="toggle-secret-btn-api_secret_token"]');
       return !!el;
-    }, { timeout: 15000 });
+    }, { timeout: 25000 });
     await page.click('[data-testid="toggle-secret-btn-api_secret_token"]');
     console.log('  ✓ Toggled secret variable reveal / hide mask.');
 

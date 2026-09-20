@@ -23,6 +23,12 @@ export const EnvironmentQuickLook: React.FC<EnvironmentQuickLookProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const popoverRef = useRef<HTMLDivElement | null>(null);
 
+  const [localRounds, setLocalRounds] = useState<Round[]>(activeLoadout?.rounds || []);
+
+  useEffect(() => {
+    setLocalRounds(activeLoadout?.rounds || []);
+  }, [activeLoadout]);
+
   // Close on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -36,7 +42,7 @@ export const EnvironmentQuickLook: React.FC<EnvironmentQuickLookProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  const rounds = activeLoadout?.rounds || [];
+  const rounds = localRounds;
   const filteredRounds = rounds.filter((r) => {
     const q = search.toLowerCase();
     const key = (r.key || r.name || '').toLowerCase();
@@ -56,11 +62,15 @@ export const EnvironmentQuickLook: React.FC<EnvironmentQuickLookProps> = ({
     if (!activeLoadout || !newKey.trim()) return;
     setIsAdding(true);
     try {
-      await bulletApi.addRound(activeLoadout.id, {
+      const created = await bulletApi.addRound(activeLoadout.id, {
         key: newKey.trim(),
+        name: newKey.trim(),
         value: newValue,
         isSecret: newIsSecret,
       });
+      if (created) {
+        setLocalRounds((prev) => [...prev.filter((r) => r.id !== created.id), created]);
+      }
       setNewKey('');
       setNewValue('');
       setNewIsSecret(false);

@@ -243,6 +243,10 @@ export function App() {
       }).catch(() => {});
       bulletApi.getLoadouts(selectedRange.id).then((loads) => {
         setLoadouts(loads);
+        setSelectedLoadout((prev) => {
+          if (!prev) return loads.length > 0 ? loads[0] : null;
+          return loads.find((l) => l.id === prev.id) || (loads.length > 0 ? loads[0] : null);
+        });
       }).catch(() => {});
     }
   }, [activeSidebarTab, selectedRange]);
@@ -259,10 +263,11 @@ export function App() {
       setLoadouts(loads);
       setTlsProfiles(tls);
 
-      // Select default loadout if none selected
-      if (loads.length > 0 && !selectedLoadout) {
-        setSelectedLoadout(loads[0]);
-      }
+      // Keep selected loadout in sync with fresh rounds data
+      setSelectedLoadout((prev) => {
+        if (!prev) return loads.length > 0 ? loads[0] : null;
+        return loads.find((l) => l.id === prev.id) || (loads.length > 0 ? loads[0] : null);
+      });
 
       // Select first available shot if none selected
       if (!selectedShot && ars.length > 0) {
