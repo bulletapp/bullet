@@ -229,12 +229,23 @@ export function App() {
     };
   }, [meshSession?.isConnected, meshSession?.rangeId, meshSession?.ticket]);
 
-  // 2. Fetch Range Children when active Range changes
   useEffect(() => {
     if (selectedRange && (!meshSession?.isConnected || meshSession.isHost)) {
       loadRangeData(selectedRange.id);
     }
   }, [selectedRange, meshSession?.isConnected]);
+
+  // Refresh TLS profiles and loadouts when switching back to Arsenals workbench
+  useEffect(() => {
+    if (selectedRange && activeSidebarTab === 'arsenals') {
+      bulletApi.getTlsProfiles(selectedRange.id).then((profiles) => {
+        setTlsProfiles(profiles);
+      }).catch(() => {});
+      bulletApi.getLoadouts(selectedRange.id).then((loads) => {
+        setLoadouts(loads);
+      }).catch(() => {});
+    }
+  }, [activeSidebarTab, selectedRange]);
 
   const loadRangeData = async (rangeId: string) => {
     try {
