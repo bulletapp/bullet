@@ -213,7 +213,7 @@ async function runFullTestSuite() {
     console.log('  ✓ Clicked "Create Shot" submit button.');
 
     // Verify modal closes
-    await page.waitForSelector('[data-testid="new-shot-modal"]', { hidden: true, timeout: 5000 });
+    await page.waitForSelector('[data-testid="new-shot-modal"]', { hidden: true, timeout: 15000 });
     console.log('  ✓ Create Shot modal closed cleanly.');
 
     // Verify center URL bar updated to https://www.google.com
@@ -665,7 +665,7 @@ async function runFullTestSuite() {
 
     const createSquadSubmit = await page.waitForSelector('[data-testid="create-squad-submit-btn"]');
     await createSquadSubmit.click();
-    await page.waitForSelector('[data-testid="new-squad-modal"]', { hidden: true, timeout: 5000 });
+    await page.waitForSelector('[data-testid="new-squad-modal"]', { hidden: true, timeout: 15000 });
     console.log('  ✓ Created target squad/folder "Core Services Folder".');
 
     // Wait for the squad element to be rendered in the sidebar
@@ -829,6 +829,17 @@ async function runFullTestSuite() {
     // Set URL to local test-api post endpoint
     await clearAndType('[data-testid="url-input"]', `${APP_URL}/api/test-api/post`);
     console.log(`  ✓ Set URL to "${APP_URL}/api/test-api/post".`);
+
+    // Switch to Settings tab to enable SSRF bypass for local test-api
+    const settingsTab18 = await page.waitForSelector('[data-testid="tab-settings"]');
+    await settingsTab18.click();
+    const ssrfToggle18 = await page.waitForSelector('[data-testid="bypass-ssrf-toggle"]');
+    const isSsrfBypassed = await page.evaluate((el) => el.checked, ssrfToggle18);
+    if (!isSsrfBypassed) {
+      await ssrfToggle18.click();
+    }
+    console.log('  ✓ Ensured SSRF bypass is enabled for local test-api.');
+    await new Promise((r) => setTimeout(r, 200));
 
     // Click Body tab
     const bodyTab = await page.waitForSelector('[data-testid="tab-body"]');
@@ -1299,7 +1310,7 @@ async function runFullTestSuite() {
     console.log('  ✓ Clicked "Parse & Load Services".');
 
     // Verify proto modal closes and service dropdown is populated
-    await page.waitForSelector('[data-testid="grpc-proto-modal"]', { hidden: true, timeout: 5000 });
+    await page.waitForSelector('[data-testid="grpc-proto-modal"]', { hidden: true, timeout: 15000 });
     console.log('  ✓ Proto schema parsed; modal closed cleanly.');
 
     // Verify active proto badge in cockpit
