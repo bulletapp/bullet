@@ -15,6 +15,95 @@ interface ImpactViewerProps {
 
 type ImpactTab = 'pretty' | 'raw' | 'preview' | 'headers' | 'cookies' | 'timing' | 'verifiers' | 'trailers';
 
+const renderHighlightedJson = (jsonStr: string, searchTerm: string) => {
+  if (!jsonStr) return null;
+  const tokenRegex = /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?|[{}[\],:])/g;
+
+  const highlightSearch = (text: string, keyPrefix: string) => {
+    if (!searchTerm.trim()) return text;
+    try {
+      const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+      return parts.map((part, i) =>
+        part.toLowerCase() === searchTerm.toLowerCase() ? (
+          <mark
+            key={`${keyPrefix}-${i}`}
+            data-testid="json-search-highlight"
+            className="bg-amber-400 text-slate-950 font-bold px-0.5 rounded shadow-sm"
+          >
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      );
+    } catch {
+      return text;
+    }
+  };
+
+  const elements: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = tokenRegex.exec(jsonStr)) !== null) {
+    if (match.index > lastIndex) {
+      elements.push(jsonStr.substring(lastIndex, match.index));
+    }
+    const token = match[0];
+    const key = `tok-${match.index}`;
+
+    if (/^"/.test(token)) {
+      if (/:$/.test(token)) {
+        const keyName = token.slice(0, -1);
+        elements.push(
+          <span key={key} className="text-sky-400 font-semibold">
+            {highlightSearch(keyName, key)}
+            <span className="text-slate-400">:</span>
+          </span>
+        );
+      } else {
+        elements.push(
+          <span key={key} className="text-emerald-400">
+            {highlightSearch(token, key)}
+          </span>
+        );
+      }
+    } else if (/true|false/.test(token)) {
+      elements.push(
+        <span key={key} className="text-purple-400 font-bold">
+          {highlightSearch(token, key)}
+        </span>
+      );
+    } else if (/null/.test(token)) {
+      elements.push(
+        <span key={key} className="text-rose-400 italic font-bold">
+          {highlightSearch(token, key)}
+        </span>
+      );
+    } else if (/^-?\d/.test(token)) {
+      elements.push(
+        <span key={key} className="text-amber-400 font-semibold">
+          {highlightSearch(token, key)}
+        </span>
+      );
+    } else {
+      elements.push(
+        <span key={key} className="text-slate-500">
+          {token}
+        </span>
+      );
+    }
+    lastIndex = tokenRegex.lastIndex;
+  }
+
+  if (lastIndex < jsonStr.length) {
+    elements.push(jsonStr.substring(lastIndex));
+  }
+
+  return elements;
+};
+
 export const ImpactViewer: React.FC<ImpactViewerProps> = ({ 
   impact, 
   isFiring, 
@@ -515,8 +604,11 @@ export const ImpactViewer: React.FC<ImpactViewerProps> = ({
               </div>
             )}
 
-            <pre className="text-slate-200 leading-relaxed overflow-x-auto whitespace-pre-wrap select-text selection:bg-amber-500/30">
-              {formattedJson}
+            <pre
+              data-testid="json-pretty-output"
+              className="leading-relaxed overflow-x-auto whitespace-pre-wrap select-text selection:bg-amber-500/30 font-mono text-xs"
+            >
+              {isJson ? renderHighlightedJson(formattedJson, jsonSearch) : formattedJson}
             </pre>
           </div>
         )}

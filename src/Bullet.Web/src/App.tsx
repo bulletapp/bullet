@@ -15,6 +15,7 @@ import { ShotEditor } from './components/ShotEditor';
 import { ImpactViewer } from './components/ImpactViewer';
 import { TrajectoryConsole } from './components/TrajectoryConsole';
 import { BulletIntroSplash } from './components/BulletIntroSplash';
+import { RequestTabBar, RequestTabItem } from './components/RequestTabBar';
 
 // Modals
 import { CommandPaletteModal } from './components/modals/CommandPaletteModal';
@@ -48,6 +49,8 @@ export function App() {
   // Navigation & View State
   const [activeSidebarTab, setActiveSidebarTab] = useState<ActiveSidebarTab>('arsenals');
   const [selectedShot, setSelectedShot] = useState<Shot | null>(null);
+  const [requestTabs, setRequestTabs] = useState<RequestTabItem[]>([]);
+  const [activeTabId, setActiveTabId] = useState<string>('');
 
   // Execution & Telemetry State
   const [impact, setImpact] = useState<Impact | null>(null);
@@ -253,7 +256,11 @@ export function App() {
       // Select first available shot if none selected
       if (!selectedShot && ars.length > 0) {
         const firstShot = ars[0].shots?.[0] || ars[0].squads?.[0]?.shots?.[0];
-        if (firstShot) setSelectedShot(firstShot);
+        if (firstShot) {
+          setSelectedShot(firstShot);
+          setRequestTabs([{ id: firstShot.id, shot: firstShot, isDirty: false }]);
+          setActiveTabId(firstShot.id);
+        }
       }
     } catch (err) {
       console.error('Failed to load range details', err);
@@ -298,11 +305,102 @@ export function App() {
         e.preventDefault();
         setCommandPaletteOpen(true);
       }
+      // Close Tab: Ctrl+W or Cmd+W
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'w' || e.key === 'W')) {
+        e.preventDefault();
+        if (activeTabId) {
+          handleCloseTab(activeTabId);
+        }
+      }
+      // New Tab: Ctrl+T or Cmd+T
+      if ((e.ctrlKey || e.metaKey) && (e.key === 't' || e.key === 'T')) {
+        e.preventDefault();
+        handleNewTab();
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedShot, selectedLoadout]);
+  }, [selectedShot, selectedLoadout, activeTabId, requestTabs]);
+
+  // Request Workbench Tabs Management
+  const openShotInTab = (shot: Shot) => {
+    setRequestTabs((prev) => {
+      const existing = prev.find((t) => t.id === shot.id);
+      if (existing) {
+        return prev;
+      }
+      return [...prev, { id: shot.id, shot, isDirty: false }];
+    });
+    setActiveTabId(shot.id);
+    setSelectedShot(shot);
+    setImpact(null);
+    setActiveSidebarTab('arsenals');
+  };
+
+  const handleSelectTab = (tabId: string) => {
+    const target = requestTabs.find((t) => t.id === tabId);
+    if (target) {
+      setActiveTabId(tabId);
+      setSelectedShot(target.shot);
+      setImpact(null);
+    }
+  };
+
+  const handleCloseTab = (tabId: string) => {
+    setRequestTabs((prev) => {
+      const remaining = prev.filter((t) => t.id !== tabId);
+      if (activeTabId === tabId) {
+        if (remaining.length > 0) {
+          const next = remaining[remaining.length - 1];
+          setActiveTabId(next.id);
+          setSelectedShot(next.shot);
+          setImpact(null);
+        } else {
+          setActiveTabId('');
+          setSelectedShot(null);
+          setImpact(null);
+        }
+      }
+      return remaining;
+    });
+  };
+
+  const handleNewTab = () => {
+    const newId = `draft-${Date.now()}`;
+    const defaultArsenalId = arsenals.length > 0 ? arsenals[0].id : '';
+    const newDraftShot: Shot = {
+      id: newId,
+      name: 'Untitled Shot',
+      method: 'GET',
+      url: 'https://httpbin.org/get',
+      arsenalId: defaultArsenalId,
+      orderIndex: 0,
+      headers: [],
+      parameters: [],
+      payload: { type: 'none', formData: [] },
+      armor: { type: 'inherit' },
+      settings: {
+        timeoutMs: 30000,
+        followRedirects: true,
+        maxRedirects: 5,
+        verifyTls: true,
+        bypassSsrfGuard: false,
+      },
+    };
+    setRequestTabs((prev) => [...prev, { id: newId, shot: newDraftShot, isDirty: false }]);
+    setActiveTabId(newId);
+    setSelectedShot(newDraftShot);
+    setImpact(null);
+    setActiveSidebarTab('arsenals');
+  };
+
+  const handleShotChange = (updated: Shot) => {
+    setSelectedShot(updated);
+    setRequestTabs((prev) =>
+      prev.map((t) => (t.id === activeTabId ? { ...t, shot: updated, isDirty: true } : t))
+    );
+  };
 
   // Actions
   const handleFireShot = async (shotOverride?: any) => {
@@ -488,8 +586,25 @@ export function App() {
     }
 
     try {
-      const updated = await bulletApi.updateShot(selectedShot.id, selectedShot);
+      let updated: Shot;
+      if (selectedShot.id.startsWith('draft-')) {
+        const { id, ...shotData } = selectedShot;
+        updated = await bulletApi.createShot({
+          ...shotData,
+          arsenalId: shotData.arsenalId || (arsenals[0]?.id ?? ''),
+        });
+      } else {
+        updated = await bulletApi.updateShot(selectedShot.id, selectedShot);
+      }
       setSelectedShot(updated);
+      setRequestTabs((prev) =>
+        prev.map((t) =>
+          t.id === activeTabId
+            ? { ...t, id: updated.id, shot: updated, isDirty: false }
+            : t
+        )
+      );
+      setActiveTabId(updated.id);
       if (selectedRange) loadRangeData(selectedRange.id);
     } catch (err: any) {
       alert(err.message || 'Failed to save shot');
@@ -646,6 +761,10 @@ export function App() {
         isMeshBroadcasting={isMeshBroadcasting}
         meshSession={meshSession}
         onDisconnectMesh={handleDisconnectMesh}
+        onOpenLoadouts={() => setActiveSidebarTab('loadouts')}
+        onRefreshLoadouts={() => {
+          if (selectedRange) loadRangeData(selectedRange.id);
+        }}
       />
 
       {/* 2. Main Workspace Layout */}
@@ -656,11 +775,7 @@ export function App() {
           onTabChange={setActiveSidebarTab}
           arsenals={arsenals}
           selectedShotId={selectedShot?.id || null}
-          onSelectShot={(shot) => {
-            setSelectedShot(shot);
-            setImpact(null);
-            setActiveSidebarTab('arsenals');
-          }}
+          onSelectShot={(shot) => openShotInTab(shot)}
           onOpenNewArsenal={() => setNewArsenalOpen(true)}
           onOpenNewSquad={(arsenalId) => {
             setTargetArsenalForSquad(arsenalId);
@@ -682,60 +797,82 @@ export function App() {
         {/* Center Canvas */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {activeSidebarTab === 'arsenals' && (
-            selectedShot ? (
-              <div className="flex-1 flex flex-col h-full overflow-hidden">
-                {/* Request URL Bar */}
-                <UrlBar
-                  shot={selectedShot}
-                  onChange={setSelectedShot}
-                  onFire={() => handleFireShot()}
-                  onCancel={() => setIsFiring(false)}
-                  isFiring={isFiring}
-                  onSave={handleSaveShot}
-                  onOpenCodeShot={() => setCodeShotOpen(true)}
-                  activeLoadout={selectedLoadout}
+            <div className="flex-1 flex flex-col h-full overflow-hidden">
+              {/* Request Tab Bar */}
+              {requestTabs.length > 0 && (
+                <RequestTabBar
+                  tabs={requestTabs}
+                  activeTabId={activeTabId}
+                  onSelectTab={handleSelectTab}
+                  onCloseTab={handleCloseTab}
+                  onNewTab={handleNewTab}
                 />
+              )}
 
-                {/* Split Request / Response Pane */}
-                <div className="flex-1 flex overflow-hidden">
-                  {/* Left: Shot Editor (Tabs: Params, Headers, Armor, Payload, Triggers, Verifiers, Settings) */}
-                  <div className="w-1/2 border-r border-bullet-border flex flex-col overflow-hidden">
-                    <ShotEditor
-                      shot={selectedShot}
-                      onChange={setSelectedShot}
-                      tlsProfiles={tlsProfiles}
-                      onOpenTlsProfiles={() => setActiveSidebarTab('tls')}
-                    />
-                  </div>
+              {selectedShot ? (
+                <div className="flex-1 flex flex-col h-full overflow-hidden">
+                  {/* Request URL Bar */}
+                  <UrlBar
+                    shot={selectedShot}
+                    onChange={handleShotChange}
+                    onFire={() => handleFireShot()}
+                    onCancel={() => setIsFiring(false)}
+                    isFiring={isFiring}
+                    onSave={handleSaveShot}
+                    onOpenCodeShot={() => setCodeShotOpen(true)}
+                    activeLoadout={selectedLoadout}
+                  />
 
-                  {/* Right: Impact Viewer (Pretty, Raw, Preview, Headers, Cookies, Timing, Verifications) */}
-                  <div className="w-1/2 flex flex-col overflow-hidden">
-                    <ImpactViewer
-                      impact={impact}
-                      isFiring={isFiring}
-                      onRetry={() => handleFireShot()}
-                    />
+                  {/* Split Request / Response Pane */}
+                  <div className="flex-1 flex overflow-hidden">
+                    {/* Left: Shot Editor (Tabs: Params, Headers, Armor, Payload, Triggers, Verifiers, Settings) */}
+                    <div className="w-1/2 border-r border-bullet-border flex flex-col overflow-hidden">
+                      <ShotEditor
+                        shot={selectedShot}
+                        onChange={handleShotChange}
+                        tlsProfiles={tlsProfiles}
+                        onOpenTlsProfiles={() => setActiveSidebarTab('tls')}
+                      />
+                    </div>
+
+                    {/* Right: Impact Viewer (Pretty, Raw, Preview, Headers, Cookies, Timing, Verifications) */}
+                    <div className="w-1/2 flex flex-col overflow-hidden">
+                      <ImpactViewer
+                        impact={impact}
+                        isFiring={isFiring}
+                        onRetry={() => handleFireShot()}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-slate-500 font-mono text-xs p-8">
-                <div>No Shot selected. Select a shot from the Arsenal tree or create a new shot.</div>
-                <button
-                  onClick={() => {
-                    if (arsenals.length > 0) {
-                      setNewShotTarget({ arsenalId: arsenals[0].id });
-                      setNewShotOpen(true);
-                    } else {
-                      setNewArsenalOpen(true);
-                    }
-                  }}
-                  className="mt-3 px-3 py-1.5 rounded bg-amber-500 text-slate-950 font-bold"
-                >
-                  {arsenals.length > 0 ? '+ Create New Shot' : '+ Create Arsenal'}
-                </button>
-              </div>
-            )
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-slate-500 font-mono text-xs p-8">
+                  <div>No Shot selected. Select a shot from the Arsenal tree or create a new shot.</div>
+                  <div className="flex items-center gap-2 mt-3">
+                    <button
+                      onClick={() => {
+                        if (arsenals.length > 0) {
+                          setNewShotTarget({ arsenalId: arsenals[0].id });
+                          setNewShotOpen(true);
+                        } else {
+                          setNewArsenalOpen(true);
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded bg-amber-500 text-slate-950 font-bold"
+                    >
+                      {arsenals.length > 0 ? '+ Create New Shot' : '+ Create Arsenal'}
+                    </button>
+                    <button
+                      data-testid="empty-new-tab-btn"
+                      onClick={handleNewTab}
+                      className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 font-bold"
+                    >
+                      + Open Blank Tab
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {activeSidebarTab === 'loadouts' && selectedRange && (
@@ -801,10 +938,7 @@ export function App() {
         onOpenArmoryTransfer={() => setArmoryTransferOpen(true)}
         onOpenManual={() => setActiveSidebarTab('manual')}
         arsenals={arsenals}
-        onSelectShot={(shot) => {
-          setSelectedShot(shot);
-          setActiveSidebarTab('arsenals');
-        }}
+        onSelectShot={(shot) => openShotInTab(shot)}
       />
 
       {selectedRange && (

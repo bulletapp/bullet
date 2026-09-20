@@ -131,7 +131,7 @@ export const FiringRunModal: React.FC<FiringRunModalProps> = ({
               Automated Runner
             </span>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-200 p-1 rounded hover:bg-slate-800">
+          <button data-testid="firing-run-close-x" onClick={onClose} className="text-slate-400 hover:text-slate-200 p-1 rounded hover:bg-slate-800">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -367,6 +367,7 @@ export const FiringRunModal: React.FC<FiringRunModalProps> = ({
         {/* Modal Footer */}
         <div className="px-4 py-3 border-t border-bullet-border bg-bullet-bg flex items-center justify-between">
           <button
+            data-testid="firing-run-close-btn"
             onClick={onClose}
             className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 font-mono text-xs border border-slate-700"
           >

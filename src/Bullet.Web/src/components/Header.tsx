@@ -7,6 +7,7 @@ import {
 import { Range, Loadout } from '../types/bullet';
 import { BulletLogo } from './BulletLogo';
 import { isSoundEnabled, setSoundEnabled } from '../utils/audioFx';
+import { EnvironmentQuickLook } from './EnvironmentQuickLook';
 
 interface HeaderProps {
   ranges: Range[];
@@ -32,6 +33,8 @@ interface HeaderProps {
     accessMode: string;
   } | null;
   onDisconnectMesh?: () => void;
+  onOpenLoadouts?: () => void;
+  onRefreshLoadouts?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -53,6 +56,8 @@ export const Header: React.FC<HeaderProps> = ({
   isMeshBroadcasting,
   meshSession,
   onDisconnectMesh,
+  onOpenLoadouts,
+  onRefreshLoadouts,
 }) => {
   const [soundActive, setSoundActive] = React.useState<boolean>(isSoundEnabled);
 
@@ -227,6 +232,13 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           )}
         </div>
+
+        {/* Environment Quick Look (Active Variables Popover) */}
+        <EnvironmentQuickLook
+          activeLoadout={selectedLoadout}
+          onOpenLoadouts={onOpenLoadouts || (() => {})}
+          onRefreshLoadouts={onRefreshLoadouts}
+        />
       </div>
 
       {/* Action Buttons */}

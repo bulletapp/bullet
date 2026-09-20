@@ -22,6 +22,38 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
   const [activeTab, setActiveTab] = useState<EditorTab>(shot.method === 'GRPC' ? 'payload' : 'params');
   const [bulkMode, setBulkMode] = useState<Record<string, boolean>>({});
   const [bulkText, setBulkText] = useState<Record<string, string>>({});
+  const [pathVarValues, setPathVarValues] = useState<Record<string, string>>({});
+
+  const extractPathVariables = (url: string): string[] => {
+    if (!url) return [];
+    const matches: string[] = [];
+    const colonRegex = /(?<!https?:)\/:([a-zA-Z0-9_]+)/g;
+    let m;
+    while ((m = colonRegex.exec(url)) !== null) {
+      if (m[1] && !matches.includes(m[1])) {
+        matches.push(m[1]);
+      }
+    }
+    const braceRegex = /\{([a-zA-Z0-9_]+)\}/g;
+    while ((m = braceRegex.exec(url)) !== null) {
+      if (m[1] && !matches.includes(m[1])) {
+        matches.push(m[1]);
+      }
+    }
+    return matches;
+  };
+
+  const detectedPathVars = extractPathVariables(shot.url);
+
+  const handleSubstitutePathVars = () => {
+    let newUrl = shot.url;
+    for (const [varKey, val] of Object.entries(pathVarValues)) {
+      if (val) {
+        newUrl = newUrl.replace(`:${varKey}`, val).replace(`{${varKey}}`, val);
+      }
+    }
+    onChange({ ...shot, url: newUrl });
+  };
 
   // OAuth 2.0 state
   const [isRequestingToken, setIsRequestingToken] = useState(false);
@@ -732,6 +764,61 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
         {/* PARAMS / HEADERS VIEW */}
         {(activeTab === 'params' || activeTab === 'headers') && (
           <div className="space-y-3">
+            {/* Path Variables Section */}
+            {activeTab === 'params' && detectedPathVars.length > 0 && (
+              <div data-testid="path-variables-section" className="mb-4">
+                <div className="flex items-center justify-between pb-1 mb-2 border-b border-bullet-border/60">
+                  <span className="text-xs font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-amber-400 font-bold">:</span> Path Variables ({detectedPathVars.length})
+                  </span>
+                  <button
+                    type="button"
+                    data-testid="substitute-path-vars-btn"
+                    onClick={handleSubstitutePathVars}
+                    className="flex items-center gap-1 text-[11px] font-mono text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded transition cursor-pointer"
+                    title="Substitute variable values into URL"
+                  >
+                    <span>Substitute into URL</span>
+                  </button>
+                </div>
+                <div className="border border-bullet-border rounded overflow-hidden">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-bullet-bg border-b border-bullet-border text-slate-400 font-mono">
+                        <th className="px-3 py-1.5 font-normal w-1/3">Variable Token</th>
+                        <th className="px-3 py-1.5 font-normal">Resolved Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detectedPathVars.map((varKey) => (
+                        <tr
+                          key={varKey}
+                          data-testid={`path-var-row-${varKey}`}
+                          className="border-b border-bullet-border/30 bg-bullet-surface/20 hover:bg-bullet-surface/40 transition"
+                        >
+                          <td className="px-3 py-1.5 text-amber-400 font-mono font-bold">
+                            :{varKey}
+                          </td>
+                          <td className="px-3 py-1.5">
+                            <input
+                              type="text"
+                              data-testid={`path-var-input-${varKey}`}
+                              placeholder={`value for :${varKey}`}
+                              value={pathVarValues[varKey] || ''}
+                              onChange={(e) =>
+                                setPathVarValues((prev) => ({ ...prev, [varKey]: e.target.value }))
+                              }
+                              className="w-full bg-bullet-bg border border-bullet-border rounded px-2 py-1 text-slate-200 text-xs font-mono outline-none focus:border-amber-500 transition"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono text-slate-400 uppercase tracking-wider">
                 {activeTab === 'params' ? 'Query Parameters' : 'HTTP Request Headers'}

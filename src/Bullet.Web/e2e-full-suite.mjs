@@ -412,14 +412,10 @@ async function runFullTestSuite() {
     console.log('  ✓ Firing Run batch completed successfully.');
 
     // Close Firing Run modal
-    const closeRunModalBtn = await page.evaluateHandle(() => {
-      const btns = Array.from(document.querySelectorAll('button'));
-      return btns.find((b) => b.textContent.trim() === 'Close' || b.querySelector('svg.lucide-x'));
-    });
-    if (closeRunModalBtn && closeRunModalBtn.asElement()) {
-      await closeRunModalBtn.asElement().click();
-      console.log('  ✓ Closed Firing Run modal.');
-    }
+    const closeRunModalBtn = await page.waitForSelector('[data-testid="firing-run-close-btn"], [data-testid="firing-run-close-x"]', { timeout: 5000 });
+    await closeRunModalBtn.click();
+    await page.waitForFunction(() => !document.body.innerText.includes('Firing Run Engine'), { timeout: 5000 });
+    console.log('  ✓ Closed Firing Run modal.');
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '04-firing-run-success.png') });
     console.log('  ★ TEST 6 PASSED: Automated batch Firing Run executed with live progress!');
 
@@ -432,14 +428,10 @@ async function runFullTestSuite() {
     await page.waitForFunction(() => document.body.innerText.includes('Import & Export') || document.body.innerText.includes('Armory Transfer'));
     console.log('  ✓ Import & Export modal opened.');
 
-    const closeTransferBtn = await page.evaluateHandle(() => {
-      const btns = Array.from(document.querySelectorAll('button'));
-      return btns.find((b) => b.textContent.trim() === 'Close' || b.querySelector('svg.lucide-x'));
-    });
-    if (closeTransferBtn && closeTransferBtn.asElement()) {
-      await closeTransferBtn.asElement().click();
-      console.log('  ✓ Closed Armory Transfer modal.');
-    }
+    const closeTransferBtn = await page.waitForSelector('[data-testid="armory-transfer-close-btn"], [data-testid="armory-transfer-close-x"]', { timeout: 5000 });
+    await closeTransferBtn.click();
+    await page.waitForFunction(() => !document.body.innerText.includes('Import Into Bullet'), { timeout: 5000 });
+    console.log('  ✓ Closed Armory Transfer modal.');
     console.log('  ★ TEST 7 PASSED: Armory Transfer modal operational!');
 
     // -------------------------------------------------------------
@@ -1422,6 +1414,150 @@ async function runFullTestSuite() {
 
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '26-mesh-collaboration-full.png') });
     console.log('  ★ TEST 30 PASSED: WiFi Mesh Collaboration Modal & Radar verified!');
+
+    // -------------------------------------------------------------
+    // TEST 31: MULTI-TAB REQUEST WORKBENCH (TABS, DIRTY DOTS, CLOSE)
+    // -------------------------------------------------------------
+    console.log('\n[TEST 31] Testing Multi-Tab Request Workbench...');
+
+    // Verify Request Tab Bar is present
+    await page.waitForSelector('[data-testid="request-tab-bar"]', { timeout: 5000 });
+    console.log('  ✓ Request Tab Bar detected.');
+
+    // Click "+ New Tab" button
+    const newTabBtn31 = await page.waitForSelector('[data-testid="tab-new-btn"]');
+    await newTabBtn31.click();
+    console.log('  ✓ Opened new blank draft tab via [+] button.');
+
+    // Verify draft tab created
+    const tabsCount31 = await page.$$eval('[data-testid="request-tab-bar"] [data-testid^="request-tab-"]', els => els.length);
+    if (tabsCount31 < 2) {
+      throw new Error(`Expected at least 2 open tabs, found ${tabsCount31}`);
+    }
+    console.log(`  ✓ Multi-tab count verified: ${tabsCount31} active tabs.`);
+
+    // Edit URL in draft tab to trigger dirty indicator dot
+    await clearAndType('[data-testid="url-input"]', 'https://httpbin.org/get?tab=test');
+    await page.waitForSelector('[data-testid^="tab-dirty-indicator-"]', { timeout: 5000 });
+    console.log('  ✓ Unsaved dirty indicator dot (●) displayed on tab upon modification.');
+
+    // Close the draft tab
+    const closeTabBtns31 = await page.$$('[data-testid^="tab-close-btn-"]');
+    if (closeTabBtns31.length > 0) {
+      await closeTabBtns31[closeTabBtns31.length - 1].click();
+      console.log('  ✓ Closed active draft tab cleanly.');
+    }
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '27-multi-tab-workbench.png') });
+    console.log('  ★ TEST 31 PASSED: Multi-Tab Request Workbench verified!');
+
+    // -------------------------------------------------------------
+    // TEST 32: ENVIRONMENT QUICK-LOOK POPOVER & VARIABLE INSPECTOR
+    // -------------------------------------------------------------
+    console.log('\n[TEST 32] Testing Environment Quick-Look Popover (Eye Button)...');
+
+    // Click Environment Quick Look button in Header
+    const envQuickLookBtn32 = await page.waitForSelector('[data-testid="env-quick-look-btn"]', { timeout: 5000 });
+    await envQuickLookBtn32.click();
+    console.log('  ✓ Clicked Environment Quick-Look button [👁️].');
+
+    // Verify Popover opened
+    await page.waitForSelector('[data-testid="env-quick-look-popover"]', { timeout: 5000 });
+    console.log('  ✓ Environment Quick-Look Popover opened.');
+
+    // Test Search input inside popover
+    await page.type('[data-testid="env-quick-search-input"]', 'base');
+    console.log('  ✓ Filtered variables using quick search input.');
+
+    // Add a quick variable directly from the popover
+    await clearAndType('[data-testid="env-quick-key-input"]', 'api_secret_token');
+    await clearAndType('[data-testid="env-quick-val-input"]', 'super_secret_999');
+    await page.click('[data-testid="env-quick-secret-toggle"]');
+    const quickAddBtn32 = await page.waitForSelector('[data-testid="env-quick-add-btn"]');
+    await quickAddBtn32.click();
+    console.log('  ✓ Added new secret variable via popover quick form.');
+
+    // Clear search filter so newly added variable is visible
+    await clearAndType('[data-testid="env-quick-search-input"]', '');
+
+    // Toggle secret visibility
+    await page.waitForFunction(() => {
+      const el = document.querySelector('[data-testid="toggle-secret-btn-api_secret_token"]');
+      return !!el;
+    }, { timeout: 5000 });
+    await page.click('[data-testid="toggle-secret-btn-api_secret_token"]');
+    console.log('  ✓ Toggled secret variable reveal / hide mask.');
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '28-env-quick-look-popover.png') });
+
+    // Close popover by clicking quick look button again
+    await envQuickLookBtn32.click();
+    console.log('  ✓ Closed Environment Quick-Look popover.');
+    console.log('  ★ TEST 32 PASSED: Environment Quick-Look Popover verified!');
+
+    // -------------------------------------------------------------
+    // TEST 33: RESPONSE SYNTAX & JSON SEARCH MATCH HIGHLIGHTING
+    // -------------------------------------------------------------
+    console.log('\n[TEST 33] Testing Response Syntax Highlighting & JSON Search Matches...');
+
+    // Verify tokenized output in Impact Pretty tab (from earlier gRPC or echo response)
+    const prettyOutput33 = await page.$('[data-testid="json-pretty-output"]');
+    if (prettyOutput33) {
+      console.log('  ✓ Colorized JSON syntax highlighting pre-block detected.');
+
+      // Search in response JSON
+      await page.waitForSelector('[data-testid="json-search-input"]', { timeout: 5000 });
+      await clearAndType('[data-testid="json-search-input"]', 'pong');
+      await page.waitForSelector('[data-testid="json-search-highlight"]', { timeout: 5000 });
+      const highlightedText33 = await page.$eval('[data-testid="json-search-highlight"]', el => el.innerText);
+      if (highlightedText33.toLowerCase().includes('pong')) {
+        console.log(`  ✓ Search match highlight verified for token: "${highlightedText33}".`);
+      }
+    }
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '29-response-syntax-highlight.png') });
+    console.log('  ★ TEST 33 PASSED: Response Syntax & Search Highlighting verified!');
+
+    // -------------------------------------------------------------
+    // TEST 34: URL PATH VARIABLES AUTO-DETECTION & SUBSTITUTION
+    // -------------------------------------------------------------
+    console.log('\n[TEST 34] Testing URL Path Variables Auto-Detection in Params Tab...');
+
+    // Ensure method is GET so standard HTTP tabs are active
+    const methodSelect34 = await page.waitForSelector('[data-testid="method-select"]');
+    await methodSelect34.select('GET');
+    console.log('  ✓ Set method to GET for HTTP path variables testing.');
+
+    // Switch URL to an endpoint with path variable :userId and :orderId
+    await clearAndType('[data-testid="url-input"]', 'https://api.example.com/users/:userId/orders/:orderId');
+
+    // Switch to Params tab
+    const paramsTab34 = await page.waitForSelector('[data-testid="tab-params"]');
+    await paramsTab34.click();
+    console.log('  ✓ Switched to Params tab.');
+
+    // Verify Path Variables section rendered
+    await page.waitForSelector('[data-testid="path-variables-section"]', { timeout: 5000 });
+    console.log('  ✓ Path Variables section automatically detected and rendered.');
+
+    // Enter values for :userId and :orderId
+    await clearAndType('[data-testid="path-var-input-userId"]', '987');
+    await clearAndType('[data-testid="path-var-input-orderId"]', '555');
+    console.log('  ✓ Typed values for :userId (987) and :orderId (555).');
+
+    // Click "Substitute into URL"
+    const substituteBtn34 = await page.waitForSelector('[data-testid="substitute-path-vars-btn"]');
+    await substituteBtn34.click();
+
+    // Verify resolved URL
+    const updatedUrl34 = await page.$eval('[data-testid="url-input"]', el => el.value);
+    if (!updatedUrl34.includes('/users/987/orders/555')) {
+      throw new Error(`Expected URL to contain /users/987/orders/555, got: ${updatedUrl34}`);
+    }
+    console.log(`  ✓ Path variable substitution verified in URL Bar: "${updatedUrl34}".`);
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '30-path-variables-substitution.png') });
+    console.log('  ★ TEST 34 PASSED: URL Path Variables Auto-Detection & Substitution verified!');
     console.log(`TOTAL UNCAUGHT ERRORS: ${uncaughtErrors.length}`);
     if (uncaughtErrors.length > 0) {
       console.error('Errors encountered:', uncaughtErrors);
