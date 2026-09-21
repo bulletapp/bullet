@@ -5,7 +5,7 @@
 #define MyAppName "BULLET"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Vishal Viswanathan"
-#define MyAppURL "https://github.com/bullet-sh/bullet"
+#define MyAppURL "https://github.com/bulletapp/bullet"
 #define MyAppExeName "Bullet.exe"
 
 [Setup]

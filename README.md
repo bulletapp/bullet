@@ -1,17 +1,17 @@
 # BULLET — The Fast, Local-First Postman Alternative 🎯
 
-[![Website](https://img.shields.io/badge/Website-bullet--sh.github.io%2Fbullet-f59e0b?style=flat-square&logo=google-chrome&logoColor=white)](https://bullet-sh.github.io/bullet/)
-[![Postman Alternative](https://img.shields.io/badge/Postman-Alternative-orange?style=flat-square&logo=postman&logoColor=white)](https://github.com/bullet-sh/bullet)
-[![GitHub Release](https://img.shields.io/github/v/release/bullet-sh/bullet?color=10b981&style=flat-square)](https://github.com/bullet-sh/bullet/releases/latest)
+[![Website](https://img.shields.io/badge/Website-bulletapp.github.io%2Fbullet-f59e0b?style=flat-square&logo=google-chrome&logoColor=white)](https://bulletapp.github.io/bullet/)
+[![Postman Alternative](https://img.shields.io/badge/Postman-Alternative-orange?style=flat-square&logo=postman&logoColor=white)](https://github.com/bulletapp/bullet)
+[![GitHub Release](https://img.shields.io/github/v/release/bulletapp/bullet?color=10b981&style=flat-square)](https://github.com/bulletapp/bullet/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 
 > **BULLET** is the blazing-fast, open-source, local-first alternative to Postman and Insomnia for testing **REST**, **GraphQL**, **gRPC**, and **WebSockets**. Built with **.NET 10**, **C# 13**, **React 19**, and **Vite** — engineered with zero cloud lock-in, absolute offline privacy, mTLS client certificates, and serverless WiFi Mesh LAN collaboration.
 >
-> 🌐 **Official Website & Live Weapon Simulator:** [https://bullet-sh.github.io/bullet/](https://bullet-sh.github.io/bullet/)
+> 🌐 **Official Website & Live Weapon Simulator:** [https://bulletapp.github.io/bullet/](https://bulletapp.github.io/bullet/)
 
 > [!IMPORTANT]
 > 🚀 **Initial Public Release (`v0.0.2`)**  
-> BULLET is fresh off the launchpad! While core HTTP/3, gRPC, scripting, and mesh engines are fully functional, you may encounter edge cases as we rapidly iterate. If you discover a bug or have an idea, please [open a GitHub Issue](https://github.com/bullet-sh/bullet/issues)—your feedback directly drives the next release!
+> BULLET is fresh off the launchpad! While core HTTP/3, gRPC, scripting, and mesh engines are fully functional, you may encounter edge cases as we rapidly iterate. If you discover a bug or have an idea, please [open a GitHub Issue](https://github.com/bulletapp/bullet/issues)—your feedback directly drives the next release!
 
 ---
 
@@ -115,10 +115,10 @@ Pre-built, signed packages are published for Windows and macOS with every releas
 
 | Platform | Architecture | Package | Details |
 |---|---|---|---|
-| **Windows** | x64 (Installer) | **[`Bullet-Setup.exe`](https://github.com/bullet-sh/bullet/releases/latest)** | Recommended single-file installer (desktop & start menu shortcuts, auto-launch, non-elevated per-user install) |
-| **Windows** | x64 (Portable) | **[`Bullet-Desktop-Windows-x64.zip`](https://github.com/bullet-sh/bullet/releases/latest)** | Zero-install standalone zip with executable and bundled assets |
-| **macOS** | Apple Silicon (ARM64) | **[`Bullet-macOS-AppleSilicon-arm64.zip`](https://github.com/bullet-sh/bullet/releases/latest)** | Native Apple Silicon bundle with double-clickable `Bullet.command` |
-| **macOS** | Intel x64 | **[`Bullet-macOS-Intel-x64.zip`](https://github.com/bullet-sh/bullet/releases/latest)** | Native Intel Mac bundle with double-clickable `Bullet.command` |
+| **Windows** | x64 (Installer) | **[`Bullet-Setup.exe`](https://github.com/bulletapp/bullet/releases/latest)** | Recommended single-file installer (desktop & start menu shortcuts, auto-launch, non-elevated per-user install) |
+| **Windows** | x64 (Portable) | **[`Bullet-Desktop-Windows-x64.zip`](https://github.com/bulletapp/bullet/releases/latest)** | Zero-install standalone zip with executable and bundled assets |
+| **macOS** | Apple Silicon (ARM64) | **[`Bullet-macOS-AppleSilicon-arm64.zip`](https://github.com/bulletapp/bullet/releases/latest)** | Native Apple Silicon bundle with double-clickable `Bullet.command` |
+| **macOS** | Intel x64 | **[`Bullet-macOS-Intel-x64.zip`](https://github.com/bulletapp/bullet/releases/latest)** | Native Intel Mac bundle with double-clickable `Bullet.command` |
 | **macOS / Web** | Cross-Platform | **Standalone Web App (PWA)** | Installable from Safari ("Add to Dock") or Chrome/Edge ("Install App") |
 | **Docker** | Linux / Any | `docker/docker-compose.yml` | Multi-container setup with PostgreSQL, API, and Web frontend |
 

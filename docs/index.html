@@ -13,7 +13,7 @@
   <meta property="og:title" content="BULLET — Load. Aim. API.">
   <meta property="og:description" content="Ultra-fast, offline-first API client built with .NET 10 & React 19. Microsecond connection telemetry, Postman fidelity, SSRF guard, and native speeds.">
   <meta property="og:image" content="assets/bullet-logo.png">
-  <meta property="og:url" content="https://bullet-sh.github.io/bullet/">
+  <meta property="og:url" content="https://bulletapp.github.io/bullet/">
   <meta name="twitter:card" content="summary_large_image">
 
   <!-- Tailwind CSS via CDN -->
@@ -47,7 +47,7 @@
   </script>
 
   <!-- Google Fonts & Custom Styling -->
-  <link rel="stylesheet" href="assets/styles.css?v=3">
+  <link rel="stylesheet" href="assets/styles.css?v=4">
 </head>
 <body class="bg-[#06090e] text-slate-100 min-h-screen relative antialiased selection:bg-amber-500 selection:text-black">
 
@@ -62,7 +62,7 @@
         Initial Public Release v0.0.2
       </span>
       <span class="text-slate-300">Fresh launch! Actively testing and evolving &mdash; early feedback is welcome.</span>
-      <a href="https://github.com/bullet-sh/bullet/issues" target="_blank" rel="noopener" class="text-amber-400 font-semibold hover:text-amber-300 underline underline-offset-4 ml-1 whitespace-nowrap">Report an Issue &rarr;</a>
+      <a href="https://github.com/bulletapp/bullet/issues" target="_blank" rel="noopener" class="text-amber-400 font-semibold hover:text-amber-300 underline underline-offset-4 ml-1 whitespace-nowrap">Report an Issue &rarr;</a>
     </div>
   </div>
 
@@ -94,7 +94,7 @@
 
       <!-- Action Buttons -->
       <div class="hidden sm:flex items-center gap-2.5 shrink-0">
-        <a href="https://github.com/bullet-sh/bullet" target="_blank" rel="noopener" class="btn-secondary text-xs font-mono py-2 px-3 whitespace-nowrap shrink-0 flex items-center gap-2">
+        <a href="https://github.com/bulletapp/bullet" target="_blank" rel="noopener" class="btn-secondary text-xs font-mono py-2 px-3 whitespace-nowrap shrink-0 flex items-center gap-2">
           <svg class="w-4 h-4 fill-current text-slate-300 shrink-0" viewBox="0 0 24 24">
             <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
           </svg>
@@ -129,7 +129,7 @@
         <a href="#downloads" class="py-2 hover:text-amber-400">Downloads</a>
         <a href="#docs" class="py-2 hover:text-amber-400">Docs</a>
         <div class="pt-3 flex flex-col sm:hidden gap-2">
-          <a href="https://github.com/bullet-sh/bullet" target="_blank" rel="noopener" class="btn-secondary text-xs text-center justify-center">Star on GitHub</a>
+          <a href="https://github.com/bulletapp/bullet" target="_blank" rel="noopener" class="btn-secondary text-xs text-center justify-center">Star on GitHub</a>
           <a href="#downloads" class="btn-primary text-xs text-center justify-center">Download Free v0.0.2</a>
         </div>
       </div>
@@ -186,7 +186,7 @@
         <div class="max-w-xl mx-auto p-1.5 rounded-xl bg-slate-950/80 border border-slate-800/80 shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 text-left">
           <div class="flex items-center gap-2 pl-3 font-mono text-xs text-slate-400 overflow-hidden text-ellipsis whitespace-nowrap">
             <span class="text-amber-400 font-bold">$</span>
-            <span id="hero-cmd-text" class="text-slate-200">docker run -d -p 5000:5000 ghcr.io/bullet-sh/bullet:latest</span>
+            <span id="hero-cmd-text" class="text-slate-200">docker run -d -p 5000:5000 ghcr.io/bulletapp/bullet:latest</span>
           </div>
           <button class="btn-copy px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-medium shrink-0 transition-colors" data-copy-target="hero-cmd-text">
             Copy
@@ -805,10 +805,10 @@
           </div>
 
           <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-            <a id="platform-card-primary" href="https://github.com/bullet-sh/bullet/releases/download/v0.0.2/Bullet-Setup-v0.0.2.exe" class="btn-primary text-sm font-bold py-3 px-6 text-center flex-1 sm:flex-none">
+            <a id="platform-card-primary" href="https://github.com/bulletapp/bullet/releases/download/v0.0.2/Bullet-Setup-v0.0.2.exe" class="btn-primary text-sm font-bold py-3 px-6 text-center flex-1 sm:flex-none">
               Download Setup (.exe)
             </a>
-            <a id="platform-card-secondary" href="https://github.com/bullet-sh/bullet/releases/download/v0.0.2/Bullet-Windows-Portable-v0.0.2.zip" class="btn-secondary text-sm font-semibold py-3 px-5 text-center flex-1 sm:flex-none">
+            <a id="platform-card-secondary" href="https://github.com/bulletapp/bullet/releases/download/v0.0.2/Bullet-Windows-Portable-v0.0.2.zip" class="btn-secondary text-sm font-semibold py-3 px-5 text-center flex-1 sm:flex-none">
               Portable (.zip)
             </a>
           </div>
@@ -823,7 +823,7 @@
             </button>
           </div>
           <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto"><code id="platform-card-terminal"># Install via PowerShell One-Liner
-Invoke-WebRequest -Uri "https://github.com/bullet-sh/bullet/releases/download/v0.0.2/Bullet-Setup-v0.0.2.exe" -OutFile "Bullet-Setup.exe"; .\Bullet-Setup.exe</code></pre>
+Invoke-WebRequest -Uri "https://github.com/bulletapp/bullet/releases/download/v0.0.2/Bullet-Setup-v0.0.2.exe" -OutFile "Bullet-Setup.exe"; .\Bullet-Setup.exe</code></pre>
         </div>
 
         <!-- Code Signing & Security Info -->
@@ -957,7 +957,7 @@ Invoke-WebRequest -Uri "https://github.com/bullet-sh/bullet/releases/download/v0
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         
-        <a href="https://github.com/bullet-sh/bullet/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
+        <a href="https://github.com/bulletapp/bullet/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
           <div class="flex items-center justify-between text-amber-400 font-mono text-xs mb-2">
             <span>ARCHITECTURE.md</span>
             <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
@@ -966,7 +966,7 @@ Invoke-WebRequest -Uri "https://github.com/bullet-sh/bullet/releases/download/v0
           <p class="text-slate-400 text-xs">Decoupled server/client model, EventListener socket hooks, and IPC SignalR pipeline.</p>
         </a>
 
-        <a href="https://github.com/bullet-sh/bullet/blob/main/docs/CLI.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
+        <a href="https://github.com/bulletapp/bullet/blob/main/docs/CLI.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
           <div class="flex items-center justify-between text-cyan-400 font-mono text-xs mb-2">
             <span>CLI.md</span>
             <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
@@ -975,7 +975,7 @@ Invoke-WebRequest -Uri "https://github.com/bullet-sh/bullet/releases/download/v0
           <p class="text-slate-400 text-xs">Headless execution, Docker Compose setup, environment variable flags, and port binding.</p>
         </a>
 
-        <a href="https://github.com/bullet-sh/bullet/blob/main/docs/SCRIPTING.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
+        <a href="https://github.com/bulletapp/bullet/blob/main/docs/SCRIPTING.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
           <div class="flex items-center justify-between text-purple-400 font-mono text-xs mb-2">
             <span>SCRIPTING.md</span>
             <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
@@ -984,7 +984,7 @@ Invoke-WebRequest -Uri "https://github.com/bullet-sh/bullet/releases/download/v0
           <p class="text-slate-400 text-xs">Pre-request hooks, pm.* API emulation, CryptoJS hashing, and dynamic environment manipulation.</p>
         </a>
 
-        <a href="https://github.com/bullet-sh/bullet/blob/main/docs/SECURITY.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
+        <a href="https://github.com/bulletapp/bullet/blob/main/docs/SECURITY.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
           <div class="flex items-center justify-between text-rose-400 font-mono text-xs mb-2">
             <span>SECURITY.md</span>
             <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
@@ -993,7 +993,7 @@ Invoke-WebRequest -Uri "https://github.com/bullet-sh/bullet/releases/download/v0
           <p class="text-slate-400 text-xs">Link-local subnet filtering, zero-knowledge AES-256 storage, and intranet access rules.</p>
         </a>
 
-        <a href="https://github.com/bullet-sh/bullet/blob/main/docs/TESTING.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
+        <a href="https://github.com/bulletapp/bullet/blob/main/docs/TESTING.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
           <div class="flex items-center justify-between text-emerald-400 font-mono text-xs mb-2">
             <span>TESTING.md</span>
             <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
@@ -1002,7 +1002,7 @@ Invoke-WebRequest -Uri "https://github.com/bullet-sh/bullet/releases/download/v0
           <p class="text-slate-400 text-xs">Chai assertion patterns, schema validation, multi-shot batch runners, and CI assertions.</p>
         </a>
 
-        <a href="https://github.com/bullet-sh/bullet/blob/main/docs/TLS.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
+        <a href="https://github.com/bulletapp/bullet/blob/main/docs/TLS.md" target="_blank" rel="noopener" class="glass-panel p-5 block group hover:border-amber-500/40">
           <div class="flex items-center justify-between text-blue-400 font-mono text-xs mb-2">
             <span>TLS.md</span>
             <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
@@ -1032,7 +1032,7 @@ Invoke-WebRequest -Uri "https://github.com/bullet-sh/bullet/releases/download/v0
           <a href="#downloads" class="btn-primary text-base py-3.5 px-8 font-extrabold w-full sm:w-auto">
             <span>Download BULLET v0.0.2 Free</span>
           </a>
-          <a href="https://github.com/bullet-sh/bullet" target="_blank" rel="noopener" class="btn-secondary text-base py-3.5 px-7 font-bold w-full sm:w-auto">
+          <a href="https://github.com/bulletapp/bullet" target="_blank" rel="noopener" class="btn-secondary text-base py-3.5 px-7 font-bold w-full sm:w-auto">
             <span>View GitHub Repository</span>
           </a>
         </div>
@@ -1052,10 +1052,10 @@ Invoke-WebRequest -Uri "https://github.com/bullet-sh/bullet/releases/download/v0
       </div>
 
       <div class="flex items-center gap-6">
-        <a href="https://github.com/bullet-sh/bullet" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub</a>
-        <a href="https://github.com/bullet-sh/bullet/releases" target="_blank" rel="noopener" class="hover:text-white transition-colors">Releases</a>
-        <a href="https://github.com/bullet-sh/bullet/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-white transition-colors">MIT License</a>
-        <a href="https://github.com/bullet-sh/bullet/blob/main/AGENTS.md" target="_blank" rel="noopener" class="hover:text-white transition-colors">Agents Guide</a>
+        <a href="https://github.com/bulletapp/bullet" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub</a>
+        <a href="https://github.com/bulletapp/bullet/releases" target="_blank" rel="noopener" class="hover:text-white transition-colors">Releases</a>
+        <a href="https://github.com/bulletapp/bullet/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-white transition-colors">MIT License</a>
+        <a href="https://github.com/bulletapp/bullet/blob/main/AGENTS.md" target="_blank" rel="noopener" class="hover:text-white transition-colors">Agents Guide</a>
       </div>
 
       <div class="text-center md:text-right text-slate-500">
@@ -1069,6 +1069,6 @@ Invoke-WebRequest -Uri "https://github.com/bullet-sh/bullet/releases/download/v0
   </footer>
 
   <!-- Interactive JavaScript Engine -->
-  <script src="assets/app.js?v=3"></script>
+  <script src="assets/app.js?v=4"></script>
 </body>
 </html>
