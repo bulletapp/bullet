@@ -23,6 +23,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    if: github.actor == 'VishalViswanathan03' || github.triggering_actor == 'VishalViswanathan03'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
