@@ -1,6 +1,7 @@
 // BULLET - Load. Aim. API. Interactive Engine
 
 document.addEventListener('DOMContentLoaded', () => {
+  initThemeToggle();
   initShotSimulator();
   initPlatformTabs();
   initGalleryTabs();
@@ -8,6 +9,51 @@ document.addEventListener('DOMContentLoaded', () => {
   initCopyButtons();
   initMobileMenu();
 });
+
+// 0. Theme Toggle System (Light / Dark Mode)
+function initThemeToggle() {
+  const toggleBtn = document.getElementById('theme-toggle-btn');
+  const sunIcon = document.getElementById('theme-icon-sun');
+  const moonIcon = document.getElementById('theme-icon-moon');
+  if (!toggleBtn) return;
+
+  function updateIcons(isLight) {
+    if (isLight) {
+      if (sunIcon) {
+        sunIcon.classList.remove('block');
+        sunIcon.classList.add('hidden');
+      }
+      if (moonIcon) {
+        moonIcon.classList.remove('hidden');
+        moonIcon.classList.add('block');
+      }
+      toggleBtn.title = 'Switch to Dark Mode';
+    } else {
+      if (sunIcon) {
+        sunIcon.classList.remove('hidden');
+        sunIcon.classList.add('block');
+      }
+      if (moonIcon) {
+        moonIcon.classList.remove('block');
+        moonIcon.classList.add('hidden');
+      }
+      toggleBtn.title = 'Switch to Light Mode';
+    }
+  }
+
+  // Initial icon state sync
+  const currentIsLight = document.documentElement.classList.contains('light');
+  updateIcons(currentIsLight);
+
+  toggleBtn.addEventListener('click', () => {
+    const isLight = document.documentElement.classList.toggle('light');
+    document.documentElement.classList.toggle('dark', !isLight);
+    try {
+      localStorage.setItem('bullet_theme', isLight ? 'light' : 'dark');
+    } catch (e) {}
+    updateIcons(isLight);
+  });
+}
 
 // 1. Live Shot Simulator
 const PRESETS = {

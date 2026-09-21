@@ -46,10 +46,26 @@
     }
   </script>
 
+  <!-- Theme Initialization Script (Zero-Flicker FOUC Prevention) -->
+  <script>
+    (function() {
+      try {
+        var savedTheme = localStorage.getItem('bullet_theme');
+        if (savedTheme === 'light' || (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+          document.documentElement.classList.add('light');
+          document.documentElement.classList.remove('dark');
+        } else {
+          document.documentElement.classList.remove('light');
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <!-- Google Fonts & Custom Styling -->
-  <link rel="stylesheet" href="assets/styles.css?v=4">
+  <link rel="stylesheet" href="assets/styles.css?v=5">
 </head>
-<body class="bg-[#06090e] text-slate-100 min-h-screen relative antialiased selection:bg-amber-500 selection:text-black">
+<body class="bg-[#06090e] text-slate-100 min-h-screen relative antialiased selection:bg-amber-500 selection:text-black transition-colors duration-200">
 
   <!-- Subtle Cyber Grid Background -->
   <div class="cyber-grid"></div>
@@ -92,29 +108,42 @@
         <a href="#docs" class="hover:text-amber-400 transition-colors whitespace-nowrap">Docs</a>
       </div>
 
-      <!-- Action Buttons -->
-      <div class="hidden sm:flex items-center gap-2.5 shrink-0">
-        <a href="https://github.com/bulletapp/bullet" target="_blank" rel="noopener" class="btn-secondary text-xs font-mono py-2 px-3 whitespace-nowrap shrink-0 flex items-center gap-2">
+      <!-- Action Buttons & Theme Toggle -->
+      <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        <!-- Theme Toggle Button (Light / Dark) -->
+        <button id="theme-toggle-btn" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="Switch to Light Mode" aria-label="Toggle Theme">
+          <!-- Sun Icon (shown in dark mode) -->
+          <svg id="theme-icon-sun" class="w-4 h-4 text-amber-400 block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="5" stroke-width="2"></circle>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+          <!-- Moon Icon (shown in light mode) -->
+          <svg id="theme-icon-moon" class="w-4 h-4 text-indigo-500 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+          </svg>
+        </button>
+
+        <a href="https://github.com/bulletapp/bullet" target="_blank" rel="noopener" class="hidden sm:inline-flex btn-secondary text-xs font-mono py-2 px-3 whitespace-nowrap shrink-0 items-center gap-2">
           <svg class="w-4 h-4 fill-current text-slate-300 shrink-0" viewBox="0 0 24 24">
             <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
           </svg>
           <span class="hidden md:inline whitespace-nowrap">Star on GitHub</span>
           <span class="md:hidden whitespace-nowrap">Star</span>
         </a>
-        <a href="#downloads" class="btn-primary text-xs py-2 px-3.5 font-bold whitespace-nowrap shrink-0 flex items-center gap-1.5">
+        <a href="#downloads" class="hidden sm:inline-flex btn-primary text-xs py-2 px-3.5 font-bold whitespace-nowrap shrink-0 items-center gap-1.5">
           <span class="whitespace-nowrap">Download Free</span>
           <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
           </svg>
         </a>
-      </div>
 
-      <!-- Mobile Hamburger Button -->
-      <button id="mobile-menu-toggle" class="lg:hidden p-2 text-slate-400 hover:text-white" aria-label="Toggle Navigation">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
-        </svg>
-      </button>
+        <!-- Mobile Hamburger Button -->
+        <button id="mobile-menu-toggle" class="lg:hidden p-2 text-slate-400 hover:text-white" aria-label="Toggle Navigation">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+          </svg>
+        </button>
+      </div>
 
     </div>
 
@@ -1069,6 +1098,6 @@ Invoke-WebRequest -Uri "https://github.com/bulletapp/bullet/releases/download/v0
   </footer>
 
   <!-- Interactive JavaScript Engine -->
-  <script src="assets/app.js?v=4"></script>
+  <script src="assets/app.js?v=5"></script>
 </body>
 </html>

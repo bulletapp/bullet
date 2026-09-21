@@ -231,3 +231,336 @@ body {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+
+/* ==============================================================================
+   LIGHT MODE THEME SYSTEM (Identical to BULLET Desktop & Web IDE)
+   ============================================================================== */
+
+html.light {
+  color-scheme: light;
+  --bg-deep: #f8fafc;
+  --bg-card: rgba(255, 255, 255, 0.90);
+  --bg-card-hover: #ffffff;
+  --border-subtle: #e2e8f0;
+  --border-glow: rgba(217, 119, 6, 0.35);
+  --text-muted: #475569;
+  --text-dim: #64748b;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+html.light body {
+  background: radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.12) 0%, transparent 45%),
+              radial-gradient(circle at 85% 30%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
+              radial-gradient(circle at 15% 70%, rgba(168, 85, 247, 0.06) 0%, transparent 50%),
+              #f8fafc;
+  color: #0f172a;
+}
+
+/* Light Mode Cyber Grid */
+html.light .cyber-grid {
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  mask-image: radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%);
+}
+
+/* Light Mode Glass Navigation & Panels */
+html.light .glass-nav {
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
+}
+
+html.light .glass-nav a {
+  color: #475569;
+}
+
+html.light .glass-nav a:hover {
+  color: #b45309;
+}
+
+html.light .glass-panel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 25px -4px rgba(0, 0, 0, 0.06), 0 2px 8px -2px rgba(0, 0, 0, 0.04);
+}
+
+html.light .glass-panel:hover {
+  border-color: rgba(217, 119, 6, 0.4);
+  box-shadow: 0 14px 35px -5px rgba(0, 0, 0, 0.10), 0 0 15px rgba(245, 158, 11, 0.15);
+}
+
+/* Light Mode Buttons */
+html.light .btn-secondary {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+html.light .btn-secondary:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+/* Light Mode Theme Toggle Button */
+html.light #theme-toggle-btn {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #334155;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+html.light #theme-toggle-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+/* Light Mode Gradients & Text */
+html.light .gradient-text {
+  background: linear-gradient(135deg, #0f172a 0%, #78350f 45%, #b45309 85%, #d97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+html.light .gradient-telemetry {
+  background: linear-gradient(135deg, #0f172a 0%, #0369a1 50%, #0e7490 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+html.light .text-white {
+  color: #0f172a !important;
+}
+
+html.light .text-slate-100,
+html.light .text-slate-200 {
+  color: #0f172a !important;
+}
+
+html.light .text-slate-300,
+html.light .text-slate-400 {
+  color: #334155 !important;
+}
+
+html.light .text-slate-500 {
+  color: #64748b !important;
+}
+
+html.light .text-slate-600 {
+  color: #475569 !important;
+}
+
+/* Accessible High-Contrast Accents in Light Mode */
+html.light .text-amber-400,
+html.light .text-amber-300 {
+  color: #b45309 !important;
+}
+
+html.light .text-cyan-400,
+html.light .text-cyan-300 {
+  color: #0e7490 !important;
+}
+
+html.light .text-emerald-400,
+html.light .text-emerald-300 {
+  color: #047857 !important;
+}
+
+html.light .text-rose-400,
+html.light .text-rose-300 {
+  color: #be123c !important;
+}
+
+html.light .text-purple-400,
+html.light .text-purple-300 {
+  color: #7e22ce !important;
+}
+
+/* Light Mode Background Surfaces */
+html.light .bg-slate-950,
+html.light .bg-slate-900 {
+  background-color: #ffffff !important;
+}
+
+html.light .bg-slate-950\/90,
+html.light .bg-slate-950\/80,
+html.light .bg-slate-950\/70,
+html.light .bg-slate-900\/90,
+html.light .bg-slate-900\/80,
+html.light .bg-slate-900\/70,
+html.light .bg-slate-900\/60,
+html.light .bg-slate-900\/40 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+html.light .bg-slate-800 {
+  background-color: #f1f5f9 !important;
+}
+
+html.light .bg-slate-800\/80,
+html.light .bg-slate-800\/60,
+html.light .bg-slate-800\/50,
+html.light .bg-slate-800\/40 {
+  background-color: #e2e8f0 !important;
+}
+
+html.light .border-slate-800,
+html.light .border-slate-700 {
+  border-color: #e2e8f0 !important;
+}
+
+html.light .border-slate-800\/80,
+html.light .border-slate-800\/70,
+html.light .border-slate-800\/60 {
+  border-color: #cbd5e1 !important;
+}
+
+html.light .border-slate-900,
+html.light .border-slate-900\/80 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Light Mode Badges & Pills */
+html.light .bg-amber-500\/10,
+html.light .bg-amber-500\/20,
+html.light .bg-amber-950\/60,
+html.light .bg-amber-950\/40 {
+  background-color: #fef3c7 !important;
+  color: #b45309 !important;
+}
+
+html.light .border-amber-500\/20,
+html.light .border-amber-500\/30,
+html.light .border-amber-500\/40 {
+  border-color: #f59e0b !important;
+}
+
+html.light .bg-cyan-500\/10,
+html.light .bg-cyan-500\/20 {
+  background-color: #e0f2fe !important;
+  color: #0369a1 !important;
+}
+
+html.light .border-cyan-500\/20,
+html.light .border-cyan-500\/30 {
+  border-color: #38bdf8 !important;
+}
+
+html.light .bg-emerald-500\/10,
+html.light .bg-emerald-500\/20 {
+  background-color: #d1fae5 !important;
+  color: #047857 !important;
+}
+
+html.light .border-emerald-500\/20,
+html.light .border-emerald-500\/30 {
+  border-color: #10b981 !important;
+}
+
+html.light .bg-rose-500\/10,
+html.light .bg-rose-500\/20 {
+  background-color: #ffe4e6 !important;
+  color: #be123c !important;
+}
+
+html.light .border-rose-500\/40 {
+  border-color: #f43f5e !important;
+}
+
+html.light .bg-purple-500\/10,
+html.light .bg-purple-500\/20 {
+  background-color: #f3e8ff !important;
+  color: #7e22ce !important;
+}
+
+html.light .border-purple-500\/30 {
+  border-color: #c084fc !important;
+}
+
+/* Comparison Table in Light Mode */
+html.light thead.bg-slate-950 {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+  border-bottom-color: #cbd5e1 !important;
+}
+
+html.light tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+html.light tbody tr {
+  border-color: #e2e8f0 !important;
+}
+
+html.light td.bg-amber-500\/5,
+html.light th.bg-amber-500\/10 {
+  background-color: #fefce8 !important;
+  border-color: #fef08a !important;
+}
+
+/* Top Announcement Banner in Light Mode */
+html.light .bg-gradient-to-r.from-amber-950\/60 {
+  background: linear-gradient(to right, #fef3c7, #f1f5f9, #ffe4e6) !important;
+  border-bottom-color: #fcd34d !important;
+}
+
+/* Mobile Dropdown in Light Mode */
+html.light #mobile-menu {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+/* Simulator Controls in Light Mode */
+html.light #simulator-preset {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light #simulator-url {
+  color: #0f172a !important;
+}
+
+/* Keep Code & Terminal Blocks Pristine & Legible */
+html.light pre,
+html.light pre code {
+  background-color: #090d16 !important;
+  color: #f8fafc !important;
+  border-color: #1e293b !important;
+}
+
+html.light pre code .text-slate-200,
+html.light pre code .text-slate-300,
+html.light pre code .text-slate-400 {
+  color: #cbd5e1 !important;
+}
+
+/* Call to Action in Light Mode */
+html.light section .glass-panel.bg-gradient-to-b {
+  background: linear-gradient(to bottom, #ffffff, #f8fafc) !important;
+  border-color: #fcd34d !important;
+}
+
+/* Footer in Light Mode */
+html.light footer {
+  background-color: #f1f5f9 !important;
+  border-top-color: #e2e8f0 !important;
+}
+
+html.light footer .text-slate-200 {
+  color: #0f172a !important;
+}
+
+html.light footer .text-slate-400,
+html.light footer .text-slate-500 {
+  color: #475569 !important;
+}
+
+html.light footer .border-slate-900\/80 {
+  border-top-color: #cbd5e1 !important;
+}
+
