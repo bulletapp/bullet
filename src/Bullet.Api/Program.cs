@@ -38,9 +38,7 @@ public static class BulletServer
             Path.Combine(Directory.GetCurrentDirectory(), "src", "Bullet.Api", "wwwroot"),
             Path.Combine(baseDir, "..", "..", "..", "wwwroot"),
             Path.Combine(baseDir, "..", "..", "..", "src", "Bullet.Api", "wwwroot"),
-            Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "..", "src", "Bullet.Api", "wwwroot")),
-            @"C:\Users\visha\.gemini\antigravity\scratch\bullet\src\Bullet.Api\wwwroot",
-            @"C:\Users\visha\.gemini\antigravity\scratch\bullet\publish\desktop\wwwroot"
+            Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "..", "src", "Bullet.Api", "wwwroot"))
         };
         var webRoot = candidatePaths.FirstOrDefault(p => Directory.Exists(p) && File.Exists(Path.Combine(p, "index.html")))
             ?? Path.Combine(baseDir, "wwwroot");
