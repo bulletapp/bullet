@@ -113,7 +113,7 @@ Pre-built, signed packages are published for Windows and macOS with every releas
 |---|---|---|---|
 | **Windows** | x64 (Installer) | **[`Bullet-Setup.exe`](https://github.com/VishalViswanathan03/bullet/releases/latest)** | Recommended single-file installer (desktop & start menu shortcuts, auto-launch, non-elevated per-user install) |
 | **Windows** | x64 (Portable) | **[`Bullet-Desktop-Windows-x64.zip`](https://github.com/VishalViswanathan03/bullet/releases/latest)** | Zero-install standalone zip with executable and bundled assets |
-| **macOS** | Apple Silicon (M1/M2/M3/M4) | **[`Bullet-macOS-AppleSilicon-arm64.zip`](https://github.com/VishalViswanathan03/bullet/releases/latest)** | Native Apple Silicon bundle with double-clickable `Bullet.command` |
+| **macOS** | Apple Silicon (ARM64) | **[`Bullet-macOS-AppleSilicon-arm64.zip`](https://github.com/VishalViswanathan03/bullet/releases/latest)** | Native Apple Silicon bundle with double-clickable `Bullet.command` |
 | **macOS** | Intel x64 | **[`Bullet-macOS-Intel-x64.zip`](https://github.com/VishalViswanathan03/bullet/releases/latest)** | Native Intel Mac bundle with double-clickable `Bullet.command` |
 | **macOS / Web** | Cross-Platform | **Standalone Web App (PWA)** | Installable from Safari ("Add to Dock") or Chrome/Edge ("Install App") |
 | **Docker** | Linux / Any | `docker/docker-compose.yml` | Multi-container setup with PostgreSQL, API, and Web frontend |
@@ -153,7 +153,7 @@ All official releases are Authenticode signed with DigiCert RFC 3161 timestamps:
 ### 🍎 macOS Installation Guide
 
 1. **Download**: Grab the package matching your Mac hardware:
-   - **Apple Silicon (M1/M2/M3/M4)**: `Bullet-macOS-AppleSilicon-arm64.zip`
+   - **Apple Silicon (ARM64)**: `Bullet-macOS-AppleSilicon-arm64.zip`
    - **Intel Macs**: `Bullet-macOS-Intel-x64.zip`
 2. **Launch via Finder**:
    - Double-click the downloaded `.zip` to extract.

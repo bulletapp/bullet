@@ -1,4 +1,4 @@
-﻿/* BULLET - Load. Aim. API. Modern Landing Page Styling */
+/* BULLET - Load. Aim. API. Modern Landing Page Styling */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 :root {
@@ -105,6 +105,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
   transition: all 0.2s ease;
   box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
   border: 1px solid #fde047;
@@ -127,6 +128,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
   transition: all 0.2s ease;
   border: 1px solid var(--border-subtle);
   text-decoration: none;

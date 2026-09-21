@@ -305,7 +305,7 @@ const PLATFORM_DATA = {
 Invoke-WebRequest -Uri "https://github.com/VishalViswanathan03/bullet/releases/download/v0.0.2/Bullet-Setup-v0.0.2.exe" -OutFile "Bullet-Setup.exe"; .\Bullet-Setup.exe`
   },
   mac_arm: {
-    title: "macOS Apple Silicon (M1 / M2 / M3 / M4)",
+    title: "macOS Apple Silicon",
     badge: "Native ARM64 Universal",
     desc: "Optimized for Apple Silicon hardware acceleration with zero Rosetta emulation overhead.",
     primaryBtn: { text: "Download for Apple Silicon (.zip)", url: "https://github.com/VishalViswanathan03/bullet/releases/download/v0.0.2/Bullet-macOS-AppleSilicon-arm64.zip" },

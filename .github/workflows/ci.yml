@@ -258,7 +258,7 @@ jobs:
         run: |
           Write-Host "Publishing native macOS engine and application bundles..."
           
-          # 1. Publish for Apple Silicon (macOS ARM64: M1, M2, M3, M4)
+          # 1. Publish for Apple Silicon (macOS ARM64)
           $armAppDir = "publish/mac-arm64/Bullet.app/Contents"
           New-Item -ItemType Directory -Force -Path "$armAppDir/MacOS", "$armAppDir/Resources/app" | Out-Null
           dotnet publish src/Bullet.Api/Bullet.Api.csproj -c Release -r osx-arm64 --self-contained false -o "$armAppDir/Resources/app"
@@ -395,7 +395,7 @@ jobs:
             "|---|---|---|",
             "| **[Bullet-Setup.exe](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Setup.exe)** | Windows x64 (Setup) | Single-file Windows setup installer with desktop shortcuts and auto-launch |",
             "| **[Bullet-Desktop-Windows-x64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Desktop-Windows-x64.zip)** | Windows x64 (Portable) | Portable zero-install package containing standalone executable and bundled assets |",
-            "| **[Bullet-macOS-AppleSilicon-arm64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-macOS-AppleSilicon-arm64.zip)** | macOS (Apple Silicon M1/M2/M3/M4) | Native Apple Silicon bundle with double-clickable `Bullet.command` launcher |",
+            "| **[Bullet-macOS-AppleSilicon-arm64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-macOS-AppleSilicon-arm64.zip)** | macOS (Apple Silicon) | Native Apple Silicon bundle with double-clickable `Bullet.command` launcher |",
             "| **[Bullet-macOS-Intel-x64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-macOS-Intel-x64.zip)** | macOS (Intel x64) | Native Intel Mac bundle with double-clickable `Bullet.command` launcher |",
             "| **[Bullet-Release.cer](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Release.cer)** | All | Authenticode public certificate for publisher identity verification |",
             "",
