@@ -25,7 +25,7 @@ concurrency:
 jobs:
   lint-and-format:
     name: Code Hygiene & Type Validation
-    if: github.actor == 'VishalViswanathan03' || github.triggering_actor == 'VishalViswanathan03'
+    if: github.event_name != 'workflow_dispatch' || github.actor == 'VishalViswanathan03'
     runs-on: windows-latest
 
     steps:
@@ -110,7 +110,7 @@ jobs:
 
   docker-verification:
     name: Docker Container Verification
-    if: github.actor == 'VishalViswanathan03' || github.triggering_actor == 'VishalViswanathan03'
+    if: github.event_name != 'workflow_dispatch' || github.actor == 'VishalViswanathan03'
     runs-on: ubuntu-latest
 
     steps:
