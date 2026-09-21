@@ -9,6 +9,10 @@
 >
 > 🌐 **Official Website & Live Weapon Simulator:** [https://vishalviswanathan03.github.io/bullet/](https://vishalviswanathan03.github.io/bullet/)
 
+> [!IMPORTANT]
+> 🚀 **Initial Public Release (`v0.0.2`)**  
+> BULLET is fresh off the launchpad! While core HTTP/3, gRPC, scripting, and mesh engines are fully functional, you may encounter edge cases as we rapidly iterate. If you discover a bug or have an idea, please [open a GitHub Issue](https://github.com/VishalViswanathan03/bullet/issues)—your feedback directly drives the next release!
+
 ---
 
 ## ⚔️ Why BULLET vs. Postman?
@@ -225,6 +229,15 @@ dotnet run --project src/Bullet.Desktop
 - **Polyglot Code Generation**: Generate code snippets in cURL, C# HttpClient, TypeScript fetch, JavaScript axios, Python requests, Go net/http, Rust reqwest, Java 11, PHP cURL, and Ruby Net::HTTP.
 - **Armory Transfer**: Import and export collections via native `.bullet.json`, Postman v2.1, OpenAPI 3.0, and cURL.
 - **JUnit XML CI/CD Reports**: Export test results formatted for native GitHub Actions, GitLab CI, and Jenkins integration.
+
+---
+
+## ⚖️ Legal & Trademark Notice
+Postman is a registered trademark of Postman, Inc. Insomnia is a registered trademark of Kong Inc. 
+BULLET is an independent, community-driven open-source project created by Vishal Viswanathan. 
+It is not affiliated with, sponsored by, or endorsed by Postman, Inc., Kong Inc., or any of their affiliates. 
+All references to third-party tools and formats (such as Postman Collection v2.1) are used strictly for 
+purposes of compatibility, interoperability, and comparative benchmarking under nominative fair use.
 
 ---
 
