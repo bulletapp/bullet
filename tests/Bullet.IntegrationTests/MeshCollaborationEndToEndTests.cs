@@ -325,4 +325,139 @@ public class MeshCollaborationEndToEndTests : IClassFixture<WebApplicationFactor
         Assert.False(body!.Success);
         Assert.Contains("not currently being shared", body.ErrorMessage);
     }
+
+    [Fact]
+    public async Task Mesh_ReadOnly_Mode_Rejects_Sync_With_Forbidden()
+    {
+        // Setup: Create a range and share it strictly in ReadOnly mode
+        var rangeResponse = await _client.PostAsJsonAsync("/api/ranges", new { name = "ReadOnly Spec Range" });
+        rangeResponse.EnsureSuccessStatusCode();
+        var rangeJson = await rangeResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var rangeId = rangeJson.GetProperty("id").GetString()!;
+
+        await _client.PostAsJsonAsync("/api/mesh/share", new
+        {
+            rangeId = rangeId,
+            accessMode = "ReadOnly"
+        });
+
+        // Peer joins the ReadOnly range
+        var joinResponse = await _client.PostAsJsonAsync("/api/mesh/join", new
+        {
+            rangeId = rangeId,
+            peerName = "Auditor Peer"
+        });
+        joinResponse.EnsureSuccessStatusCode();
+        var joinResult = await joinResponse.Content.ReadFromJsonAsync<MeshJoinResponse>(JsonOpts);
+        var ticket = joinResult!.Ticket!;
+        Assert.Equal("ReadOnly", joinResult.AccessMode);
+
+        // Attempt mutation sync -> must return 403 Forbidden
+        var syncRequest = new HttpRequestMessage(HttpMethod.Post, "/api/mesh/sync")
+        {
+            Content = JsonContent.Create(new
+            {
+                rangeId = rangeId,
+                eventType = "ShotUpdated",
+                authorPeerName = "Auditor Peer",
+                payloadJson = "{\"name\":\"Unauthorized Edit\"}",
+                timestampUtc = DateTime.UtcNow
+            })
+        };
+        syncRequest.Headers.Add("X-Mesh-Ticket", ticket);
+
+        var syncResponse = await _client.SendAsync(syncRequest);
+        Assert.Equal(HttpStatusCode.Forbidden, syncResponse.StatusCode);
+
+        var errorBody = await syncResponse.Content.ReadAsStringAsync();
+        Assert.Contains("Read-Only", errorBody);
+
+        // Clean up
+        await _client.PostAsJsonAsync("/api/mesh/stop-share", new { rangeId = rangeId });
+    }
+
+    [Fact]
+    public async Task Mesh_MultiInstance_4_Peers_Connect_And_Verify_AccessModes()
+    {
+        // 1. Instance 1 (Host): Creates and shares Range in ReadWrite mode with password
+        var rangeResponse = await _client.PostAsJsonAsync("/api/ranges", new { name = "Mesh 4-Instance Range" });
+        rangeResponse.EnsureSuccessStatusCode();
+        var rangeJson = await rangeResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var rangeId = rangeJson.GetProperty("id").GetString()!;
+
+        var shareResponse = await _client.PostAsJsonAsync("/api/mesh/share", new
+        {
+            rangeId = rangeId,
+            password = "secure_mesh_pass",
+            accessMode = "ReadWrite"
+        });
+        shareResponse.EnsureSuccessStatusCode();
+
+        // 2. Instance 2 (Peer A - ReadWrite): Joins with correct password
+        var peerAResponse = await _client.PostAsJsonAsync("/api/mesh/join", new
+        {
+            rangeId = rangeId,
+            password = "secure_mesh_pass",
+            peerName = "Peer-A-Writer"
+        });
+        peerAResponse.EnsureSuccessStatusCode();
+        var peerABody = await peerAResponse.Content.ReadFromJsonAsync<MeshJoinResponse>(JsonOpts);
+        Assert.True(peerABody!.Success);
+        Assert.NotNull(peerABody.Ticket);
+
+        // 3. Instance 3 (Peer B - ReadWrite): Joins with correct password
+        var peerBResponse = await _client.PostAsJsonAsync("/api/mesh/join", new
+        {
+            rangeId = rangeId,
+            password = "secure_mesh_pass",
+            peerName = "Peer-B-Writer"
+        });
+        peerBResponse.EnsureSuccessStatusCode();
+        var peerBBody = await peerBResponse.Content.ReadFromJsonAsync<MeshJoinResponse>(JsonOpts);
+        Assert.True(peerBBody!.Success);
+
+        // 4. Instance 4 (Peer C - Unauthorized / Rejected): Attempts join with wrong password
+        var peerCResponse = await _client.PostAsJsonAsync("/api/mesh/join", new
+        {
+            rangeId = rangeId,
+            password = "wrong_password_123",
+            peerName = "Peer-C-Attacker"
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, peerCResponse.StatusCode);
+
+        // 5. Verify Instance 2 can perform ReadWrite mutation sync
+        var syncReqA = new HttpRequestMessage(HttpMethod.Post, "/api/mesh/sync")
+        {
+            Content = JsonContent.Create(new
+            {
+                rangeId = rangeId,
+                eventType = "ShotUpdated",
+                authorPeerName = "Peer-A-Writer",
+                payloadJson = "{}",
+                timestampUtc = DateTime.UtcNow
+            })
+        };
+        syncReqA.Headers.Add("X-Mesh-Ticket", peerABody.Ticket);
+        var syncResA = await _client.SendAsync(syncReqA);
+        syncResA.EnsureSuccessStatusCode();
+
+        // 6. Verify Instance 3 can also perform ReadWrite mutation sync
+        var syncReqB = new HttpRequestMessage(HttpMethod.Post, "/api/mesh/sync")
+        {
+            Content = JsonContent.Create(new
+            {
+                rangeId = rangeId,
+                eventType = "ShotUpdated",
+                authorPeerName = "Peer-B-Writer",
+                payloadJson = "{}",
+                timestampUtc = DateTime.UtcNow
+            })
+        };
+        syncReqB.Headers.Add("X-Mesh-Ticket", peerBBody.Ticket);
+        var syncResB = await _client.SendAsync(syncReqB);
+        syncResB.EnsureSuccessStatusCode();
+
+        // Clean up
+        await _client.PostAsJsonAsync("/api/mesh/stop-share", new { rangeId = rangeId });
+    }
 }
