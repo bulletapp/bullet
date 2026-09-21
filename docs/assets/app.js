@@ -83,16 +83,16 @@ const PRESETS = {
   },
   github: {
     method: 'GET',
-    url: 'https://api.github.com/repos/VishalViswanathan03/bullet',
+    url: 'https://api.github.com/repos/bullet-sh/bullet',
     status: '200 OK',
     time: '24.6 ms',
     size: '3.18 KB',
     waterfall: { dns: 1.2, tcp: 2.8, tls: 5.4, ttfb: 14.2, transfer: 1.0 },
     body: {
       name: "bullet",
-      full_name: "VishalViswanathan03/bullet",
+      full_name: "bullet-sh/bullet",
       description: "BULLET: Load. Aim. API. Ultra-fast sub-millisecond API weapon built with .NET 10 & React 19.",
-      html_url: "https://github.com/VishalViswanathan03/bullet",
+      html_url: "https://github.com/bullet-sh/bullet",
       license: "MIT License",
       language: "C# / TypeScript",
       latest_release: "v0.0.2",
@@ -100,7 +100,7 @@ const PRESETS = {
     },
     assertions: [
       { name: "Repository name is 'bullet'", passed: true, time: "0.1ms" },
-      { name: "Owner matches VishalViswanathan03", passed: true, time: "0.1ms" },
+      { name: "Owner matches bullet-sh", passed: true, time: "0.1ms" },
       { name: "License is MIT", passed: true, time: "0.1ms" }
     ],
     headers: {
@@ -299,17 +299,17 @@ const PLATFORM_DATA = {
     title: "Windows 10 / 11 (x64)",
     badge: "Installer & Portable",
     desc: "Self-contained desktop application with native WebView2 runtime and microsecond SocketsHttpHandler.",
-    primaryBtn: { text: "Download Setup (.exe)", url: "https://github.com/VishalViswanathan03/bullet/releases/download/v0.0.2/Bullet-Setup-v0.0.2.exe" },
-    secondaryBtn: { text: "Portable (.zip)", url: "https://github.com/VishalViswanathan03/bullet/releases/download/v0.0.2/Bullet-Windows-Portable-v0.0.2.zip" },
+    primaryBtn: { text: "Download Setup (.exe)", url: "https://github.com/bullet-sh/bullet/releases/download/v0.0.2/Bullet-Setup-v0.0.2.exe" },
+    secondaryBtn: { text: "Portable (.zip)", url: "https://github.com/bullet-sh/bullet/releases/download/v0.0.2/Bullet-Windows-Portable-v0.0.2.zip" },
     terminal: `# Install via PowerShell One-Liner
-Invoke-WebRequest -Uri "https://github.com/VishalViswanathan03/bullet/releases/download/v0.0.2/Bullet-Setup-v0.0.2.exe" -OutFile "Bullet-Setup.exe"; .\Bullet-Setup.exe`
+Invoke-WebRequest -Uri "https://github.com/bullet-sh/bullet/releases/download/v0.0.2/Bullet-Setup-v0.0.2.exe" -OutFile "Bullet-Setup.exe"; .\Bullet-Setup.exe`
   },
   mac_arm: {
     title: "macOS Apple Silicon",
     badge: "Native ARM64 Universal",
     desc: "Optimized for Apple Silicon hardware acceleration with zero Rosetta emulation overhead.",
-    primaryBtn: { text: "Download for Apple Silicon (.zip)", url: "https://github.com/VishalViswanathan03/bullet/releases/download/v0.0.2/Bullet-macOS-AppleSilicon-arm64.zip" },
-    secondaryBtn: { text: "View macOS Guide", url: "https://github.com/VishalViswanathan03/bullet/blob/main/README.md#-macos-installation-apple-silicon--intel" },
+    primaryBtn: { text: "Download for Apple Silicon (.zip)", url: "https://github.com/bullet-sh/bullet/releases/download/v0.0.2/Bullet-macOS-AppleSilicon-arm64.zip" },
+    secondaryBtn: { text: "View macOS Guide", url: "https://github.com/bullet-sh/bullet/blob/main/README.md#-macos-installation-apple-silicon--intel" },
     terminal: `# Quick Run via Terminal (Removes Gatekeeper quarantine)
 unzip Bullet-macOS-AppleSilicon-arm64.zip
 xattr -cr Bullet.app
@@ -319,8 +319,8 @@ open Bullet.app`
     title: "macOS Intel (x64)",
     badge: "Intel 64-bit Native",
     desc: "For Intel Core i5/i7/i9 MacBooks and iMacs running macOS 12+ (Monterey, Ventura, Sonoma, Sequoia).",
-    primaryBtn: { text: "Download for Intel Mac (.zip)", url: "https://github.com/VishalViswanathan03/bullet/releases/download/v0.0.2/Bullet-macOS-Intel-x64.zip" },
-    secondaryBtn: { text: "View macOS Guide", url: "https://github.com/VishalViswanathan03/bullet/blob/main/README.md#-macos-installation-apple-silicon--intel" },
+    primaryBtn: { text: "Download for Intel Mac (.zip)", url: "https://github.com/bullet-sh/bullet/releases/download/v0.0.2/Bullet-macOS-Intel-x64.zip" },
+    secondaryBtn: { text: "View macOS Guide", url: "https://github.com/bullet-sh/bullet/blob/main/README.md#-macos-installation-apple-silicon--intel" },
     terminal: `# Quick Run for Intel Mac
 unzip Bullet-macOS-Intel-x64.zip
 xattr -cr Bullet.app
@@ -330,10 +330,10 @@ open Bullet.app`
     title: "Docker Container (Linux / Cloud)",
     badge: "Headless & Web",
     desc: "Run BULLET in isolated containers on Linux, server farms, or Kubernetes with zero desktop overhead.",
-    primaryBtn: { text: "GitHub Container Registry", url: "https://github.com/VishalViswanathan03/bullet/pkgs/container/bullet" },
-    secondaryBtn: { text: "Docker Compose Guide", url: "https://github.com/VishalViswanathan03/bullet/blob/main/docs/CLI.md" },
+    primaryBtn: { text: "GitHub Container Registry", url: "https://github.com/bullet-sh/bullet/pkgs/container/bullet" },
+    secondaryBtn: { text: "Docker Compose Guide", url: "https://github.com/bullet-sh/bullet/blob/main/docs/CLI.md" },
     terminal: `# Pull & Run Bullet Container in 1 Command
-docker run -d --name bullet-engine -p 5000:5000 ghcr.io/vishalviswanathan03/bullet:latest
+docker run -d --name bullet-engine -p 5000:5000 ghcr.io/bullet-sh/bullet:latest
 # Then open http://localhost:5000 in any browser`
   },
   pwa: {
@@ -341,7 +341,7 @@ docker run -d --name bullet-engine -p 5000:5000 ghcr.io/vishalviswanathan03/bull
     badge: "Zero Install • Add to Dock",
     desc: "Run BULLET directly in Safari, Chrome, or Edge. Click 'Install' or 'Add to Dock' for a full offline desktop window.",
     primaryBtn: { text: "Open Web App (localhost:5000)", url: "http://localhost:5000" },
-    secondaryBtn: { text: "Read PWA Guide", url: "https://github.com/VishalViswanathan03/bullet#standalone-web-app--pwa-macos-dock" },
+    secondaryBtn: { text: "Read PWA Guide", url: "https://github.com/bullet-sh/bullet#standalone-web-app--pwa-macos-dock" },
     terminal: `# Start the local API server and launch your browser
 dotnet run --project src/Bullet.Api
 # Click the 'Install BULLET App' button in the top navigation bar!`
@@ -350,9 +350,9 @@ dotnet run --project src/Bullet.Api
     title: ".NET 10 SDK & Source Build",
     badge: "Source Code",
     desc: "Full access to the .NET 10 Kestrel backend, Jint sandbox, and React 19 frontend codebase.",
-    primaryBtn: { text: "Clone Repository", url: "https://github.com/VishalViswanathan03/bullet" },
-    secondaryBtn: { text: "Architecture Spec", url: "https://github.com/VishalViswanathan03/bullet/blob/main/docs/ARCHITECTURE.md" },
-    terminal: `git clone https://github.com/VishalViswanathan03/bullet.git
+    primaryBtn: { text: "Clone Repository", url: "https://github.com/bullet-sh/bullet" },
+    secondaryBtn: { text: "Architecture Spec", url: "https://github.com/bullet-sh/bullet/blob/main/docs/ARCHITECTURE.md" },
+    terminal: `git clone https://github.com/bullet-sh/bullet.git
 cd bullet
 dotnet run --project src/Bullet.Api`
   }

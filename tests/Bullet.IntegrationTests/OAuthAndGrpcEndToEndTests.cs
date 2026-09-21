@@ -21,7 +21,7 @@ public class OAuthAndGrpcEndToEndTests : IClassFixture<WebApplicationFactory<Pro
         _factory = factory;
     }
 
-    private HttpClient CreateCustomClient()
+    private HttpClient CreateCustomClient(bool allowAutoRedirect = true)
     {
         return _factory.WithWebHostBuilder(builder =>
         {
@@ -31,7 +31,7 @@ public class OAuthAndGrpcEndToEndTests : IClassFixture<WebApplicationFactory<Pro
                 services.AddSingleton<IHttpMessageHandlerProvider>(new TestServerHandlerProvider(testHandler));
                 services.AddSingleton<IOAuthService>(new OAuthService(new HttpClient(testHandler) { BaseAddress = new Uri("http://localhost") }));
             });
-        }).CreateClient();
+        }).CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { AllowAutoRedirect = allowAutoRedirect });
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
@@ -43,7 +43,7 @@ public class OAuthAndGrpcEndToEndTests : IClassFixture<WebApplicationFactory<Pro
     [Fact]
     public async Task OAuth2_Pkce_Generation_And_AuthorizeRedirect_Success()
     {
-        var client = CreateCustomClient();
+        var client = CreateCustomClient(allowAutoRedirect: false);
 
         // 1. Generate PKCE pair
         var pkceRes = await client.PostAsync("/api/oauth/pkce", null);

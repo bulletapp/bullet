@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # BULLET API Testing Platform - macOS Native Launcher
-# https://github.com/VishalViswanathan03/bullet
+# https://github.com/bullet-sh/bullet
 # ==============================================================================
 
 set -e
