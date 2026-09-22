@@ -66,6 +66,19 @@ if ($iscc) {
     Write-Host "[5/5] Skipping Inno Setup build (ISCC.exe not in standard paths)." -ForegroundColor DarkGray
 }
 
+# 6. Authenticode Signing (if certificate exists in CurrentUser\My)
+$cert = (Get-ChildItem Cert:\CurrentUser\My -ErrorAction SilentlyContinue | Where-Object { $_.Subject -like "*BULLET Open Source Project*" -or $_.Subject -like "*VishalViswanathan03*" } | Select-Object -First 1)
+if ($cert) {
+    Write-Host "`nAuthenticode Signing Installer Binaries with DigiCert timestamp..." -ForegroundColor Cyan
+    Get-ChildItem -Path "dist-installer" -Filter "*.exe" | ForEach-Object {
+        Write-Host "Signing $($_.Name)..." -ForegroundColor Yellow
+        $sig = Set-AuthenticodeSignature -FilePath $_.FullName -Certificate $cert -TimestampServer "http://timestamp.digicert.com" -HashAlgorithm SHA256 -IncludeChain All
+        Write-Host "Signature status: $($sig.Status)" -ForegroundColor ($sig.Status -eq 'Valid' ? 'Green' : 'DarkYellow')
+    }
+} else {
+    Write-Host "`n[Notice] No code-signing certificate found in Cert:\CurrentUser\My. Installers left unsigned for local dev." -ForegroundColor DarkGray
+}
+
 # Generate SHA256 Checksums
 Write-Host "`nComputing SHA256 Checksums for Release Artifacts..." -ForegroundColor Cyan
 Get-ChildItem -Path "dist-installer" -Filter "*.exe" | ForEach-Object {

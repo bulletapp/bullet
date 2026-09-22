@@ -32,6 +32,14 @@ WizardStyle=modern
 CloseApplications=yes
 RestartApplications=no
 ArchitecturesInstallIn64BitMode=x64compatible
+VersionInfoVersion={#MyAppVersion}.0
+VersionInfoCompany={#MyAppPublisher}
+VersionInfoDescription=BULLET API Automation Platform Setup
+VersionInfoTextVersion={#MyAppVersion}
+VersionInfoCopyright=Copyright (C) 2026 {#MyAppPublisher}
+VersionInfoProductName={#MyAppName}
+VersionInfoProductVersion={#MyAppVersion}
+VersionInfoOriginalFileName=Bullet-Setup.exe
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

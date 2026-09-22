@@ -212,7 +212,8 @@ jobs:
               -FilePath "publish/desktop/Bullet.exe" `
               -Certificate $cert `
               -TimestampServer "http://timestamp.digicert.com" `
-              -HashAlgorithm SHA256
+              -HashAlgorithm SHA256 `
+              -IncludeChain All
             Write-Host "Desktop signature status: $($sig.Status)"
           }
         env:
@@ -241,13 +242,18 @@ jobs:
         run: |
           $cert = (Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Subject -like "*BULLET Open Source Project*" -or $_.Subject -like "*VishalViswanathan03*" } | Select-Object -First 1)
           if ($cert -and (Test-Path "dist-installer/Bullet-Setup.exe")) {
-            Write-Host "Signing dist-installer/Bullet-Setup.exe with DigiCert timestamp..."
+            Write-Host "Signing dist-installer/Bullet-Setup.exe with DigiCert timestamp and full chain..."
             $sig = Set-AuthenticodeSignature `
               -FilePath "dist-installer/Bullet-Setup.exe" `
               -Certificate $cert `
               -TimestampServer "http://timestamp.digicert.com" `
-              -HashAlgorithm SHA256
+              -HashAlgorithm SHA256 `
+              -IncludeChain All
             Write-Host "Installer signature status: $($sig.Status)"
+          }
+          
+          if (Test-Path "installer/Install-Certificate.bat") {
+            Copy-Item "installer/Install-Certificate.bat" -Destination "dist-installer/Install-Certificate.bat" -Force
           }
           
           $hash = (Get-FileHash -Algorithm SHA256 dist-installer/Bullet-Setup.exe).Hash
@@ -398,6 +404,12 @@ jobs:
             "| **[Bullet-macOS-AppleSilicon-arm64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-macOS-AppleSilicon-arm64.zip)** | macOS (Apple Silicon) | Native Apple Silicon bundle with double-clickable `Bullet.command` launcher |",
             "| **[Bullet-macOS-Intel-x64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-macOS-Intel-x64.zip)** | macOS (Intel x64) | Native Intel Mac bundle with double-clickable `Bullet.command` launcher |",
             "| **[Bullet-Release.cer](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Release.cer)** | All | Authenticode public certificate for publisher identity verification |",
+            "| **[Install-Certificate.bat](https://github.com/${{ github.repository }}/releases/download/$ver/Install-Certificate.bat)** | Windows | 1-Click script to trust the publisher certificate and eliminate SmartScreen blocks |",
+            "",
+            "#### 🛡️ Windows SmartScreen Guidance",
+            "> If Windows Defender SmartScreen shows *'Windows protected your PC'*, this is normal for newly released open-source installers. You can either:",
+            "> 1. Click **More info** -> **Run anyway**.",
+            "> 2. Or download `Install-Certificate.bat` into the same folder as `Bullet-Release.cer` and run it once to install the publisher certificate into your Windows CurrentUser store.",
             "",
             "#### 🔐 SHA256 Verification Hashes",
             '```text',
@@ -432,5 +444,6 @@ jobs:
             Bullet-macOS-Intel-x64.zip
             Bullet-macOS-Intel-x64.zip.sha256
             dist-installer/Bullet-Release.cer
+            dist-installer/Install-Certificate.bat
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
