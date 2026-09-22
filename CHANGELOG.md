@@ -5,6 +5,19 @@ All notable changes to the **BULLET** platform will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.3] - 2026-09-22
+
+### 🛡️ Code Signing, Authenticode & Publisher Identity
+- **Authenticode Code Signing**: Added native Authenticode signing with full certificate chain and DigiCert RFC 3161 timestamps to `Bullet.exe` and `Bullet-Setup.exe` installer.
+- **Publisher Identity Updated to `bulletapp`**: Standardized publisher name, digital certificate identity (`CN=bulletapp`), and application metadata across Inno Setup, .NET assemblies, and release scripts.
+- **SmartScreen 1-Click Trusted Certificate Installer**: Shipped `Install-Certificate.bat` script alongside `Bullet-Release.cer` to install the publisher certificate into the Windows CurrentUser store, eliminating SmartScreen unknown publisher warnings.
+
+### 🐛 Bug Fixes & Execution Engine Hardening
+- **Unconditional SSL/TLS Bypass**: Fixed issue where requests with `verifySsl = false` failed on self-signed or invalid certificates due to socket pool reuse and certificate revocation timeouts. Added explicit `CertificateRevocationCheckMode = X509RevocationMode.NoCheck`, lifetime bounds, and handler disposal isolation.
+- **Shot State Reversion Fix**: Fixed bug where selecting Bearer authentication or editing fields reverted to inherited/empty state upon switching shots or tabs. Resolved backend enum serialization case mismatch (`JsonStringEnumConverter`), normalized auth type lookups in `ShotEditor.tsx`, and replaced input fallbacks with nullish coalescing (`??`).
+- **Debounced Real-Time Autosave**: Implemented automatic 750ms debounced persistence to the local SQLite database via `bulletApi.updateShot()`. Added `flushPendingAutosave()` to guarantee pending edits are saved before firing, closing tabs, or navigating. Added real-time visual saving indicator (`• Saving...` / `Saved ✓`) to the URL bar.
+- **39-Phase Automated E2E Browser Suite**: Expanded test coverage with Tests 37, 38, and 39 verifying shot state persistence across navigation, debounced autosave across hard browser reloads, and SSL verification bypass execution.
+
 ---
 
 ## [0.0.2] - 2026-09-20

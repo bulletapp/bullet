@@ -10,7 +10,7 @@
 > 🌐 **Official Website & Live Weapon Simulator:** [https://bulletapp.github.io/bullet/](https://bulletapp.github.io/bullet/)
 
 > [!IMPORTANT]
-> 🚀 **Initial Public Release (`v0.0.2`)**  
+> 🚀 **Public Release (`v0.0.3`)**  
 > BULLET is fresh off the launchpad! While core HTTP/3, gRPC, scripting, and mesh engines are fully functional, you may encounter edge cases as we rapidly iterate. If you discover a bug or have an idea, please [open a GitHub Issue](https://github.com/bulletapp/bullet/issues)—your feedback directly drives the next release!
 
 ---

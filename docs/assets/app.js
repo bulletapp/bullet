@@ -141,7 +141,7 @@ const PRESETS = {
       html_url: "https://github.com/bulletapp/bullet",
       license: "MIT License",
       language: "C# / TypeScript",
-      latest_release: "v0.0.2",
+      latest_release: "v0.0.3",
       platforms: ["Windows x64", "macOS Apple Silicon (arm64)", "macOS Intel (x64)", "Docker Linux", "PWA Standalone"]
     },
     assertions: [
@@ -345,16 +345,16 @@ const PLATFORM_DATA = {
     title: "Windows 10 / 11 (x64)",
     badge: "Installer & Portable",
     desc: "Self-contained desktop application with native WebView2 runtime and microsecond SocketsHttpHandler.",
-    primaryBtn: { text: "Download Setup (.exe)", url: "https://github.com/bulletapp/bullet/releases/download/v0.0.2/Bullet-Setup-v0.0.2.exe" },
-    secondaryBtn: { text: "Portable (.zip)", url: "https://github.com/bulletapp/bullet/releases/download/v0.0.2/Bullet-Windows-Portable-v0.0.2.zip" },
+    primaryBtn: { text: "Download Setup (.exe)", url: "https://github.com/bulletapp/bullet/releases/download/v0.0.3/Bullet-Setup-v0.0.3.exe" },
+    secondaryBtn: { text: "Portable (.zip)", url: "https://github.com/bulletapp/bullet/releases/download/v0.0.3/Bullet-Windows-Portable-v0.0.3.zip" },
     terminal: `# Install via PowerShell One-Liner
-Invoke-WebRequest -Uri "https://github.com/bulletapp/bullet/releases/download/v0.0.2/Bullet-Setup-v0.0.2.exe" -OutFile "Bullet-Setup.exe"; .\Bullet-Setup.exe`
+Invoke-WebRequest -Uri "https://github.com/bulletapp/bullet/releases/download/v0.0.3/Bullet-Setup-v0.0.3.exe" -OutFile "Bullet-Setup.exe"; .\Bullet-Setup.exe`
   },
   mac_arm: {
     title: "macOS Apple Silicon",
     badge: "Native ARM64 Universal",
     desc: "Optimized for Apple Silicon hardware acceleration with zero Rosetta emulation overhead.",
-    primaryBtn: { text: "Download for Apple Silicon (.zip)", url: "https://github.com/bulletapp/bullet/releases/download/v0.0.2/Bullet-macOS-AppleSilicon-arm64.zip" },
+    primaryBtn: { text: "Download for Apple Silicon (.zip)", url: "https://github.com/bulletapp/bullet/releases/download/v0.0.3/Bullet-macOS-AppleSilicon-arm64.zip" },
     secondaryBtn: { text: "View macOS Guide", url: "https://github.com/bulletapp/bullet/blob/main/README.md#-macos-installation-apple-silicon--intel" },
     terminal: `# Quick Run via Terminal (Removes Gatekeeper quarantine)
 unzip Bullet-macOS-AppleSilicon-arm64.zip
@@ -365,7 +365,7 @@ open Bullet.app`
     title: "macOS Intel (x64)",
     badge: "Intel 64-bit Native",
     desc: "For Intel Core i5/i7/i9 MacBooks and iMacs running macOS 12+ (Monterey, Ventura, Sonoma, Sequoia).",
-    primaryBtn: { text: "Download for Intel Mac (.zip)", url: "https://github.com/bulletapp/bullet/releases/download/v0.0.2/Bullet-macOS-Intel-x64.zip" },
+    primaryBtn: { text: "Download for Intel Mac (.zip)", url: "https://github.com/bulletapp/bullet/releases/download/v0.0.3/Bullet-macOS-Intel-x64.zip" },
     secondaryBtn: { text: "View macOS Guide", url: "https://github.com/bulletapp/bullet/blob/main/README.md#-macos-installation-apple-silicon--intel" },
     terminal: `# Quick Run for Intel Mac
 unzip Bullet-macOS-Intel-x64.zip

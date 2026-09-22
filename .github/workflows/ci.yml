@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       release_version:
-        description: 'Release Tag (e.g. v0.0.2)'
+        description: 'Release Tag (e.g. v0.0.3)'
         required: true
-        default: 'v0.0.2'
+        default: 'v0.0.3'
       create_release:
         description: 'Publish GitHub Release with standalone desktop package'
         type: boolean
@@ -259,6 +259,18 @@ jobs:
           $hash = (Get-FileHash -Algorithm SHA256 dist-installer/Bullet-Setup.exe).Hash
           "$hash  Bullet-Setup.exe" | Out-File -Encoding utf8 dist-installer/Bullet-Setup.exe.sha256
 
+          $ver = "${{ github.event.inputs.release_version || github.ref_name }}"
+          if ($ver -and (Test-Path "dist-installer/Bullet-Setup.exe")) {
+            Copy-Item "dist-installer/Bullet-Setup.exe" -Destination "dist-installer/Bullet-Setup-$ver.exe" -Force
+            $verHash = (Get-FileHash -Algorithm SHA256 "dist-installer/Bullet-Setup-$ver.exe").Hash
+            "$verHash  Bullet-Setup-$ver.exe" | Out-File -Encoding utf8 "dist-installer/Bullet-Setup-$ver.exe.sha256"
+          }
+          if ($ver -and (Test-Path "Bullet-Desktop-Windows-x64.zip")) {
+            Copy-Item "Bullet-Desktop-Windows-x64.zip" -Destination "Bullet-Windows-Portable-$ver.zip" -Force
+            $zipVerHash = (Get-FileHash -Algorithm SHA256 "Bullet-Windows-Portable-$ver.zip").Hash
+            "$zipVerHash  Bullet-Windows-Portable-$ver.zip" | Out-File -Encoding utf8 "Bullet-Windows-Portable-$ver.zip.sha256"
+          }
+
       - name: Package Native macOS Application Bundles
         shell: pwsh
         run: |
@@ -437,8 +449,12 @@ jobs:
           files: |
             dist-installer/Bullet-Setup.exe
             dist-installer/Bullet-Setup.exe.sha256
+            dist-installer/Bullet-Setup-*.exe
+            dist-installer/Bullet-Setup-*.exe.sha256
             Bullet-Desktop-Windows-x64.zip
             Bullet-Desktop-Windows-x64.zip.sha256
+            Bullet-Windows-Portable-*.zip
+            Bullet-Windows-Portable-*.zip.sha256
             Bullet-macOS-AppleSilicon-arm64.zip
             Bullet-macOS-AppleSilicon-arm64.zip.sha256
             Bullet-macOS-Intel-x64.zip
