@@ -396,22 +396,20 @@ export function App() {
 
   const handleCloseTab = (tabId: string) => {
     flushPendingAutosave();
-    setRequestTabs((prev) => {
-      const remaining = prev.filter((t) => t.id !== tabId);
-      if (activeTabId === tabId) {
-        if (remaining.length > 0) {
-          const next = remaining[remaining.length - 1];
-          setActiveTabId(next.id);
-          setSelectedShot(next.shot);
-          setImpact(null);
-        } else {
-          setActiveTabId('');
-          setSelectedShot(null);
-          setImpact(null);
-        }
+    const remaining = requestTabs.filter((t) => t.id !== tabId);
+    setRequestTabs(remaining);
+    if (activeTabId === tabId) {
+      if (remaining.length > 0) {
+        const next = remaining[remaining.length - 1];
+        setActiveTabId(next.id);
+        setSelectedShot(next.shot);
+        setImpact(null);
+      } else {
+        setActiveTabId('');
+        setSelectedShot(null);
+        setImpact(null);
       }
-      return remaining;
-    });
+    }
   };
 
   const handleNewTab = () => {
@@ -444,6 +442,7 @@ export function App() {
   };
 
   const handleShotChange = (updated: Shot) => {
+    const prevShot = selectedShot;
     setSelectedShot(updated);
     pendingShotRef.current = updated;
 
@@ -452,46 +451,48 @@ export function App() {
       prev.map((t) => (t.id === (updated.id || activeTabId) ? { ...t, shot: updated, isDirty: true } : t))
     );
 
-    // 2. Immediately update in-memory arsenals so sidebar tree nodes reflect modifications
-    setArsenals((prevArsenals) =>
-      prevArsenals.map((ars) => {
-        let arsModified = false;
-        const newShots = ars.shots?.map((s) => {
-          if (s.id === updated.id) {
-            arsModified = true;
-            return updated;
-          }
-          return s;
-        });
-        const newSquads = ars.squads?.map((sq) => {
-          let sqModified = false;
-          const newSqShots = sq.shots?.map((s) => {
+    // 2. Only update in-memory arsenals if sidebar-visible attributes (name, method) changed
+    if (!prevShot || prevShot.name !== updated.name || prevShot.method !== updated.method) {
+      setArsenals((prevArsenals) =>
+        prevArsenals.map((ars) => {
+          let arsModified = false;
+          const newShots = ars.shots?.map((s) => {
             if (s.id === updated.id) {
-              sqModified = true;
+              arsModified = true;
               return updated;
             }
             return s;
           });
-          if (sqModified) {
-            arsModified = true;
-            return { ...sq, shots: newSqShots };
-          }
-          return sq;
-        });
+          const newSquads = ars.squads?.map((sq) => {
+            let sqModified = false;
+            const newSqShots = sq.shots?.map((s) => {
+              if (s.id === updated.id) {
+                sqModified = true;
+                return updated;
+              }
+              return s;
+            });
+            if (sqModified) {
+              arsModified = true;
+              return { ...sq, shots: newSqShots };
+            }
+            return sq;
+          });
 
-        if (arsModified) {
-          return { ...ars, shots: newShots, squads: newSquads };
-        }
-        return ars;
-      })
-    );
+          if (arsModified) {
+            return { ...ars, shots: newShots, squads: newSquads };
+          }
+          return ars;
+        })
+      );
+    }
 
     // 3. Debounced Autosave (for non-draft persisted shots)
     if (updated.id && !updated.id.startsWith('draft-')) {
       if (autosaveTimerRef.current) {
         clearTimeout(autosaveTimerRef.current);
       }
-      setSaveStatus('saving');
+      setSaveStatus((prev) => (prev === 'saving' ? prev : 'saving'));
       autosaveTimerRef.current = setTimeout(async () => {
         try {
           const saved = await bulletApi.updateShot(updated.id, updated);

@@ -102,7 +102,7 @@ async function runFullTestSuite() {
 
   page.on('pageerror', (err) => {
     uncaughtErrors.push(err.message);
-    console.error(`  [Page Error]: ${err.message}`);
+    console.error(`  [Page Error]: ${err.message}\n${err.stack || ''}`);
   });
 
   async function clearAndType(selector, text) {
@@ -113,7 +113,7 @@ async function runFullTestSuite() {
     await page.keyboard.up('Control');
     await page.keyboard.press('Backspace');
     if (text) {
-      await page.keyboard.type(text);
+      await page.keyboard.type(text, { delay: 4 });
     }
     const actualVal = await page.$eval(selector, (element) => element.value);
     if (actualVal !== text) {
