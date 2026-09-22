@@ -55,6 +55,21 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
     onChange({ ...shot, url: newUrl });
   };
 
+  // Normalized Armor / Auth Type resolution
+  const normalizeAuthType = (type?: string): string => {
+    if (!type) return 'inherit';
+    const lower = String(type).toLowerCase();
+    if (lower === 'bearer') return 'bearer';
+    if (lower === 'basic') return 'basic';
+    if (lower === 'apikey') return 'apiKey';
+    if (lower === 'oauth2') return 'oauth2';
+    if (lower === 'awssigv4') return 'awsSigV4';
+    if (lower === 'none') return 'none';
+    return 'inherit';
+  };
+
+  const currentAuthType = normalizeAuthType(shot.armor?.type);
+
   // OAuth 2.0 state
   const [isRequestingToken, setIsRequestingToken] = useState(false);
   const [tokenStatus, setTokenStatus] = useState<string | null>(null);
@@ -594,7 +609,7 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
             >
               <Lock className="w-3 h-3 text-slate-400" />
               <span>Auth</span>
-              {shot.armor?.type && shot.armor.type !== 'inherit' && shot.armor.type !== 'none' && (
+              {currentAuthType !== 'inherit' && currentAuthType !== 'none' && (
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
               )}
             </button>
@@ -674,7 +689,7 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
             >
               <Lock className="w-3 h-3 text-slate-400" />
               <span>Auth</span>
-              {shot.armor?.type && shot.armor.type !== 'inherit' && shot.armor.type !== 'none' && (
+              {currentAuthType !== 'inherit' && currentAuthType !== 'none' && (
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               )}
             </button>
@@ -965,7 +980,7 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
               <label className="text-xs text-slate-400 font-mono block mb-1">Type</label>
               <select
                 data-testid="auth-type-select"
-                value={shot.armor?.type || 'inherit'}
+                value={currentAuthType}
                 onChange={(e) =>
                   onChange({
                     ...shot,
@@ -984,13 +999,13 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
               </select>
             </div>
 
-            {(!shot.armor?.type || shot.armor.type === 'inherit') && (
+            {currentAuthType === 'inherit' && (
               <div className="p-3 bg-bullet-surface border border-bullet-border rounded text-xs text-slate-400 font-sans leading-relaxed">
                 This request will automatically inherit authentication credentials from its parent collection.
               </div>
             )}
 
-            {shot.armor?.type === 'bearer' && (
+            {currentAuthType === 'bearer' && (
               <div>
                 <label className="text-xs text-slate-400 font-mono block mb-1">
                   Bearer Token (supports <code className="text-amber-400">{'{{round}}'}</code>)
@@ -998,39 +1013,63 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
                 <input
                   type="text"
                   data-testid="bearer-token-input"
-                  value={shot.armor.bearerToken || ''}
-                  onChange={(e) =>
+                  value={
+                    shot.armor?.bearerToken ??
+                    shot.armor?.properties?.token ??
+                    (shot.armor as any)?.token ??
+                    ''
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
                     onChange({
                       ...shot,
                       armor: {
                         ...shot.armor,
-                        bearerToken: e.target.value,
+                        type: 'bearer',
+                        bearerToken: val,
+                        token: val,
                         properties: {
                           ...(shot.armor?.properties || {}),
-                          token: e.target.value,
+                          token: val,
+                          Token: val,
                         },
                       },
-                    })
-                  }
+                    });
+                  }}
                   placeholder="e.g. {{authToken}} or eyJhbGciOi..."
                   className="w-full p-2 bg-bullet-surface border border-bullet-border rounded text-xs font-mono text-slate-200 outline-none focus:border-amber-500"
                 />
               </div>
             )}
 
-            {shot.armor?.type === 'basic' && (
+            {currentAuthType === 'basic' && (
               <div className="space-y-2">
                 <div>
                   <label className="text-xs text-slate-400 font-mono block mb-1">Username</label>
                   <input
                     type="text"
-                    value={shot.armor.basicUsername || ''}
-                    onChange={(e) =>
+                    data-testid="basic-username-input"
+                    value={
+                      shot.armor?.basicUsername ??
+                      shot.armor?.properties?.username ??
+                      ''
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
                       onChange({
                         ...shot,
-                        armor: { ...shot.armor, basicUsername: e.target.value },
-                      })
-                    }
+                        armor: {
+                          ...shot.armor,
+                          type: 'basic',
+                          basicUsername: val,
+                          properties: {
+                            ...(shot.armor?.properties || {}),
+                            username: val,
+                            Username: val,
+                          },
+                        },
+                      });
+                    }}
                     placeholder="Username or {{username}}"
                     className="w-full p-2 bg-bullet-surface border border-bullet-border rounded text-xs font-mono text-slate-200 outline-none focus:border-amber-500"
                   />
@@ -1039,13 +1078,28 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
                   <label className="text-xs text-slate-400 font-mono block mb-1">Password</label>
                   <input
                     type="password"
-                    value={shot.armor.basicPassword || ''}
-                    onChange={(e) =>
+                    data-testid="basic-password-input"
+                    value={
+                      shot.armor?.basicPassword ??
+                      shot.armor?.properties?.password ??
+                      ''
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
                       onChange({
                         ...shot,
-                        armor: { ...shot.armor, basicPassword: e.target.value },
-                      })
-                    }
+                        armor: {
+                          ...shot.armor,
+                          type: 'basic',
+                          basicPassword: val,
+                          properties: {
+                            ...(shot.armor?.properties || {}),
+                            password: val,
+                            Password: val,
+                          },
+                        },
+                      });
+                    }}
                     placeholder="Password or {{password}}"
                     className="w-full p-2 bg-bullet-surface border border-bullet-border rounded text-xs font-mono text-slate-200 outline-none focus:border-amber-500"
                   />
@@ -1053,19 +1107,34 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
               </div>
             )}
 
-            {shot.armor?.type === 'apiKey' && (
+            {currentAuthType === 'apiKey' && (
               <div className="space-y-2">
                 <div>
                   <label className="text-xs text-slate-400 font-mono block mb-1">Key Name</label>
                   <input
                     type="text"
-                    value={shot.armor.apiKeyName || ''}
-                    onChange={(e) =>
+                    data-testid="api-key-name-input"
+                    value={
+                      shot.armor?.apiKeyName ??
+                      shot.armor?.properties?.key ??
+                      ''
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
                       onChange({
                         ...shot,
-                        armor: { ...shot.armor, apiKeyName: e.target.value },
-                      })
-                    }
+                        armor: {
+                          ...shot.armor,
+                          type: 'apiKey',
+                          apiKeyName: val,
+                          properties: {
+                            ...(shot.armor?.properties || {}),
+                            key: val,
+                            Key: val,
+                          },
+                        },
+                      });
+                    }}
                     placeholder="e.g. X-API-Key"
                     className="w-full p-2 bg-bullet-surface border border-bullet-border rounded text-xs font-mono text-slate-200 outline-none focus:border-amber-500"
                   />
@@ -1074,13 +1143,28 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
                   <label className="text-xs text-slate-400 font-mono block mb-1">Key Value</label>
                   <input
                     type="text"
-                    value={shot.armor.apiKeyValue || ''}
-                    onChange={(e) =>
+                    data-testid="api-key-value-input"
+                    value={
+                      shot.armor?.apiKeyValue ??
+                      shot.armor?.properties?.value ??
+                      ''
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
                       onChange({
                         ...shot,
-                        armor: { ...shot.armor, apiKeyValue: e.target.value },
-                      })
-                    }
+                        armor: {
+                          ...shot.armor,
+                          type: 'apiKey',
+                          apiKeyValue: val,
+                          properties: {
+                            ...(shot.armor?.properties || {}),
+                            value: val,
+                            Value: val,
+                          },
+                        },
+                      });
+                    }}
                     placeholder="e.g. {{apiKey}}"
                     className="w-full p-2 bg-bullet-surface border border-bullet-border rounded text-xs font-mono text-slate-200 outline-none focus:border-amber-500"
                   />
@@ -1088,11 +1172,25 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
                 <div>
                   <label className="text-xs text-slate-400 font-mono block mb-1">Add To</label>
                   <select
-                    value={shot.armor.apiKeyLocation || 'header'}
+                    data-testid="api-key-location-select"
+                    value={
+                      shot.armor?.apiKeyLocation ||
+                      shot.armor?.properties?.addTo ||
+                      shot.armor?.properties?.AddTo ||
+                      'header'
+                    }
                     onChange={(e) =>
                       onChange({
                         ...shot,
-                        armor: { ...shot.armor, apiKeyLocation: e.target.value as any },
+                        armor: {
+                          ...shot.armor,
+                          type: 'apiKey',
+                          apiKeyLocation: e.target.value as any,
+                          properties: {
+                            ...(shot.armor?.properties || {}),
+                            addTo: e.target.value,
+                          },
+                        },
                       })
                     }
                     className="w-full p-2 bg-bullet-surface border border-bullet-border rounded text-xs font-mono text-slate-200 outline-none"
@@ -1105,7 +1203,7 @@ export const ShotEditor: React.FC<ShotEditorProps> = ({ shot, onChange, tlsProfi
             )}
 
             {/* OAuth 2.0 Configuration Panel */}
-            {shot.armor?.type === 'oauth2' && (
+            {currentAuthType === 'oauth2' && (
               <div className="space-y-4">
                 {/* Feedback notifications */}
                 {tokenStatus && (

@@ -52,6 +52,9 @@ export function App() {
   const [selectedShot, setSelectedShot] = useState<Shot | null>(null);
   const [requestTabs, setRequestTabs] = useState<RequestTabItem[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>('');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingShotRef = useRef<Shot | null>(null);
 
   // Execution & Telemetry State
   const [impact, setImpact] = useState<Impact | null>(null);
@@ -235,7 +238,7 @@ export function App() {
     if (selectedRange && (!meshSession?.isConnected || meshSession.isHost)) {
       loadRangeData(selectedRange.id);
     }
-  }, [selectedRange, meshSession?.isConnected]);
+  }, [selectedRange?.id, meshSession?.isConnected]);
 
   // Refresh TLS profiles and loadouts when switching back to Arsenals workbench
   useEffect(() => {
@@ -251,7 +254,7 @@ export function App() {
         });
       }).catch(() => {});
     }
-  }, [activeSidebarTab, selectedRange]);
+  }, [activeSidebarTab, selectedRange?.id]);
 
   const loadRangeData = async (rangeId: string) => {
     try {
@@ -341,22 +344,48 @@ export function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedShot, selectedLoadout, activeTabId, requestTabs]);
 
-  // Request Workbench Tabs Management
+  // Request Workbench Tabs & Autosave Management
+  const flushPendingAutosave = async () => {
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+    const pending = pendingShotRef.current;
+    if (pending && pending.id && !pending.id.startsWith('draft-')) {
+      pendingShotRef.current = null;
+      try {
+        const saved = await bulletApi.updateShot(pending.id, pending);
+        setRequestTabs((prev) =>
+          prev.map((t) => (t.id === saved.id ? { ...t, shot: saved, isDirty: false } : t))
+        );
+      } catch (e) {
+        console.error('Failed to flush autosave:', e);
+      }
+    }
+  };
+
   const openShotInTab = (shot: Shot) => {
+    flushPendingAutosave();
+
+    // Check if shot is already in requestTabs to preserve any unsaved in-memory state
+    const existing = requestTabs.find((t) => t.id === shot.id);
+    const shotToUse = existing ? existing.shot : shot;
+
     setRequestTabs((prev) => {
-      const existing = prev.find((t) => t.id === shot.id);
-      if (existing) {
+      const alreadyOpen = prev.find((t) => t.id === shot.id);
+      if (alreadyOpen) {
         return prev;
       }
-      return [...prev, { id: shot.id, shot, isDirty: false }];
+      return [...prev, { id: shot.id, shot: shotToUse, isDirty: false }];
     });
     setActiveTabId(shot.id);
-    setSelectedShot(shot);
+    setSelectedShot(shotToUse);
     setImpact(null);
     setActiveSidebarTab('arsenals');
   };
 
   const handleSelectTab = (tabId: string) => {
+    flushPendingAutosave();
     const target = requestTabs.find((t) => t.id === tabId);
     if (target) {
       setActiveTabId(tabId);
@@ -366,6 +395,7 @@ export function App() {
   };
 
   const handleCloseTab = (tabId: string) => {
+    flushPendingAutosave();
     setRequestTabs((prev) => {
       const remaining = prev.filter((t) => t.id !== tabId);
       if (activeTabId === tabId) {
@@ -415,9 +445,70 @@ export function App() {
 
   const handleShotChange = (updated: Shot) => {
     setSelectedShot(updated);
+    pendingShotRef.current = updated;
+
+    // 1. Update tab
     setRequestTabs((prev) =>
-      prev.map((t) => (t.id === activeTabId ? { ...t, shot: updated, isDirty: true } : t))
+      prev.map((t) => (t.id === (updated.id || activeTabId) ? { ...t, shot: updated, isDirty: true } : t))
     );
+
+    // 2. Immediately update in-memory arsenals so sidebar tree nodes reflect modifications
+    setArsenals((prevArsenals) =>
+      prevArsenals.map((ars) => {
+        let arsModified = false;
+        const newShots = ars.shots?.map((s) => {
+          if (s.id === updated.id) {
+            arsModified = true;
+            return updated;
+          }
+          return s;
+        });
+        const newSquads = ars.squads?.map((sq) => {
+          let sqModified = false;
+          const newSqShots = sq.shots?.map((s) => {
+            if (s.id === updated.id) {
+              sqModified = true;
+              return updated;
+            }
+            return s;
+          });
+          if (sqModified) {
+            arsModified = true;
+            return { ...sq, shots: newSqShots };
+          }
+          return sq;
+        });
+
+        if (arsModified) {
+          return { ...ars, shots: newShots, squads: newSquads };
+        }
+        return ars;
+      })
+    );
+
+    // 3. Debounced Autosave (for non-draft persisted shots)
+    if (updated.id && !updated.id.startsWith('draft-')) {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+      setSaveStatus('saving');
+      autosaveTimerRef.current = setTimeout(async () => {
+        try {
+          const saved = await bulletApi.updateShot(updated.id, updated);
+          pendingShotRef.current = null;
+          setRequestTabs((prev) =>
+            prev.map((t) => (t.id === saved.id ? { ...t, shot: saved, isDirty: false } : t))
+          );
+          setSaveStatus('saved');
+          setTimeout(() => {
+            setSaveStatus((curr) => (curr === 'saved' ? 'idle' : curr));
+          }, 2000);
+        } catch (e) {
+          console.error('Autosave failed:', e);
+          setSaveStatus('idle');
+        }
+      }, 750);
+    }
   };
 
   // Actions
@@ -568,6 +659,12 @@ export function App() {
   const handleSaveShot = async () => {
     if (!selectedShot) return;
 
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+    pendingShotRef.current = null;
+
     // If connected to a remote peer workspace over WiFi Mesh
     if (meshSession?.isConnected) {
       if (meshSession.accessMode === 'ReadOnly') {
@@ -604,6 +701,7 @@ export function App() {
     }
 
     try {
+      setSaveStatus('saving');
       let updated: Shot;
       if (selectedShot.id.startsWith('draft-')) {
         const { id: _id, ...shotData } = selectedShot;
@@ -623,8 +721,48 @@ export function App() {
         )
       );
       setActiveTabId(updated.id);
+
+      // Immediately sync with in-memory arsenals
+      setArsenals((prevArsenals) =>
+        prevArsenals.map((ars) => {
+          let arsModified = false;
+          const newShots = ars.shots?.map((s) => {
+            if (s.id === updated.id || s.id === selectedShot.id) {
+              arsModified = true;
+              return updated;
+            }
+            return s;
+          });
+          const newSquads = ars.squads?.map((sq) => {
+            let sqModified = false;
+            const newSqShots = sq.shots?.map((s) => {
+              if (s.id === updated.id || s.id === selectedShot.id) {
+                sqModified = true;
+                return updated;
+              }
+              return s;
+            });
+            if (sqModified) {
+              arsModified = true;
+              return { ...sq, shots: newSqShots };
+            }
+            return sq;
+          });
+
+          if (arsModified) {
+            return { ...ars, shots: newShots, squads: newSquads };
+          }
+          return ars;
+        })
+      );
+
+      setSaveStatus('saved');
+      setTimeout(() => {
+        setSaveStatus((curr) => (curr === 'saved' ? 'idle' : curr));
+      }, 2000);
       if (selectedRange) loadRangeData(selectedRange.id);
     } catch (err: any) {
+      setSaveStatus('idle');
       alert(err.message || 'Failed to save shot');
     }
   };
@@ -840,6 +978,7 @@ export function App() {
                     onSave={handleSaveShot}
                     onOpenCodeShot={() => setCodeShotOpen(true)}
                     activeLoadout={selectedLoadout}
+                    saveStatus={saveStatus}
                   />
 
                   {/* Split Request / Response Pane */}

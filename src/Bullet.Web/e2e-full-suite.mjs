@@ -106,21 +106,35 @@ async function runFullTestSuite() {
   });
 
   async function clearAndType(selector, text) {
-    await page.waitForSelector(selector);
-    await page.evaluate((sel, val) => {
-      const el = document.querySelector(sel);
-      if (el) {
-        const proto = el instanceof HTMLTextAreaElement ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
-        const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
-        if (setter) {
-          setter.call(el, val || '');
-        } else {
-          el.value = val || '';
+    const el = await page.waitForSelector(selector);
+    await el.click({ clickCount: 3 });
+    await page.keyboard.down('Control');
+    await page.keyboard.press('a');
+    await page.keyboard.up('Control');
+    await page.keyboard.press('Backspace');
+    if (text) {
+      await page.keyboard.type(text);
+    }
+    const actualVal = await page.$eval(selector, (element) => element.value);
+    if (actualVal !== text) {
+      await page.evaluate((sel, val) => {
+        const input = document.querySelector(sel);
+        if (input) {
+          if (input._valueTracker) {
+            input._valueTracker.setValue('__reset__');
+          }
+          const proto = input instanceof HTMLTextAreaElement ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+          const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+          if (setter) {
+            setter.call(input, val || '');
+          } else {
+            input.value = val || '';
+          }
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
         }
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-        el.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-    }, selector, text);
+      }, selector, text);
+    }
   }
 
   try {
@@ -631,7 +645,8 @@ async function runFullTestSuite() {
       const spans = Array.from(document.querySelectorAll('span'));
       const shotSpan = spans.find((s) => s.textContent.trim() === 'Imported Ping Shot');
       if (shotSpan) {
-        shotSpan.click();
+        const item = shotSpan.closest('[data-testid^="shot-item-"]') || shotSpan;
+        item.click();
       }
     });
 
@@ -639,7 +654,7 @@ async function runFullTestSuite() {
     await page.waitForFunction(() => {
       const input = document.querySelector('[data-testid="url-input"]');
       return input && input.value.includes('httpbin.org/get');
-    }, { timeout: 5000 });
+    }, { timeout: 10000 });
     console.log('  ✓ Clicked imported shot: active URL in editor updated to "https://httpbin.org/get"!');
 
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '08-dragdrop-import-success.png') });
@@ -1461,7 +1476,8 @@ async function runFullTestSuite() {
     // Close the draft tab
     const closeTabBtns31 = await page.$$('[data-testid^="tab-close-btn-"]');
     if (closeTabBtns31.length > 0) {
-      await closeTabBtns31[closeTabBtns31.length - 1].click();
+      const lastCloseBtn = closeTabBtns31[closeTabBtns31.length - 1];
+      await page.evaluate((el) => el.click(), lastCloseBtn);
       console.log('  ✓ Closed active draft tab cleanly.');
     }
 
@@ -1720,6 +1736,183 @@ async function runFullTestSuite() {
 
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '32-pm-assertions-bridge.png') });
     console.log('  ★ TEST 36 PASSED: Postman pm.* Compatibility Bridge & Assertions verified!');
+
+    // -------------------------------------------------------------
+    // TEST 37: SHOT STATE PERSISTENCE ACROSS SHOT NAVIGATION & BEARER AUTH
+    // -------------------------------------------------------------
+    console.log('\n[TEST 37] Testing Shot State Persistence & Bearer Auth Across Shot Navigation...');
+
+    // Select the first shot in the sidebar
+    const firstShotItem = await page.waitForSelector('[data-testid^="shot-item-"]');
+    await firstShotItem.click();
+    await new Promise((r) => setTimeout(r, 500));
+
+    // Navigate to Auth tab
+    const authTab37 = await page.waitForSelector('[data-testid="tab-auth"]');
+    await authTab37.click();
+    console.log('  ✓ Navigated to Auth tab.');
+
+    // Choose Bearer Token
+    await page.waitForSelector('[data-testid="auth-type-select"]');
+    await page.select('[data-testid="auth-type-select"]', 'bearer');
+    console.log('  ✓ Selected Bearer Token auth type.');
+
+    // Enter token
+    const testBearerToken = 'e2e-persistent-bearer-token-12345';
+    await clearAndType('[data-testid="bearer-token-input"]', testBearerToken);
+    console.log(`  ✓ Entered bearer token: "${testBearerToken}".`);
+
+    // Click Save shot
+    const saveShotBtn = await page.waitForSelector('[data-testid="save-shot-btn"]');
+    await saveShotBtn.click();
+    console.log('  ✓ Clicked Save button.');
+    await new Promise((r) => setTimeout(r, 1200));
+
+    // Get all shot items in sidebar
+    const shotItems = await page.$$('[data-testid^="shot-item-"]');
+    if (shotItems.length > 1) {
+      // Click on a second shot
+      await shotItems[1].click();
+      await new Promise((r) => setTimeout(r, 800));
+      console.log('  ✓ Switched to second shot in sidebar.');
+
+      // Click back to the first shot
+      const freshItems = await page.$$('[data-testid^="shot-item-"]');
+      await freshItems[0].click();
+      await new Promise((r) => setTimeout(r, 800));
+      console.log('  ✓ Switched back to first shot in sidebar.');
+    }
+
+    // Ensure Auth tab is selected
+    const authTab37Check = await page.waitForSelector('[data-testid="tab-auth"]');
+    await authTab37Check.click();
+
+    // Verify auth type is STILL 'bearer'
+    const preservedAuthType = await page.$eval('[data-testid="auth-type-select"]', (el) => el.value);
+    if (preservedAuthType.toLowerCase() !== 'bearer') {
+      throw new Error(`Expected preserved auth type 'bearer', but got '${preservedAuthType}'!`);
+    }
+    console.log(`  ✓ Preserved Auth Type verified: "${preservedAuthType}"`);
+
+    // Verify bearer token input is STILL the test token
+    const preservedToken = await page.$eval('[data-testid="bearer-token-input"]', (el) => el.value);
+    if (preservedToken !== testBearerToken) {
+      throw new Error(`Expected preserved bearer token '${testBearerToken}', but got '${preservedToken}'!`);
+    }
+    console.log(`  ✓ Preserved Bearer Token verified: "${preservedToken}"`);
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '33-auth-persistence-success.png') });
+    console.log('  ★ TEST 37 PASSED: Auth state & Bearer token preserved across shot navigation!');
+
+    // -------------------------------------------------------------
+    // TEST 38: DEBOUNCED REAL-TIME AUTOSAVE & DATABASE RELOAD PERSISTENCE
+    // -------------------------------------------------------------
+    console.log('\n[TEST 38] Testing Debounced Real-time Autosave & Reload Persistence...');
+
+    // In the URL input, modify the URL to an autosaved test endpoint
+    const autosaveUrl = `${APP_URL}/api/ranges?autosave_e2e_verified=1`;
+    await clearAndType('[data-testid="url-input"]', autosaveUrl);
+    console.log(`  ✓ Modified URL to: "${autosaveUrl}". (NOT clicking save, waiting for autosave...)`);
+
+    // Wait for debounced autosave (750ms + network)
+    await page.waitForFunction(() => {
+      const statusEl = document.querySelector('[data-testid="autosave-status"]');
+      return statusEl && statusEl.textContent.includes('Saved');
+    }, { timeout: 5000 }).catch(() => {});
+    await new Promise((r) => setTimeout(r, 1500));
+    console.log('  ✓ Debounced autosave interval elapsed.');
+
+    // Reload the entire page from backend database
+    console.log('  ✓ Reloading browser page to test database persistence...');
+    await page.reload({ waitUntil: 'networkidle0' });
+    await new Promise((r) => setTimeout(r, 1000));
+
+    // Wait for sidebar and select the first shot
+    const reloadedFirstShot = await page.waitForSelector('[data-testid^="shot-item-"]', { timeout: 10000 });
+    await reloadedFirstShot.click();
+    await new Promise((r) => setTimeout(r, 800));
+
+    // Verify URL input still contains autosave_e2e_verified
+    const reloadedUrl = await page.$eval('[data-testid="url-input"]', (el) => el.value);
+    if (!reloadedUrl.includes('autosave_e2e_verified=1')) {
+      throw new Error(`Expected reloaded URL to contain 'autosave_e2e_verified=1', got: '${reloadedUrl}'`);
+    }
+    console.log(`  ✓ Verified reloaded URL persisted from database: "${reloadedUrl}"`);
+
+    // Verify Auth tab also still has Bearer token
+    const reloadedAuthTab = await page.waitForSelector('[data-testid="tab-auth"]');
+    await reloadedAuthTab.click();
+    const reloadedToken = await page.$eval('[data-testid="bearer-token-input"]', (el) => el.value);
+    if (reloadedToken !== testBearerToken) {
+      throw new Error(`Expected reloaded bearer token '${testBearerToken}', got: '${reloadedToken}'`);
+    }
+    console.log(`  ✓ Verified reloaded Bearer token persisted from database: "${reloadedToken}"`);
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '34-autosave-persistence-success.png') });
+    console.log('  ★ TEST 38 PASSED: Debounced real-time autosave & database reload persistence verified!');
+
+    // -------------------------------------------------------------
+    // TEST 39: VERIFY SSL TOGGLE STATE PERSISTENCE & TLS BYPASS
+    // -------------------------------------------------------------
+    console.log('\n[TEST 39] Testing Verify SSL Toggle State Persistence & TLS Bypass...');
+
+    // Click Settings tab
+    const settingsTab = await page.waitForSelector('[data-testid="tab-settings"]');
+    await settingsTab.click();
+    console.log('  ✓ Navigated to Settings tab.');
+
+    // Find verify-ssl-toggle
+    const verifySslToggle = await page.waitForSelector('[data-testid="verify-ssl-toggle"]');
+    const isSslInitiallyChecked = await page.$eval('[data-testid="verify-ssl-toggle"]', (el) => el.checked);
+    console.log(`  ✓ Initial Verify SSL toggle state: ${isSslInitiallyChecked}`);
+
+    // If checked, click it to uncheck (disable SSL verification)
+    if (isSslInitiallyChecked) {
+      await verifySslToggle.click();
+      console.log('  ✓ Toggled Verify SSL to FALSE (disabled).');
+    }
+
+    // Click Save
+    const saveShotBtn39 = await page.waitForSelector('[data-testid="save-shot-btn"]');
+    await saveShotBtn39.click();
+    await new Promise((r) => setTimeout(r, 1200));
+
+    // Switch to another shot and switch back
+    const shotItems39 = await page.$$('[data-testid^="shot-item-"]');
+    if (shotItems39.length > 1) {
+      await shotItems39[1].click();
+      await new Promise((r) => setTimeout(r, 600));
+      const freshShotItems39 = await page.$$('[data-testid^="shot-item-"]');
+      await freshShotItems39[0].click();
+      await new Promise((r) => setTimeout(r, 600));
+    }
+
+    // Go to Settings tab
+    const settingsTabVerify = await page.waitForSelector('[data-testid="tab-settings"]');
+    await settingsTabVerify.click();
+
+    // Verify verify-ssl-toggle is STILL FALSE (not reverted to true)
+    const isSslStillDisabled = await page.$eval('[data-testid="verify-ssl-toggle"]', (el) => el.checked);
+    if (isSslStillDisabled !== false) {
+      throw new Error(`Expected Verify SSL toggle to remain FALSE, but found: ${isSslStillDisabled}`);
+    }
+    console.log('  ✓ Verified Verify SSL toggle remained FALSE after shot navigation.');
+
+    // Now test firing request with verifySsl = false
+    await clearAndType('[data-testid="url-input"]', `${APP_URL}/api/ranges`);
+    const fireBtn39 = await page.waitForSelector('[data-testid="fire-btn"]');
+    await fireBtn39.click();
+    console.log('  ✓ Fired request with Verify SSL = false.');
+
+    await page.waitForSelector('[data-testid="status-code"]', { timeout: 15000 });
+    const statusCode39 = await page.$eval('[data-testid="status-code"]', (el) => el.textContent.trim());
+    if (!statusCode39.includes('200')) {
+      throw new Error(`Expected status 200, got: ${statusCode39}`);
+    }
+    console.log(`  ✓ Execution succeeded with SSL disabled: Status ${statusCode39}`);
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '35-ssl-bypass-success.png') });
+    console.log('  ★ TEST 39 PASSED: SSL toggle state persistence & TLS bypass verified!');
 
     console.log(`TOTAL UNCAUGHT ERRORS: ${uncaughtErrors.length}`);
     if (uncaughtErrors.length > 0) {

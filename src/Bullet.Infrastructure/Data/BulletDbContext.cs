@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Bullet.Domain.Entities;
 using Bullet.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
@@ -38,7 +39,11 @@ public class BulletDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        var jsonOpts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var jsonOpts = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+        };
 
         // User & Memberships
         modelBuilder.Entity<User>(b =>

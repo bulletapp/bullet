@@ -11,6 +11,7 @@ interface UrlBarProps {
   onSave: () => void;
   onOpenCodeShot: () => void;
   activeLoadout: Loadout | null;
+  saveStatus?: 'idle' | 'saving' | 'saved';
 }
 
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'GRPC'];
@@ -35,6 +36,7 @@ export const UrlBar: React.FC<UrlBarProps> = ({
   onSave,
   onOpenCodeShot,
   activeLoadout,
+  saveStatus = 'idle',
 }) => {
   const [resolvedPreview, setResolvedPreview] = useState<string>('');
   const [showTooltip, setShowTooltip] = useState(false);
@@ -357,6 +359,19 @@ export const UrlBar: React.FC<UrlBarProps> = ({
           <Save className="w-3.5 h-3.5 text-slate-400" />
           <span>Save</span>
         </button>
+
+        {saveStatus === 'saving' && (
+          <span data-testid="autosave-status" className="text-[11px] font-mono text-amber-400 flex items-center gap-1 px-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            Saving...
+          </span>
+        )}
+        {saveStatus === 'saved' && (
+          <span data-testid="autosave-status" className="text-[11px] font-mono text-emerald-400 flex items-center gap-1 px-1">
+            <Check className="w-3 h-3 text-emerald-400" />
+            Saved
+          </span>
+        )}
 
         {/* Code Shot Button */}
         <button

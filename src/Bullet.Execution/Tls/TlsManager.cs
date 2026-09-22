@@ -24,6 +24,8 @@ public class TlsManager : ITlsManager
         if (!verifySsl)
         {
             handler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+            handler.SslOptions.CertificateRevocationCheckMode = X509RevocationMode.NoCheck;
+            handler.PooledConnectionLifetime = TimeSpan.FromSeconds(15);
         }
 
         if (profile == null)
@@ -64,55 +66,58 @@ public class TlsManager : ITlsManager
         // Custom CA Bundle or Self-signed validation (only when SSL verification is enabled)
         if (verifySsl)
         {
-            handler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+            bool ValidateServerCertificate(object? sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
             {
                 if (profile.AllowSelfSigned)
                     return true;
 
-            if (sslPolicyErrors == SslPolicyErrors.None)
-                return true;
-
-            if (!profile.VerifyHostName && (sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != 0)
-            {
-                sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNameMismatch;
                 if (sslPolicyErrors == SslPolicyErrors.None)
                     return true;
-            }
 
-            // If custom CA bundle is provided, check if certificate chain is trusted by our bundle
-            if (!string.IsNullOrWhiteSpace(profile.CaBundlePem) && certificate != null && chain != null)
-            {
-                try
+                if (!profile.VerifyHostName && (sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != 0)
                 {
-                    var customChain = new X509Chain();
-                    customChain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-
-                    var certParts = profile.CaBundlePem.Split("-----END CERTIFICATE-----", StringSplitOptions.RemoveEmptyEntries);
-                    foreach (var part in certParts)
-                    {
-                        var trimmed = part.Trim();
-                        if (!string.IsNullOrEmpty(trimmed))
-                        {
-                            var fullPem = trimmed + "\n-----END CERTIFICATE-----\n";
-                            var ca = X509Certificate2.CreateFromPem(fullPem);
-                            customChain.ChainPolicy.CustomTrustStore.Add(ca);
-                        }
-                    }
-                    customChain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-
-                    var x509Cert2 = certificate as X509Certificate2 ?? new X509Certificate2(certificate);
-                    var isValid = customChain.Build(x509Cert2);
-                    if (isValid)
+                    sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNameMismatch;
+                    if (sslPolicyErrors == SslPolicyErrors.None)
                         return true;
                 }
-                catch
+
+                // If custom CA bundle is provided, check if certificate chain is trusted by our bundle
+                if (!string.IsNullOrWhiteSpace(profile.CaBundlePem) && certificate != null && chain != null)
                 {
-                    // Fallthrough to standard rejection
+                    try
+                    {
+                        var customChain = new X509Chain();
+                        customChain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+
+                        var certParts = profile.CaBundlePem.Split("-----END CERTIFICATE-----", StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var part in certParts)
+                        {
+                            var trimmed = part.Trim();
+                            if (!string.IsNullOrEmpty(trimmed))
+                            {
+                                var fullPem = trimmed + "\n-----END CERTIFICATE-----\n";
+                                var ca = X509Certificate2.CreateFromPem(fullPem);
+                                customChain.ChainPolicy.CustomTrustStore.Add(ca);
+                            }
+                        }
+
+                        customChain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+
+                        var x509Cert2 = certificate as X509Certificate2 ?? new X509Certificate2(certificate);
+                        var isValid = customChain.Build(x509Cert2);
+                        if (isValid)
+                            return true;
+                    }
+                    catch
+                    {
+                        // Fallthrough to standard rejection
+                    }
                 }
+
+                return false;
             }
 
-            return false;
-        };
+            handler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => ValidateServerCertificate(sender, certificate, chain, sslPolicyErrors);
         }
 
         return handler;

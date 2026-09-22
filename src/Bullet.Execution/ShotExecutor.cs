@@ -302,7 +302,7 @@ public class ShotExecutor : IShotExecutor
         // Step 9: Configure TLS & SocketsHttpHandler
         var verifySsl = shot.Settings.VerifySsl;
         var handler = _handlerProvider.CreateHandler(request.TlsProfile, verifySsl);
-        using var client = new HttpClient(handler, disposeHandler: false)
+        using var client = new HttpClient(handler, disposeHandler: true)
         {
             Timeout = TimeSpan.FromMilliseconds(shot.Settings.TimeoutMs > 0 ? shot.Settings.TimeoutMs : 30000)
         };
