@@ -67,7 +67,7 @@ if ($iscc) {
 }
 
 # 6. Authenticode Signing (if certificate exists in CurrentUser\My)
-$cert = (Get-ChildItem Cert:\CurrentUser\My -ErrorAction SilentlyContinue | Where-Object { $_.Subject -like "*BULLET Open Source Project*" -or $_.Subject -like "*VishalViswanathan03*" } | Select-Object -First 1)
+$cert = (Get-ChildItem Cert:\CurrentUser\My -ErrorAction SilentlyContinue | Where-Object { $_.Subject -like "*bulletapp*" -or $_.Subject -like "*BULLET Open Source Project*" -or $_.Subject -like "*VishalViswanathan03*" } | Select-Object -First 1)
 if ($cert) {
     Write-Host "`nAuthenticode Signing Installer Binaries with DigiCert timestamp..." -ForegroundColor Cyan
     Get-ChildItem -Path "dist-installer" -Filter "*.exe" | ForEach-Object {

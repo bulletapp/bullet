@@ -153,7 +153,7 @@ public static class InstallerEngine
 
                 key.SetValue("DisplayName", "BULLET");
                 key.SetValue("DisplayVersion", "1.0.0");
-                key.SetValue("Publisher", "Vishal Viswanathan");
+                key.SetValue("Publisher", "bulletapp");
                 key.SetValue("DisplayIcon", File.Exists(iconPath) ? iconPath : Path.Combine(targetDir, "Bullet.exe"));
                 key.SetValue("InstallLocation", targetDir);
                 key.SetValue("UninstallString", $"\"{setupPath}\" --uninstall");

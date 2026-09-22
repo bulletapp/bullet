@@ -193,10 +193,10 @@ jobs:
               [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable
             )
           } else {
-            Write-Host "Generating project Authenticode code-signing certificate for VishalViswanathan03..."
+            Write-Host "Generating project Authenticode code-signing certificate for bulletapp..."
             $cert = New-SelfSignedCertificate `
               -Type CodeSigningCert `
-              -Subject "CN=VishalViswanathan03, O=BULLET Open Source Project, OU=Release Signing" `
+              -Subject "CN=bulletapp, O=bulletapp, OU=Release Signing" `
               -CertStoreLocation "Cert:\CurrentUser\My" `
               -HashAlgorithm SHA256 `
               -NotAfter (Get-Date).AddYears(5)
@@ -240,7 +240,7 @@ jobs:
       - name: Authenticode Sign Setup Installer
         shell: pwsh
         run: |
-          $cert = (Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Subject -like "*BULLET Open Source Project*" -or $_.Subject -like "*VishalViswanathan03*" } | Select-Object -First 1)
+          $cert = (Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Subject -like "*bulletapp*" -or $_.Subject -like "*BULLET Open Source Project*" -or $_.Subject -like "*VishalViswanathan03*" } | Select-Object -First 1)
           if ($cert -and (Test-Path "dist-installer/Bullet-Setup.exe")) {
             Write-Host "Signing dist-installer/Bullet-Setup.exe with DigiCert timestamp and full chain..."
             $sig = Set-AuthenticodeSignature `

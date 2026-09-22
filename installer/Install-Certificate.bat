@@ -8,7 +8,7 @@ echo This utility installs the public code-signing certificate for BULLET
 echo into your Windows CurrentUser Certificate Store (Trusted Root).
 echo.
 echo This resolves Windows SmartScreen warnings and verifies the publisher
-echo as 'VishalViswanathan03 / BULLET Open Source Project'.
+echo as 'bulletapp'.
 echo.
 
 set "CER_PATH=%~dp0Bullet-Release.cer"
