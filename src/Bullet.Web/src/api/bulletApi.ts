@@ -8,7 +8,10 @@ import {
 const BASE_URL = '/api';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const url = path.startsWith('http://') || path.startsWith('https://')
+    ? path
+    : `${BASE_URL}${path}`;
+  const res = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -21,6 +24,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     try {
       const errObj = await res.json();
       if (errObj.error) errMsg = errObj.error;
+      else if (errObj.errorMessage) errMsg = errObj.errorMessage;
       else if (errObj.title) errMsg = errObj.title;
     } catch {
       // fallback
@@ -292,16 +296,16 @@ export const bulletApi = {
       method: 'POST',
       body: JSON.stringify({ rangeId }),
     }),
-  joinMeshRange: (rangeId: string, password?: string, peerName?: string) =>
+  joinMeshRange: (rangeId: string, password?: string, peerName?: string, hostEndpoint?: string) =>
     request<MeshJoinResponse>('/mesh/join', {
       method: 'POST',
-      body: JSON.stringify({ rangeId, password, peerName: peerName || 'BULLET Peer' }),
+      body: JSON.stringify({ rangeId, password, peerName: peerName || 'BULLET Peer', hostEndpoint }),
     }),
-  syncMeshEvent: (rangeId: string, eventType: string, payloadJson: string, ticket: string) =>
+  syncMeshEvent: (rangeId: string, eventType: string, payloadJson: string, ticket: string, hostEndpoint?: string) =>
     request<{ success: boolean }>('/mesh/sync', {
       method: 'POST',
       headers: { 'X-Mesh-Ticket': ticket },
-      body: JSON.stringify({ rangeId, eventType, payloadJson, authorPeerName: 'local', timestampUtc: new Date().toISOString() }),
+      body: JSON.stringify({ rangeId, eventType, payloadJson, authorPeerName: 'local', hostEndpoint, timestampUtc: new Date().toISOString() }),
     }),
 };
 
@@ -320,9 +324,10 @@ export function createFiringRunHubConnection(): signalR.HubConnection {
     .build();
 }
 
-export function createMeshHubConnection(): signalR.HubConnection {
+export function createMeshHubConnection(endpoint?: string): signalR.HubConnection {
+  const url = endpoint ? `${endpoint.replace(/\/+$/, '')}/hubs/mesh` : '/hubs/mesh';
   return new signalR.HubConnectionBuilder()
-    .withUrl('/hubs/mesh')
+    .withUrl(url)
     .withAutomaticReconnect()
     .build();
 }

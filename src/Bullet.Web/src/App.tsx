@@ -181,7 +181,7 @@ export function App() {
   useEffect(() => {
     if (!meshSession?.isConnected || !meshSession?.ticket) return;
 
-    const hub = createMeshHubConnection();
+    const hub = createMeshHubConnection(meshSession.hostEndpoint);
 
     hub.on('OnSyncEvent', (evt: any) => {
       if (evt.eventType === 'ShotUpdated' && evt.payloadJson) {
@@ -232,7 +232,7 @@ export function App() {
       hub.invoke('LeaveMesh', meshSession.rangeId).catch(() => {});
       hub.stop().catch(() => {});
     };
-  }, [meshSession?.isConnected, meshSession?.rangeId, meshSession?.ticket]);
+  }, [meshSession?.isConnected, meshSession?.rangeId, meshSession?.ticket, meshSession?.hostEndpoint]);
 
   useEffect(() => {
     if (selectedRange && (!meshSession?.isConnected || meshSession.isHost)) {
@@ -673,7 +673,7 @@ export function App() {
         return;
       }
       try {
-        await bulletApi.syncMeshEvent(meshSession.rangeId, 'ShotUpdated', JSON.stringify(selectedShot), meshSession.ticket);
+        await bulletApi.syncMeshEvent(meshSession.rangeId, 'ShotUpdated', JSON.stringify(selectedShot), meshSession.ticket, meshSession.hostEndpoint);
         setSelectedShot({ ...selectedShot });
         setArsenals((prev) =>
           prev.map((a) => ({

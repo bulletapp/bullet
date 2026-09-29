@@ -401,5 +401,6 @@ export interface MeshSyncEvent {
   eventType: string;
   authorPeerName: string;
   payloadJson: string;
+  hostEndpoint?: string;
   timestampUtc: string;
 }

@@ -1,4 +1,4 @@
-﻿using Bullet.Domain.Entities;
+using Bullet.Domain.Entities;
 using Range = Bullet.Domain.Entities.Range;
 
 namespace Bullet.Application.Mesh;
@@ -105,5 +105,6 @@ public class MeshSyncEvent
     public string EventType { get; set; } = string.Empty; // ShotUpdated, ShotCreated, ShotDeleted, RoundUpdated, ShotFired
     public string AuthorPeerName { get; set; } = string.Empty;
     public string PayloadJson { get; set; } = string.Empty;
+    public string? HostEndpoint { get; set; }
     public DateTime TimestampUtc { get; set; } = DateTime.UtcNow;
 }

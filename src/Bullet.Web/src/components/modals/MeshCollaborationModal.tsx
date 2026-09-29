@@ -34,7 +34,7 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
 
   // Share form state
   const [sharePassword, setSharePassword] = useState('');
-  const [usePassword, setUsePassword] = useState(true);
+  const [usePassword, setUsePassword] = useState(false);
   const [accessMode, setAccessMode] = useState<'ReadWrite' | 'ReadOnly'>('ReadWrite');
 
   // Join state
@@ -109,18 +109,19 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
     } catch { }
   };
 
-  const handleJoin = async (rangeId: string) => {
+  const handleJoin = async (range: DiscoveredRange) => {
+    const rangeId = range.rangeId;
     setJoinStatus(prev => ({ ...prev, [rangeId]: { loading: true } }));
     try {
+      const endpoint = range.endpoint || (range.hostIp ? `http://${range.hostIp}:${range.hostPort || 5000}` : '');
       const result = await bulletApi.joinMeshRange(
         rangeId,
         joinPasswords[rangeId],
-        'BULLET Peer'
+        'BULLET Peer',
+        endpoint
       );
       if (result.success) {
         setJoinStatus(prev => ({ ...prev, [rangeId]: { loading: false, ticket: result.ticket } }));
-        const found = discoveredRanges.find(r => r.rangeId === rangeId);
-        const endpoint = found?.endpoint || (found?.hostIp ? `http://${found.hostIp}:${found.hostPort || 5230}` : '');
         if (onJoinedWorkspace) {
           setTimeout(() => {
             onJoinedWorkspace(result, endpoint);
@@ -135,6 +136,102 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
     }
   };
 
+  const handleDirectConnect = async () => {
+    if (!directIp.trim()) return;
+    try {
+      const ep = directIp.startsWith('http') ? directIp.trim() : `http://${directIp.trim()}`;
+      const res = await fetch(`${ep}/api/mesh/status`);
+      if (res.ok) {
+        const status: MeshStatus = await res.json();
+        if (status.activeShares && status.activeShares.length > 0) {
+          const newRanges: DiscoveredRange[] = status.activeShares.map(s => ({
+            peerId: 'direct',
+            machineName: status.machineName,
+            osPlatform: status.osPlatform,
+            rangeId: s.rangeId,
+            rangeName: s.rangeName,
+            hostIp: ep.replace(/^https?:\/\//, '').split(':')[0],
+            hostPort: status.port || 5000,
+            endpoint: ep,
+            isPasswordProtected: s.isPasswordProtected,
+            accessMode: s.accessMode,
+            activePeers: s.connectedPeers,
+            lastSeenUtc: new Date().toISOString(),
+          }));
+          setDiscoveredRanges(prev => {
+            const map = new Map(prev.map(r => [r.rangeId, r]));
+            newRanges.forEach(r => map.set(r.rangeId, r));
+            return Array.from(map.values());
+          });
+        }
+      }
+    } catch (err: any) {
+      alert(`Could not connect to ${directIp}: ${err.message}`);
+    }
+  };
+
+  const [isScanningSubnet, setIsScanningSubnet] = useState(false);
+
+  const handleScanSubnet = async () => {
+    if (isScanningSubnet) return;
+    setIsScanningSubnet(true);
+    try {
+      const myIp = meshStatus?.localIpAddresses?.[0] || '192.168.1.1';
+      const parts = myIp.split('.');
+      if (parts.length === 4) {
+        const subnet = `${parts[0]}.${parts[1]}.${parts[2]}`;
+        const currentLast = parseInt(parts[3], 10);
+        const candidates: number[] = [];
+        for (let i = 1; i <= 254; i++) {
+          if (i !== currentLast) candidates.push(i);
+        }
+        candidates.sort((a, b) => Math.abs(a - currentLast) - Math.abs(b - currentLast));
+
+        const batchSize = 25;
+        for (let i = 0; i < Math.min(candidates.length, 100); i += batchSize) {
+          const batch = candidates.slice(i, i + batchSize);
+          await Promise.all(
+            batch.map(async (hostNum) => {
+              const ep = `http://${subnet}.${hostNum}:5000`;
+              try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 750);
+                const res = await fetch(`${ep}/api/mesh/status`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                if (res.ok) {
+                  const status: MeshStatus = await res.json();
+                  if (status.activeShares && status.activeShares.length > 0) {
+                    const newRanges: DiscoveredRange[] = status.activeShares.map((s) => ({
+                      peerId: 'subnet-scan',
+                      machineName: status.machineName,
+                      osPlatform: status.osPlatform,
+                      rangeId: s.rangeId,
+                      rangeName: s.rangeName,
+                      hostIp: `${subnet}.${hostNum}`,
+                      hostPort: status.port || 5000,
+                      endpoint: ep,
+                      isPasswordProtected: s.isPasswordProtected,
+                      accessMode: s.accessMode,
+                      activePeers: s.connectedPeers,
+                      lastSeenUtc: new Date().toISOString(),
+                    }));
+                    setDiscoveredRanges((prev) => {
+                      const map = new Map(prev.map((r) => [r.rangeId, r]));
+                      newRanges.forEach((r) => map.set(r.rangeId, r));
+                      return Array.from(map.values());
+                    });
+                  }
+                }
+              } catch {}
+            })
+          );
+        }
+      }
+    } finally {
+      setIsScanningSubnet(false);
+    }
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
@@ -145,7 +242,7 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
   if (!isOpen) return null;
 
   const primaryIp = meshStatus?.localIpAddresses?.[0] || '127.0.0.1';
-  const connectionUrl = `http://${primaryIp}:${meshStatus?.port || 5230}`;
+  const connectionUrl = `http://${primaryIp}:${meshStatus?.port || 5000}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
@@ -445,7 +542,7 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
                           </div>
                         ) : (
                           <button
-                            onClick={() => handleJoin(range.rangeId)}
+                            onClick={() => handleJoin(range)}
                             disabled={status?.loading}
                             className="w-full py-1.5 text-xs font-mono rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 disabled:opacity-40 transition"
                           >
@@ -466,11 +563,23 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
                     type="text"
                     value={directIp}
                     onChange={(e) => setDirectIp(e.target.value)}
-                    placeholder="e.g. 192.168.1.42:5230"
+                    placeholder="e.g. 192.168.1.42:5000"
+                    onKeyDown={(e) => e.key === 'Enter' && handleDirectConnect()}
                     className="flex-1 px-2.5 py-1.5 text-xs font-mono rounded bg-slate-800 border border-slate-700 text-slate-200 placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
                   />
-                  <button className="px-3 py-1.5 text-xs font-mono rounded bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition">
+                  <button
+                    onClick={handleDirectConnect}
+                    className="px-3 py-1.5 text-xs font-mono rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition cursor-pointer"
+                  >
                     Connect
+                  </button>
+                  <button
+                    onClick={handleScanSubnet}
+                    disabled={isScanningSubnet}
+                    className="px-3 py-1.5 text-xs font-mono rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 disabled:opacity-40 transition cursor-pointer"
+                    title="Probe local WiFi subnet (e.g. 192.168.x.x) if UDP discovery is blocked by firewall"
+                  >
+                    {isScanningSubnet ? '⏳ Scanning...' : '🔍 Scan Subnet'}
                   </button>
                 </div>
               </div>
@@ -481,7 +590,7 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
         {/* Footer */}
         <div className="flex items-center justify-between px-5 py-2.5 border-t border-slate-700/40 bg-slate-900/50">
           <div className="text-[9px] font-mono text-slate-500">
-            {meshStatus?.osPlatform} • {primaryIp} • UDP 5238 / HTTP {meshStatus?.port || 5230}
+            {meshStatus?.osPlatform} • {primaryIp} • UDP 5238 / HTTP {meshStatus?.port || 5000}
           </div>
           <div className="flex items-center gap-1.5 text-[9px] font-mono text-slate-500">
             <div className={`w-1.5 h-1.5 rounded-full ${isBroadcasting ? 'bg-emerald-400' : 'bg-slate-600'}`} />

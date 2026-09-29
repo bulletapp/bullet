@@ -92,14 +92,18 @@ public static class DatabaseSeeder
             return; // Already seeded
         }
 
-        // 1. Create Default User
-        var user = new User
+        // 1. Create Default User (or reuse if already exists)
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Username == "developer");
+        if (user == null)
         {
-            Username = "developer",
-            Email = "developer@bullet.dev",
-            PasswordHash = passwordHasher.HashPassword("bullet2026")
-        };
-        db.Users.Add(user);
+            user = new User
+            {
+                Username = "developer",
+                Email = "developer@bullet.dev",
+                PasswordHash = passwordHasher.HashPassword("bullet2026")
+            };
+            db.Users.Add(user);
+        }
 
         // 2. Create Default Workspace / Range
         var range = new Range

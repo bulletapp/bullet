@@ -1,13 +1,16 @@
 using System.Collections.Concurrent;
+using System.Net.Http.Json;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Bullet.Application.Mesh;
 using Bullet.Domain.Entities;
 using Bullet.Infrastructure.Data;
 using Bullet.Security.Auth;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Range = Bullet.Domain.Entities.Range;
 
@@ -17,15 +20,33 @@ public class MeshCollaborationService : IMeshCollaborationService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IConfiguration? _configuration;
     private readonly string _peerId = Guid.NewGuid().ToString("N")[..12];
 
     private readonly ConcurrentDictionary<Guid, InternalShareEntry> _activeShares = new();
     private readonly ConcurrentDictionary<string, DiscoveredRange> _discoveredRanges = new();
 
-    public MeshCollaborationService(IServiceScopeFactory scopeFactory, IPasswordHasher passwordHasher)
+    public MeshCollaborationService(IServiceScopeFactory scopeFactory, IPasswordHasher passwordHasher, IConfiguration? configuration = null)
     {
         _scopeFactory = scopeFactory;
         _passwordHasher = passwordHasher;
+        _configuration = configuration;
+    }
+
+    private int GetServerPort()
+    {
+        var urls = _configuration?["urls"] ?? Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
+        if (!string.IsNullOrWhiteSpace(urls))
+        {
+            foreach (var url in urls.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (Uri.TryCreate(url.Replace("*", "localhost").Replace("+", "localhost"), UriKind.Absolute, out var uri))
+                {
+                    if (uri.Port > 0) return uri.Port;
+                }
+            }
+        }
+        return 5000;
     }
 
     public Task<MeshStatus> GetStatusAsync(CancellationToken cancellationToken = default)
@@ -36,7 +57,7 @@ public class MeshCollaborationService : IMeshCollaborationService
             MachineName = Environment.MachineName,
             OsPlatform = GetCurrentOsPlatform(),
             LocalIpAddresses = ips,
-            Port = 5230,
+            Port = GetServerPort(),
             ActiveShares = _activeShares.Values.Select(s => new ActiveShareInfo
             {
                 RangeId = s.RangeId,
@@ -144,6 +165,17 @@ public class MeshCollaborationService : IMeshCollaborationService
     {
         if (!_activeShares.TryGetValue(request.RangeId, out var share))
         {
+            // Check if this range was discovered from a remote LAN peer
+            var remote = _discoveredRanges.Values.FirstOrDefault(r => r.RangeId == request.RangeId);
+            var targetEndpoint = !string.IsNullOrWhiteSpace(request.HostEndpoint)
+                ? request.HostEndpoint
+                : remote?.Endpoint;
+
+            if (!string.IsNullOrWhiteSpace(targetEndpoint))
+            {
+                return await ForwardJoinToRemoteHostAsync(targetEndpoint, request, cancellationToken);
+            }
+
             return new MeshJoinResponse
             {
                 Success = false,
@@ -261,6 +293,37 @@ public class MeshCollaborationService : IMeshCollaborationService
         return Task.CompletedTask;
     }
 
+    private async Task<MeshJoinResponse> ForwardJoinToRemoteHostAsync(string targetEndpoint, JoinRangeRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+            var url = $"{targetEndpoint.TrimEnd('/')}/api/mesh/join";
+            var payload = new
+            {
+                rangeId = request.RangeId,
+                password = request.Password,
+                peerName = string.IsNullOrWhiteSpace(request.PeerName) ? Environment.MachineName : request.PeerName,
+                hostEndpoint = targetEndpoint
+            };
+
+            var res = await http.PostAsJsonAsync(url, payload, cancellationToken);
+            var content = await res.Content.ReadAsStringAsync(cancellationToken);
+
+            var jsonOpts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var result = JsonSerializer.Deserialize<MeshJoinResponse>(content, jsonOpts);
+            return result ?? new MeshJoinResponse { Success = false, ErrorMessage = "Failed to parse response from mesh host." };
+        }
+        catch (Exception ex)
+        {
+            return new MeshJoinResponse
+            {
+                Success = false,
+                ErrorMessage = $"Could not connect to mesh host at {targetEndpoint}: {ex.Message}"
+            };
+        }
+    }
+
     public List<MeshBeacon> GetActiveBeaconsToBroadcast()
     {
         var ips = GetLocalLanIpv4Addresses();
@@ -280,7 +343,7 @@ public class MeshCollaborationService : IMeshCollaborationService
                 RangeId = share.RangeId,
                 RangeName = share.RangeName,
                 HostIp = primaryIp,
-                HostPort = 5230,
+                HostPort = GetServerPort(),
                 IsPasswordProtected = !string.IsNullOrEmpty(share.PasswordHash),
                 AccessMode = share.AccessMode,
                 ActivePeers = share.Peers.Count,

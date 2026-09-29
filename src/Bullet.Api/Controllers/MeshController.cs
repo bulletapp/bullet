@@ -6,6 +6,7 @@ using Bullet.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace Bullet.Api.Controllers;
@@ -74,7 +75,7 @@ public class MeshController : ControllerBase
 
         if (!response.Success)
         {
-            return Unauthorized(response);
+            return Unauthorized(new { error = response.ErrorMessage ?? "Join failed.", errorMessage = response.ErrorMessage, success = false });
         }
 
         return Ok(response);
@@ -85,6 +86,10 @@ public class MeshController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(ticket) || !_meshService.ValidateTicket(evt.RangeId, ticket))
         {
+            if (!string.IsNullOrWhiteSpace(evt.HostEndpoint))
+            {
+                return await ForwardSyncToRemoteHostAsync(evt.HostEndpoint, ticket, evt, cancellationToken);
+            }
             return Unauthorized(new { error = "Invalid or missing mesh collaboration ticket." });
         }
 
@@ -173,5 +178,25 @@ public class MeshController : ControllerBase
         await _meshHub.Clients.Group($"mesh_{evt.RangeId}").SendAsync("OnSyncEvent", evt, cancellationToken);
 
         return Ok(new { success = true });
+    }
+
+    private async Task<IActionResult> ForwardSyncToRemoteHostAsync(string hostEndpoint, string? ticket, MeshSyncEvent evt, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+            if (!string.IsNullOrWhiteSpace(ticket))
+            {
+                http.DefaultRequestHeaders.Add("X-Mesh-Ticket", ticket);
+            }
+            var url = $"{hostEndpoint.TrimEnd('/')}/api/mesh/sync";
+            var res = await http.PostAsJsonAsync(url, evt, cancellationToken);
+            var content = await res.Content.ReadAsStringAsync(cancellationToken);
+            return StatusCode((int)res.StatusCode, content);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = $"Failed to proxy sync to {hostEndpoint}: {ex.Message}" });
+        }
     }
 }

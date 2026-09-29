@@ -164,6 +164,17 @@ public static class BulletServer
         }
 
         app.UseExceptionHandler();
+
+        // Support Chromium Private Network Access (PNA) preflight checks across LAN
+        app.Use(async (context, next) =>
+        {
+            if (context.Request.Headers.ContainsKey("Access-Control-Request-Private-Network"))
+            {
+                context.Response.Headers["Access-Control-Allow-Private-Network"] = "true";
+            }
+            await next();
+        });
+
         app.UseCors("AllowBulletClients");
 
         app.UseDefaultFiles();

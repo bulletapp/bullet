@@ -42,8 +42,8 @@ if [ -z "$EXECUTABLE" ]; then
 fi
 
 PORT=5000
-echo "⚡ Starting BULLET Core Engine on http://localhost:$PORT..."
-$EXECUTABLE --urls "http://127.0.0.1:$PORT" &
+echo "⚡ Starting BULLET Core Engine on http://0.0.0.0:$PORT..."
+$EXECUTABLE --urls "http://0.0.0.0:$PORT" &
 API_PID=$!
 
 # Trap termination to kill the API process on exit
