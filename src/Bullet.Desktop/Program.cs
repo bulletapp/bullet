@@ -22,16 +22,17 @@ internal static class Program
             File.AppendAllText(logFile, $"[UNHANDLED EXCEPTION] {e.ExceptionObject}\n");
         };
 
-        const string serverUrl = "http://127.0.0.1:5000";
+        const string listenUrl = "http://0.0.0.0:5000";
+        const string localUiUrl = "http://127.0.0.1:5000";
 
         // Start in-process Bullet API Server synchronously so it is listening before WebView2 opens
         try
         {
             File.AppendAllText(logFile, $"[{DateTime.UtcNow:O}] Creating BulletServer App...\n");
-            _serverApp = BulletServer.CreateApp(new[] { "--urls", serverUrl });
+            _serverApp = BulletServer.CreateApp(new[] { "--urls", listenUrl });
             File.AppendAllText(logFile, $"[{DateTime.UtcNow:O}] Starting BulletServer App synchronously...\n");
             _serverApp.StartAsync().GetAwaiter().GetResult();
-            File.AppendAllText(logFile, $"[{DateTime.UtcNow:O}] BulletServer successfully listening on {serverUrl}\n");
+            File.AppendAllText(logFile, $"[{DateTime.UtcNow:O}] BulletServer successfully listening on {listenUrl}\n");
         }
         catch (Exception ex)
         {
@@ -46,7 +47,7 @@ internal static class Program
         }
 
         File.AppendAllText(logFile, $"[{DateTime.UtcNow:O}] Creating MainForm...\n");
-        var mainForm = new MainForm(serverUrl);
+        var mainForm = new MainForm(localUiUrl);
         mainForm.FormClosed += async (s, e) =>
         {
             if (_serverApp != null)

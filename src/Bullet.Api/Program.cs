@@ -50,6 +50,11 @@ public static class BulletServer
             WebRootPath = webRoot
         });
 
+        if (string.IsNullOrWhiteSpace(builder.Configuration["urls"]) && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")))
+        {
+            builder.WebHost.UseUrls("http://0.0.0.0:5000");
+        }
+
         // Configure Serilog
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(builder.Configuration)
