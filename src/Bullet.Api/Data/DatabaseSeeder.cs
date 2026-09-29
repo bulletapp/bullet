@@ -10,7 +10,26 @@ namespace Bullet.Api.Data;
 
 public static class DatabaseSeeder
 {
+    private static readonly SemaphoreSlim _seedLock = new(1, 1);
+
     public static async Task SeedAsync(BulletDbContext db, IPasswordHasher passwordHasher)
+    {
+        await _seedLock.WaitAsync();
+        try
+        {
+            await SeedInternalAsync(db, passwordHasher);
+        }
+        catch (DbUpdateException)
+        {
+            // Concurrently seeded or already present in database
+        }
+        finally
+        {
+            _seedLock.Release();
+        }
+    }
+
+    private static async Task SeedInternalAsync(BulletDbContext db, IPasswordHasher passwordHasher)
     {
         await db.Database.EnsureCreatedAsync();
 
