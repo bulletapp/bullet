@@ -10,6 +10,14 @@ interface NewShotModalProps {
   defaultArsenalId?: string;
   defaultSquadId?: string;
   onCreated: (shot: Shot) => void;
+  meshSession?: {
+    isConnected: boolean;
+    isHost: boolean;
+    rangeId: string;
+    ticket: string;
+    hostEndpoint?: string;
+    accessMode: string;
+  } | null;
 }
 
 export const NewShotModal: React.FC<NewShotModalProps> = ({
@@ -19,6 +27,7 @@ export const NewShotModal: React.FC<NewShotModalProps> = ({
   defaultArsenalId,
   defaultSquadId,
   onCreated,
+  meshSession,
 }) => {
   const [arsenalId, setArsenalId] = useState('');
   const [squadId, setSquadId] = useState('');
@@ -60,6 +69,52 @@ export const NewShotModal: React.FC<NewShotModalProps> = ({
       return;
     }
 
+    if (meshSession?.isConnected && !meshSession.isHost) {
+      if (meshSession.accessMode === 'ReadOnly') {
+        alert('This workspace is shared in Read-Only mode. New shots cannot be added.');
+        return;
+      }
+      setIsLoading(true);
+      try {
+        const newShotId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `shot-${Date.now()}`;
+        const newShot: Shot = {
+          id: newShotId,
+          arsenalId: targetArsenalId,
+          squadId: squadId || undefined,
+          name: name.trim(),
+          method,
+          url: url.trim() || 'https://httpbin.org/get',
+          orderIndex: 0,
+          parameters: [],
+          headers: [],
+          payload: { type: 'none', formData: [] },
+          armor: { type: 'inherit' },
+          settings: {
+            timeoutMs: 30000,
+            followRedirects: true,
+            maxRedirects: 5,
+            verifyTls: localStorage.getItem('bullet_verify_ssl') !== 'false',
+            verifySsl: localStorage.getItem('bullet_verify_ssl') !== 'false',
+            bypassSsrfGuard: false,
+          },
+        };
+        await bulletApi.syncMeshEvent(
+          meshSession.rangeId,
+          'ShotCreated',
+          JSON.stringify(newShot),
+          meshSession.ticket,
+          meshSession.hostEndpoint
+        );
+        onCreated(newShot);
+        onClose();
+      } catch (err: any) {
+        alert(err.message || 'Failed to create Shot over mesh.');
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
     setIsLoading(true);
     try {
       const created = await bulletApi.createShot({
@@ -81,6 +136,14 @@ export const NewShotModal: React.FC<NewShotModalProps> = ({
           bypassSsrfGuard: false,
         },
       });
+      if (meshSession?.isConnected && meshSession.isHost) {
+        bulletApi.syncMeshEvent(
+          meshSession.rangeId,
+          'ShotCreated',
+          JSON.stringify(created),
+          meshSession.ticket
+        ).catch(() => {});
+      }
       onCreated(created);
       onClose();
     } catch (err: any) {

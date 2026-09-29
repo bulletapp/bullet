@@ -61,6 +61,10 @@ public class MeshController : ControllerBase
     public async Task<IActionResult> StopShare([FromBody] StopShareRequest request, CancellationToken cancellationToken)
     {
         var result = await _meshService.StopSharingAsync(request.RangeId, cancellationToken);
+        if (result)
+        {
+            await _meshHub.Clients.Group($"mesh_{request.RangeId}").SendAsync("OnShareStopped", request.RangeId, cancellationToken);
+        }
         return Ok(new { success = result });
     }
 
@@ -167,6 +171,39 @@ public class MeshController : ControllerBase
                     if (shot != null)
                     {
                         _db.Shots.Remove(shot);
+                        await _db.SaveChangesAsync(cancellationToken);
+                    }
+                }
+            }
+            catch { }
+        }
+        else if (evt.EventType == "ArsenalCreated" && !string.IsNullOrEmpty(evt.PayloadJson))
+        {
+            try
+            {
+                var incoming = JsonSerializer.Deserialize<Arsenal>(evt.PayloadJson, jsonOpts);
+                if (incoming != null && incoming.RangeId != Guid.Empty)
+                {
+                    if (incoming.Id == Guid.Empty) incoming.Id = Guid.NewGuid();
+                    incoming.CreatedAtUtc = DateTime.UtcNow;
+                    incoming.UpdatedAtUtc = DateTime.UtcNow;
+                    _db.Arsenals.Add(incoming);
+                    await _db.SaveChangesAsync(cancellationToken);
+                }
+            }
+            catch { }
+        }
+        else if (evt.EventType == "ArsenalDeleted" && !string.IsNullOrEmpty(evt.PayloadJson))
+        {
+            try
+            {
+                var doc = JsonDocument.Parse(evt.PayloadJson);
+                if (doc.RootElement.TryGetProperty("id", out var idProp) && Guid.TryParse(idProp.GetString(), out var arsId))
+                {
+                    var ars = await _db.Arsenals.FirstOrDefaultAsync(a => a.Id == arsId, cancellationToken);
+                    if (ars != null)
+                    {
+                        _db.Arsenals.Remove(ars);
                         await _db.SaveChangesAsync(cancellationToken);
                     }
                 }

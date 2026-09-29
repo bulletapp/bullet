@@ -357,6 +357,7 @@ export interface ActiveShareInfo {
   rangeName: string;
   isPasswordProtected: boolean;
   accessMode: string;
+  hostTicket?: string;
   connectedPeers: number;
   sharedAtUtc: string;
   peers: MeshPeerInfo[];

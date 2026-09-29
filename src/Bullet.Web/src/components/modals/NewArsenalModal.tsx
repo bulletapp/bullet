@@ -8,6 +8,14 @@ interface NewArsenalModalProps {
   onClose: () => void;
   rangeId: string;
   onCreated: (arsenal: Arsenal) => void;
+  meshSession?: {
+    isConnected: boolean;
+    isHost: boolean;
+    rangeId: string;
+    ticket: string;
+    hostEndpoint?: string;
+    accessMode: string;
+  } | null;
 }
 
 export const NewArsenalModal: React.FC<NewArsenalModalProps> = ({
@@ -15,6 +23,7 @@ export const NewArsenalModal: React.FC<NewArsenalModalProps> = ({
   onClose,
   rangeId,
   onCreated,
+  meshSession,
 }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -33,6 +42,41 @@ export const NewArsenalModal: React.FC<NewArsenalModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+
+    if (meshSession?.isConnected && !meshSession.isHost) {
+      if (meshSession.accessMode === 'ReadOnly') {
+        alert('This workspace is shared in Read-Only mode. New collections cannot be created.');
+        return;
+      }
+      setIsLoading(true);
+      try {
+        const newArsenalId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `arsenal-${Date.now()}`;
+        const newArsenal: Arsenal = {
+          id: newArsenalId,
+          rangeId,
+          name: name.trim(),
+          description: description.trim() || undefined,
+          orderIndex: 0,
+          shots: [],
+          squads: [],
+        };
+        await bulletApi.syncMeshEvent(
+          meshSession.rangeId,
+          'ArsenalCreated',
+          JSON.stringify(newArsenal),
+          meshSession.ticket,
+          meshSession.hostEndpoint
+        );
+        onCreated(newArsenal);
+        onClose();
+      } catch (err: any) {
+        alert(err.message || 'Failed to create collection over mesh.');
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
     setIsLoading(true);
     try {
       const created = await bulletApi.createArsenal({
@@ -41,6 +85,14 @@ export const NewArsenalModal: React.FC<NewArsenalModalProps> = ({
         description: description.trim() || undefined,
         tags: [],
       });
+      if (meshSession?.isConnected && meshSession.isHost) {
+        bulletApi.syncMeshEvent(
+          meshSession.rangeId,
+          'ArsenalCreated',
+          JSON.stringify(created),
+          meshSession.ticket
+        ).catch(() => {});
+      }
       onCreated(created);
       onClose();
     } catch (err: any) {

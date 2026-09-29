@@ -64,6 +64,7 @@ public class MeshCollaborationService : IMeshCollaborationService
                 RangeName = s.RangeName,
                 IsPasswordProtected = !string.IsNullOrEmpty(s.PasswordHash),
                 AccessMode = s.AccessMode,
+                HostTicket = s.HostTicket,
                 ConnectedPeers = s.Peers.Count,
                 SharedAtUtc = s.SharedAtUtc,
                 Peers = s.Peers.Values.ToList()
@@ -132,14 +133,17 @@ public class MeshCollaborationService : IMeshCollaborationService
             passHash = _passwordHasher.HashPassword(request.Password);
         }
 
+        var hostTicket = "mesh_host_" + Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
         var entry = new InternalShareEntry
         {
             RangeId = range.Id,
             RangeName = range.Name,
             PasswordHash = passHash,
             AccessMode = string.Equals(request.AccessMode, "ReadOnly", StringComparison.OrdinalIgnoreCase) ? "ReadOnly" : "ReadWrite",
+            HostTicket = hostTicket,
             SharedAtUtc = DateTime.UtcNow
         };
+        entry.IssuedTickets[hostTicket] = DateTime.UtcNow.AddDays(7);
 
         _activeShares[range.Id] = entry;
 
@@ -149,6 +153,7 @@ public class MeshCollaborationService : IMeshCollaborationService
             RangeName = entry.RangeName,
             IsPasswordProtected = !string.IsNullOrEmpty(passHash),
             AccessMode = entry.AccessMode,
+            HostTicket = hostTicket,
             ConnectedPeers = 0,
             SharedAtUtc = entry.SharedAtUtc,
             Peers = new List<MeshPeerInfo>()
@@ -264,6 +269,7 @@ public class MeshCollaborationService : IMeshCollaborationService
     {
         if (!ValidateTicket(rangeId, ticket)) return false;
         if (!_activeShares.TryGetValue(rangeId, out var share)) return false;
+        if (ticket == share.HostTicket) return true;
         return !string.Equals(share.AccessMode, "ReadOnly", StringComparison.OrdinalIgnoreCase);
     }
 
@@ -402,6 +408,7 @@ public class MeshCollaborationService : IMeshCollaborationService
         public string RangeName { get; set; } = string.Empty;
         public string? PasswordHash { get; set; }
         public string AccessMode { get; set; } = "ReadWrite";
+        public string HostTicket { get; set; } = string.Empty;
         public DateTime SharedAtUtc { get; set; }
         public ConcurrentDictionary<string, MeshPeerInfo> Peers { get; } = new();
         public ConcurrentDictionary<string, DateTime> IssuedTickets { get; } = new();

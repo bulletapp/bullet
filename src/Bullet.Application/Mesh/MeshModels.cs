@@ -84,6 +84,7 @@ public class ActiveShareInfo
     public string RangeName { get; set; } = string.Empty;
     public bool IsPasswordProtected { get; set; }
     public string AccessMode { get; set; } = "ReadWrite";
+    public string? HostTicket { get; set; }
     public int ConnectedPeers { get; set; }
     public DateTime SharedAtUtc { get; set; } = DateTime.UtcNow;
     public List<MeshPeerInfo> Peers { get; set; } = new();

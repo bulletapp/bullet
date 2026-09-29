@@ -125,29 +125,10 @@ public static class BulletServer
         {
             options.AddPolicy("AllowBulletClients", policy =>
             {
-                policy.SetIsOriginAllowed(origin =>
-                {
-                    if (string.IsNullOrEmpty(origin) || origin == "null") return true;
-                    if (Uri.TryCreate(origin, UriKind.Absolute, out var uri))
-                    {
-                        var host = uri.DnsSafeHost;
-                        if (host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
-                            host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
-                            host.Equals("::1", StringComparison.OrdinalIgnoreCase) ||
-                            host.EndsWith(".local", StringComparison.OrdinalIgnoreCase) ||
-                            !host.Contains('.'))
-                            return true;
-
-                        if (System.Net.IPAddress.TryParse(host, out var ip))
-                        {
-                            return SsrfGuard.IsRestrictedIp(ip); // Allow local LAN IP addresses for mesh collaboration
-                        }
-                    }
-                    return false;
-                })
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials();
+                policy.SetIsOriginAllowed(_ => true)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
             });
         });
 

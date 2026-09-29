@@ -9,6 +9,7 @@ interface MeshCollaborationModalProps {
   selectedRangeId: string | null;
   selectedRangeName: string | null;
   onJoinedWorkspace?: (response: MeshJoinResponse, hostEndpoint: string) => void;
+  onBroadcastingChange?: (isBroadcasting: boolean, activeShare: ActiveShareInfo | null) => void;
 }
 
 type TabId = 'share' | 'discover';
@@ -25,6 +26,7 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
   selectedRangeId,
   selectedRangeName,
   onJoinedWorkspace,
+  onBroadcastingChange,
 }) => {
   const [activeTab, setActiveTab] = useState<TabId>('share');
   const [meshStatus, setMeshStatus] = useState<MeshStatus | null>(null);
@@ -56,10 +58,15 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
         if (existing) {
           setActiveShare(existing);
           setIsBroadcasting(true);
+          onBroadcastingChange?.(true, existing);
+        } else {
+          setActiveShare(null);
+          setIsBroadcasting(false);
+          onBroadcastingChange?.(false, null);
         }
       }
     } catch { }
-  }, [selectedRangeId]);
+  }, [selectedRangeId, onBroadcastingChange]);
 
   const loadDiscovered = useCallback(async () => {
     try {
@@ -91,6 +98,7 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
       );
       setActiveShare(result);
       setIsBroadcasting(true);
+      onBroadcastingChange?.(true, result);
       await loadStatus();
     } catch (e: any) {
       setShareError(e.message || 'Failed to start sharing');
@@ -105,6 +113,7 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
       await bulletApi.stopShareRange(selectedRangeId);
       setActiveShare(null);
       setIsBroadcasting(false);
+      onBroadcastingChange?.(false, null);
       await loadStatus();
     } catch { }
   };
@@ -114,10 +123,11 @@ export const MeshCollaborationModal: React.FC<MeshCollaborationModalProps> = ({
     setJoinStatus(prev => ({ ...prev, [rangeId]: { loading: true } }));
     try {
       const endpoint = range.endpoint || (range.hostIp ? `http://${range.hostIp}:${range.hostPort || 5000}` : '');
+      const myPeerName = meshStatus?.machineName ? `${meshStatus.machineName} (${meshStatus.osPlatform})` : 'BULLET Contributor';
       const result = await bulletApi.joinMeshRange(
         rangeId,
         joinPasswords[rangeId],
-        'BULLET Peer',
+        myPeerName,
         endpoint
       );
       if (result.success) {

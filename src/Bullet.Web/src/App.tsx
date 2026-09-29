@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Upload } from 'lucide-react';
 import { 
   Range, Arsenal, Shot, Loadout, TLSProfile, 
-  Impact, TrajectoryLogEntry, MeshJoinResponse 
+  Impact, TrajectoryLogEntry, MeshJoinResponse, ActiveShareInfo 
 } from './types/bullet';
 import { bulletApi, createExecutionHubConnection, createMeshHubConnection } from './api/bulletApi';
 import { playFireSound, playImpactSuccessSound, playImpactErrorSound } from './utils/audioFx';
@@ -80,7 +80,7 @@ export function App() {
   const [newShotOpen, setNewShotOpen] = useState(false);
   const [newShotTarget, setNewShotTarget] = useState<{ arsenalId?: string; squadId?: string }>({});
   const [meshCollabOpen, setMeshCollabOpen] = useState(false);
-  const [isMeshBroadcasting] = useState(false);
+  const [isMeshBroadcasting, setIsMeshBroadcasting] = useState(false);
   const [fieldManualArsenal, setFieldManualArsenal] = useState<{ id: string; name: string } | null>(null);
   const [meshSession, setMeshSession] = useState<{
     isConnected: boolean;
@@ -127,6 +127,41 @@ export function App() {
     return () => window.removeEventListener('bullet_test_mesh_session', handleTestSession);
   }, []);
 
+  const handleBroadcastingChange = (isBroadcasting: boolean, activeShare: ActiveShareInfo | null) => {
+    setIsMeshBroadcasting(isBroadcasting);
+    if (isBroadcasting && activeShare) {
+      setMeshSession({
+        isConnected: true,
+        isHost: true,
+        rangeId: activeShare.rangeId,
+        rangeName: activeShare.rangeName || selectedRange?.name || 'Shared Workspace',
+        accessMode: activeShare.accessMode,
+        ticket: activeShare.hostTicket || 'mesh_host_ticket',
+        hostEndpoint: '',
+      });
+      setTrajectoryLogs((prev) => [
+        {
+          category: 'Mesh',
+          level: 'Info',
+          timestampUtc: new Date().toISOString(),
+          message: `[WiFi Mesh] 📡 Broadcasting "${activeShare.rangeName || 'Workspace'}" on local WiFi mesh (${activeShare.accessMode} mode).`
+        },
+        ...prev
+      ]);
+    } else if (!isBroadcasting && meshSession?.isHost) {
+      setMeshSession(null);
+      setTrajectoryLogs((prev) => [
+        {
+          category: 'Mesh',
+          level: 'Info',
+          timestampUtc: new Date().toISOString(),
+          message: '[WiFi Mesh] 🛑 Stopped broadcasting workspace on local WiFi mesh.'
+        },
+        ...prev
+      ]);
+    }
+  };
+
   const handleJoinedMeshWorkspace = (joinRes: MeshJoinResponse, hostEndpoint: string) => {
     if (!joinRes.rangeSnapshot || !joinRes.rangeId) return;
 
@@ -150,6 +185,12 @@ export function App() {
     const firstShot = snapshot.arsenals?.[0]?.shots?.[0] || snapshot.arsenals?.[0]?.squads?.[0]?.shots?.[0];
     if (firstShot) {
       setSelectedShot(firstShot);
+      setRequestTabs([{ id: firstShot.id, shot: firstShot, isDirty: false }]);
+      setActiveTabId(firstShot.id);
+    } else {
+      setSelectedShot(null);
+      setRequestTabs([]);
+      setActiveTabId('');
     }
 
     setTrajectoryLogs((prev) => [
@@ -164,6 +205,10 @@ export function App() {
   };
 
   const handleDisconnectMesh = () => {
+    if (meshSession?.isHost) {
+      bulletApi.stopShareRange(meshSession.rangeId).catch(() => {});
+      setIsMeshBroadcasting(false);
+    }
     setMeshSession(null);
     loadRanges();
     setTrajectoryLogs((prev) => [
@@ -198,13 +243,112 @@ export function App() {
             }))
           );
           setSelectedShot((prev) => (prev && prev.id === updated.id ? { ...prev, ...updated } : prev));
-
+          setRequestTabs((prev) =>
+            prev.map((t) => (t.id === updated.id ? { ...t, shot: { ...t.shot, ...updated } } : t))
+          );
           setTrajectoryLogs((logs) => [
             {
               category: 'Mesh',
               level: 'Info',
               timestampUtc: new Date().toISOString(),
               message: `[WiFi Mesh] Synced: Shot "${updated.name || updated.id}" updated by ${evt.authorPeerName || 'peer'}`
+            },
+            ...logs
+          ]);
+        } catch {}
+      } else if (evt.eventType === 'ShotCreated' && evt.payloadJson) {
+        try {
+          const created: Shot = JSON.parse(evt.payloadJson);
+          setArsenals((prev) =>
+            prev.map((a) => {
+              if (a.id === created.arsenalId) {
+                if (created.squadId) {
+                  return {
+                    ...a,
+                    squads: a.squads?.map((sq) =>
+                      sq.id === created.squadId
+                        ? { ...sq, shots: [...(sq.shots || []).filter((s) => s.id !== created.id), created] }
+                        : sq
+                    ),
+                  };
+                }
+                return { ...a, shots: [...(a.shots || []).filter((s) => s.id !== created.id), created] };
+              }
+              return a;
+            })
+          );
+          setTrajectoryLogs((logs) => [
+            {
+              category: 'Mesh',
+              level: 'Info',
+              timestampUtc: new Date().toISOString(),
+              message: `[WiFi Mesh] Synced: New shot "${created.name}" created by ${evt.authorPeerName || 'peer'}`
+            },
+            ...logs
+          ]);
+        } catch {}
+      } else if (evt.eventType === 'ShotDeleted' && evt.payloadJson) {
+        try {
+          const { id } = JSON.parse(evt.payloadJson);
+          setArsenals((prev) =>
+            prev.map((a) => ({
+              ...a,
+              shots: a.shots?.filter((s) => s.id !== id) || [],
+              squads: a.squads?.map((sq) => ({
+                ...sq,
+                shots: sq.shots?.filter((s) => s.id !== id) || [],
+              })) || [],
+            }))
+          );
+          setSelectedShot((prev) => (prev?.id === id ? null : prev));
+          handleCloseTab(id);
+          setTrajectoryLogs((logs) => [
+            {
+              category: 'Mesh',
+              level: 'Info',
+              timestampUtc: new Date().toISOString(),
+              message: `[WiFi Mesh] Synced: Shot deleted by ${evt.authorPeerName || 'peer'}`
+            },
+            ...logs
+          ]);
+        } catch {}
+      } else if (evt.eventType === 'ArsenalCreated' && evt.payloadJson) {
+        try {
+          const createdArsenal: Arsenal = JSON.parse(evt.payloadJson);
+          setArsenals((prev) => [...prev.filter((a) => a.id !== createdArsenal.id), createdArsenal]);
+          setTrajectoryLogs((logs) => [
+            {
+              category: 'Mesh',
+              level: 'Info',
+              timestampUtc: new Date().toISOString(),
+              message: `[WiFi Mesh] Synced: Collection "${createdArsenal.name}" created by ${evt.authorPeerName || 'peer'}`
+            },
+            ...logs
+          ]);
+        } catch {}
+      } else if (evt.eventType === 'ArsenalDeleted' && evt.payloadJson) {
+        try {
+          const { id } = JSON.parse(evt.payloadJson);
+          setArsenals((prev) => prev.filter((a) => a.id !== id));
+          setTrajectoryLogs((logs) => [
+            {
+              category: 'Mesh',
+              level: 'Info',
+              timestampUtc: new Date().toISOString(),
+              message: `[WiFi Mesh] Synced: Collection deleted by ${evt.authorPeerName || 'peer'}`
+            },
+            ...logs
+          ]);
+        } catch {}
+      } else if (evt.eventType === 'ShotFired' && evt.payloadJson) {
+        try {
+          const summary = JSON.parse(evt.payloadJson);
+          setTrajectoryLogs((logs) => [
+            {
+              category: 'Mesh',
+              level: 'Info',
+              timestampUtc: new Date().toISOString(),
+              message: `[WiFi Mesh] Peer fired: ${summary.shotName || summary.shotId || 'Shot'} (${summary.statusCode || 200}) in ${summary.durationMs?.toFixed(0) || 0}ms`
             },
             ...logs
           ]);
@@ -224,8 +368,45 @@ export function App() {
       ]);
     });
 
+    hub.on('OnPeerJoined', (peer: any) => {
+      setTrajectoryLogs((logs) => [
+        {
+          category: 'Mesh',
+          level: 'Info',
+          timestampUtc: new Date().toISOString(),
+          message: `[WiFi Mesh] 👋 ${peer.peerName || 'A peer'} connected to workspace from ${peer.ipAddress || 'LAN'}`
+        },
+        ...logs
+      ]);
+    });
+
+    hub.on('OnPeerLeft', (peer: any) => {
+      setTrajectoryLogs((logs) => [
+        {
+          category: 'Mesh',
+          level: 'Info',
+          timestampUtc: new Date().toISOString(),
+          message: '[WiFi Mesh] 🚪 Peer disconnected from workspace'
+        },
+        ...logs
+      ]);
+    });
+
+    hub.on('OnShareStopped', () => {
+      setTrajectoryLogs((logs) => [
+        {
+          category: 'Mesh',
+          level: 'Warning',
+          timestampUtc: new Date().toISOString(),
+          message: '[WiFi Mesh] Host stopped sharing this workspace.'
+        },
+        ...logs
+      ]);
+      handleDisconnectMesh();
+    });
+
     hub.start().then(() => {
-      hub.invoke('JoinMesh', meshSession.rangeId, meshSession.ticket, 'BULLET Peer Contributor').catch(() => {});
+      hub.invoke('JoinMesh', meshSession.rangeId, meshSession.ticket, 'BULLET Contributor').catch(() => {});
     }).catch(() => {});
 
     return () => {
@@ -495,6 +676,29 @@ export function App() {
       setSaveStatus((prev) => (prev === 'saving' ? prev : 'saving'));
       autosaveTimerRef.current = setTimeout(async () => {
         try {
+          if (meshSession?.isConnected) {
+            if (meshSession.accessMode !== 'ReadOnly') {
+              await bulletApi.syncMeshEvent(
+                meshSession.rangeId,
+                'ShotUpdated',
+                JSON.stringify(updated),
+                meshSession.ticket,
+                meshSession.hostEndpoint
+              );
+              if (meshSession.isHost) {
+                await bulletApi.updateShot(updated.id, updated).catch(() => {});
+              }
+              pendingShotRef.current = null;
+              setRequestTabs((prev) =>
+                prev.map((t) => (t.id === updated.id ? { ...t, shot: updated, isDirty: false } : t))
+              );
+              setSaveStatus('saved');
+              setTimeout(() => {
+                setSaveStatus((curr) => (curr === 'saved' ? 'idle' : curr));
+              }, 2000);
+            }
+            return;
+          }
           const saved = await bulletApi.updateShot(updated.id, updated);
           pendingShotRef.current = null;
           setRequestTabs((prev) =>
@@ -549,7 +753,17 @@ export function App() {
 
       const targetShotId = targetShot.id || (targetShot as any).Id;
       let res: Impact;
-      if (targetShotId && targetShotId !== 'undefined') {
+      if (meshSession?.isConnected && !meshSession.isHost) {
+        // Connected to remote mesh workspace: fire ad-hoc from contributor machine
+        res = await bulletApi.fireAdHoc(
+          {
+            ...targetShot,
+            settings: effectiveSettings,
+          },
+          selectedLoadout?.id,
+          targetShot.tlsProfileId
+        );
+      } else if (targetShotId && targetShotId !== 'undefined' && !targetShotId.startsWith('draft-')) {
         res = await bulletApi.fireShot(targetShotId, {
           loadoutId: selectedLoadout?.id,
           method: targetShot.method,
@@ -600,6 +814,21 @@ export function App() {
           level: res.isSuccess ? 'Information' : 'Warning',
         },
       ]);
+
+      if (meshSession?.isConnected) {
+        bulletApi.syncMeshEvent(
+          meshSession.rangeId,
+          'ShotFired',
+          JSON.stringify({
+            shotId: targetShot.id,
+            shotName: targetShot.name,
+            statusCode: res.statusCode,
+            durationMs: res.durationMs,
+          }),
+          meshSession.ticket,
+          meshSession.hostEndpoint
+        ).catch(() => {});
+      }
     } catch (err: any) {
       playImpactErrorSound();
       const errMsg = err.message || 'Execution failed due to network or connection error.';
@@ -672,32 +901,66 @@ export function App() {
         alert('This workspace is shared in Read-Only mode. Changes cannot be saved.');
         return;
       }
-      try {
-        await bulletApi.syncMeshEvent(meshSession.rangeId, 'ShotUpdated', JSON.stringify(selectedShot), meshSession.ticket, meshSession.hostEndpoint);
-        setSelectedShot({ ...selectedShot });
-        setArsenals((prev) =>
-          prev.map((a) => ({
-            ...a,
-            shots: a.shots?.map((s) => (s.id === selectedShot.id ? { ...selectedShot } : s)) || [],
-            squads: a.squads?.map((sq) => ({
-              ...sq,
-              shots: sq.shots?.map((s) => (s.id === selectedShot.id ? { ...selectedShot } : s)) || []
-            })) || []
-          }))
-        );
-        setTrajectoryLogs((logs) => [
-          {
-            category: 'Mesh',
-            level: 'Info',
-            timestampUtc: new Date().toISOString(),
-            message: `[WiFi Mesh] Saved and synced shot "${selectedShot.name}" to host workspace.`
-          },
-          ...logs
-        ]);
-        return;
-      } catch (err: any) {
-        alert(err.message || 'Failed to sync changes to host workspace.');
-        return;
+      if (meshSession.isHost) {
+        // Host saves locally and broadcasts to all connected peers
+        try {
+          setSaveStatus('saving');
+          let updated: Shot;
+          if (selectedShot.id.startsWith('draft-')) {
+            const { id: _id, ...shotData } = selectedShot;
+            updated = await bulletApi.createShot({
+              ...shotData,
+              arsenalId: shotData.arsenalId || (arsenals[0]?.id ?? ''),
+            });
+            await bulletApi.syncMeshEvent(meshSession.rangeId, 'ShotCreated', JSON.stringify(updated), meshSession.ticket).catch(() => {});
+          } else {
+            updated = await bulletApi.updateShot(selectedShot.id, selectedShot);
+            await bulletApi.syncMeshEvent(meshSession.rangeId, 'ShotUpdated', JSON.stringify(updated), meshSession.ticket).catch(() => {});
+          }
+          setSelectedShot(updated);
+          setRequestTabs((prev) =>
+            prev.map((t) => (t.id === activeTabId ? { ...t, id: updated.id, shot: updated, isDirty: false } : t))
+          );
+          setActiveTabId(updated.id);
+          setSaveStatus('saved');
+          setTimeout(() => setSaveStatus((curr) => (curr === 'saved' ? 'idle' : curr)), 2000);
+          setTrajectoryLogs((logs) => [
+            {
+              category: 'Mesh',
+              level: 'Info',
+              timestampUtc: new Date().toISOString(),
+              message: `[WiFi Mesh] Saved and broadcasted shot "${updated.name}" to mesh peers.`
+            },
+            ...logs
+          ]);
+          return;
+        } catch (err: any) {
+          setSaveStatus('idle');
+          alert(err.message || 'Failed to save shot.');
+          return;
+        }
+      } else {
+        // Remote contributor syncs to host
+        try {
+          await bulletApi.syncMeshEvent(meshSession.rangeId, 'ShotUpdated', JSON.stringify(selectedShot), meshSession.ticket, meshSession.hostEndpoint);
+          setSelectedShot({ ...selectedShot });
+          setRequestTabs((prev) =>
+            prev.map((t) => (t.id === selectedShot.id ? { ...t, shot: { ...selectedShot }, isDirty: false } : t))
+          );
+          setTrajectoryLogs((logs) => [
+            {
+              category: 'Mesh',
+              level: 'Info',
+              timestampUtc: new Date().toISOString(),
+              message: `[WiFi Mesh] Saved and synced shot "${selectedShot.name}" to host workspace.`
+            },
+            ...logs
+          ]);
+          return;
+        } catch (err: any) {
+          alert(err.message || 'Failed to sync changes to host workspace.');
+          return;
+        }
       }
     }
 
@@ -770,6 +1033,29 @@ export function App() {
 
   const handleDeleteArsenal = async (id: string) => {
     if (!confirm('Are you sure you want to delete this Arsenal?')) return;
+    if (meshSession?.isConnected) {
+      if (meshSession.accessMode === 'ReadOnly') {
+        alert('This workspace is shared in Read-Only mode. Collections cannot be deleted.');
+        return;
+      }
+      try {
+        await bulletApi.syncMeshEvent(
+          meshSession.rangeId,
+          'ArsenalDeleted',
+          JSON.stringify({ id }),
+          meshSession.ticket,
+          meshSession.hostEndpoint
+        );
+        if (meshSession.isHost) {
+          await bulletApi.deleteArsenal(id).catch(() => {});
+        }
+        setArsenals((prev) => prev.filter((a) => a.id !== id));
+        return;
+      } catch (err: any) {
+        alert(err.message || 'Failed to delete Arsenal over mesh.');
+        return;
+      }
+    }
     try {
       await bulletApi.deleteArsenal(id);
       if (selectedRange) loadRangeData(selectedRange.id);
@@ -790,9 +1076,44 @@ export function App() {
 
   const handleDeleteShot = async (id: string) => {
     if (!confirm('Are you sure you want to delete this Shot?')) return;
+    if (meshSession?.isConnected) {
+      if (meshSession.accessMode === 'ReadOnly') {
+        alert('This workspace is shared in Read-Only mode. Shots cannot be deleted.');
+        return;
+      }
+      try {
+        await bulletApi.syncMeshEvent(
+          meshSession.rangeId,
+          'ShotDeleted',
+          JSON.stringify({ id }),
+          meshSession.ticket,
+          meshSession.hostEndpoint
+        );
+        if (meshSession.isHost) {
+          await bulletApi.deleteShot(id).catch(() => {});
+        }
+        if (selectedShot?.id === id) setSelectedShot(null);
+        handleCloseTab(id);
+        setArsenals((prev) =>
+          prev.map((a) => ({
+            ...a,
+            shots: a.shots?.filter((s) => s.id !== id) || [],
+            squads: a.squads?.map((sq) => ({
+              ...sq,
+              shots: sq.shots?.filter((s) => s.id !== id) || [],
+            })) || [],
+          }))
+        );
+        return;
+      } catch (err: any) {
+        alert(err.message || 'Failed to delete shot over mesh.');
+        return;
+      }
+    }
     try {
       await bulletApi.deleteShot(id);
       if (selectedShot?.id === id) setSelectedShot(null);
+      handleCloseTab(id);
       if (selectedRange) loadRangeData(selectedRange.id);
     } catch (err: any) {
       alert(err.message);
@@ -1146,8 +1467,9 @@ export function App() {
           isOpen={newArsenalOpen}
           onClose={() => setNewArsenalOpen(false)}
           rangeId={selectedRange.id}
+          meshSession={meshSession}
           onCreated={(arsenal) => {
-            setArsenals((prev) => [...prev, arsenal]);
+            setArsenals((prev) => [...prev.filter((a) => a.id !== arsenal.id), arsenal]);
           }}
         />
       )}
@@ -1170,6 +1492,7 @@ export function App() {
           arsenals={arsenals}
           defaultArsenalId={newShotTarget.arsenalId}
           defaultSquadId={newShotTarget.squadId}
+          meshSession={meshSession}
           onCreated={(rawShot) => {
             const shot: Shot = {
               ...rawShot,
@@ -1194,12 +1517,12 @@ export function App() {
                       ...a,
                       squads: a.squads?.map((sq) =>
                         sq.id === shot.squadId
-                          ? { ...sq, shots: [...(sq.shots || []), shot] }
+                          ? { ...sq, shots: [...(sq.shots || []).filter((s) => s.id !== shot.id), shot] }
                           : sq
                       ),
                     };
                   }
-                  return { ...a, shots: [...(a.shots || []), shot] };
+                  return { ...a, shots: [...(a.shots || []).filter((s) => s.id !== shot.id), shot] };
                 }
                 return a;
               })
@@ -1216,6 +1539,7 @@ export function App() {
         selectedRangeId={selectedRange?.id || null}
         selectedRangeName={selectedRange?.name || null}
         onJoinedWorkspace={handleJoinedMeshWorkspace}
+        onBroadcastingChange={handleBroadcastingChange}
       />
 
       {/* Field Manual (Documentation) Modal */}
