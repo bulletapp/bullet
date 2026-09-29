@@ -136,9 +136,155 @@ jobs:
           push: false
           tags: bullet-web:ci-test
 
+  package-macos:
+    name: Package Native macOS DMG Installers
+    needs: [lint-and-format, e2e-click-through-tests, docker-verification]
+    if: ((github.event_name == 'workflow_dispatch' && (github.event.inputs.create_release == 'true' || github.event.inputs.create_release == true || inputs.create_release)) || startsWith(github.ref, 'refs/tags/v')) && (github.actor == 'VishalViswanathan03' || github.triggering_actor == 'VishalViswanathan03')
+    runs-on: macos-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+            9.0.x
+
+      - name: Setup Node.js Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build Production Frontend Assets
+        working-directory: src/Bullet.Web
+        run: |
+          npm install
+          npm run build
+
+      - name: Build & Package Apple Silicon (ARM64) Bundle and DMG
+        run: |
+          ARM_APP_DIR="publish/mac-arm64/Bullet.app/Contents"
+          mkdir -p "$ARM_APP_DIR/MacOS" "$ARM_APP_DIR/Resources/app"
+          
+          dotnet publish src/Bullet.Api/Bullet.Api.csproj -c Release -r osx-arm64 --self-contained true /p:PublishTrimmed=false -o "$ARM_APP_DIR/Resources/app"
+          cp -R src/Bullet.Web/dist/* "$ARM_APP_DIR/Resources/app/wwwroot/"
+          
+          cp scripts/run-mac.sh "$ARM_APP_DIR/MacOS/Bullet"
+          chmod +x "$ARM_APP_DIR/MacOS/Bullet"
+          chmod +x "$ARM_APP_DIR/Resources/app/Bullet.Api"
+          
+          cat << 'EOF' > "$ARM_APP_DIR/Info.plist"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>Bullet</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.bullet.api</string>
+              <key>CFBundleName</key>
+              <string>BULLET</string>
+              <key>CFBundleDisplayName</key>
+              <string>BULLET</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0.0</string>
+              <key>CFBundleVersion</key>
+              <string>1.0.0</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>11.0</string>
+              <key>NSHighResolutionCapable</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+          
+          # Create drag-and-drop DMG
+          mkdir -p dmg-staging-arm64
+          cp -R publish/mac-arm64/Bullet.app dmg-staging-arm64/
+          ln -s /Applications dmg-staging-arm64/Applications
+          
+          hdiutil create -volname "BULLET Installer" -srcfolder dmg-staging-arm64 -ov -format UDZO Bullet-macOS-AppleSilicon-Setup.dmg
+          shasum -a 256 Bullet-macOS-AppleSilicon-Setup.dmg > Bullet-macOS-AppleSilicon-Setup.dmg.sha256
+          
+          # Also package portable ZIP with preserved unix permissions
+          ditto -c -k --keepParent publish/mac-arm64/Bullet.app Bullet-macOS-AppleSilicon-arm64.zip
+          shasum -a 256 Bullet-macOS-AppleSilicon-arm64.zip > Bullet-macOS-AppleSilicon-arm64.zip.sha256
+
+      - name: Build & Package Intel (x64) Bundle and DMG
+        run: |
+          X64_APP_DIR="publish/mac-x64/Bullet.app/Contents"
+          mkdir -p "$X64_APP_DIR/MacOS" "$X64_APP_DIR/Resources/app"
+          
+          dotnet publish src/Bullet.Api/Bullet.Api.csproj -c Release -r osx-x64 --self-contained true /p:PublishTrimmed=false -o "$X64_APP_DIR/Resources/app"
+          cp -R src/Bullet.Web/dist/* "$X64_APP_DIR/Resources/app/wwwroot/"
+          
+          cp scripts/run-mac.sh "$X64_APP_DIR/MacOS/Bullet"
+          chmod +x "$X64_APP_DIR/MacOS/Bullet"
+          chmod +x "$X64_APP_DIR/Resources/app/Bullet.Api"
+          
+          cat << 'EOF' > "$X64_APP_DIR/Info.plist"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>Bullet</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.bullet.api</string>
+              <key>CFBundleName</key>
+              <string>BULLET</string>
+              <key>CFBundleDisplayName</key>
+              <string>BULLET</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0.0</string>
+              <key>CFBundleVersion</key>
+              <string>1.0.0</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>11.0</string>
+              <key>NSHighResolutionCapable</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+          
+          # Create drag-and-drop DMG
+          mkdir -p dmg-staging-x64
+          cp -R publish/mac-x64/Bullet.app dmg-staging-x64/
+          ln -s /Applications dmg-staging-x64/Applications
+          
+          hdiutil create -volname "BULLET Installer" -srcfolder dmg-staging-x64 -ov -format UDZO Bullet-macOS-Intel-Setup.dmg
+          shasum -a 256 Bullet-macOS-Intel-Setup.dmg > Bullet-macOS-Intel-Setup.dmg.sha256
+          
+          # Also package portable ZIP with preserved unix permissions
+          ditto -c -k --keepParent publish/mac-x64/Bullet.app Bullet-macOS-Intel-x64.zip
+          shasum -a 256 Bullet-macOS-Intel-x64.zip > Bullet-macOS-Intel-x64.zip.sha256
+
+      - name: Upload macOS Release Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bullet-macos-release-assets
+          path: |
+            Bullet-macOS-AppleSilicon-Setup.dmg
+            Bullet-macOS-AppleSilicon-Setup.dmg.sha256
+            Bullet-macOS-Intel-Setup.dmg
+            Bullet-macOS-Intel-Setup.dmg.sha256
+            Bullet-macOS-AppleSilicon-arm64.zip
+            Bullet-macOS-AppleSilicon-arm64.zip.sha256
+            Bullet-macOS-Intel-x64.zip
+            Bullet-macOS-Intel-x64.zip.sha256
+
   release-desktop:
     name: Package & Release Desktop Executable
-    needs: [lint-and-format, e2e-click-through-tests, docker-verification]
+    needs: [lint-and-format, e2e-click-through-tests, docker-verification, package-macos]
     if: ((github.event_name == 'workflow_dispatch' && (github.event.inputs.create_release == 'true' || github.event.inputs.create_release == true || inputs.create_release)) || startsWith(github.ref, 'refs/tags/v')) && (github.actor == 'VishalViswanathan03' || github.triggering_actor == 'VishalViswanathan03')
     runs-on: windows-latest
     permissions:
@@ -149,6 +295,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Download macOS Release Assets
+        uses: actions/download-artifact@v4
+        with:
+          name: bullet-macos-release-assets
+          path: dist-macos/
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
@@ -271,70 +423,6 @@ jobs:
             "$zipVerHash  Bullet-Windows-Portable-$ver.zip" | Out-File -Encoding utf8 "Bullet-Windows-Portable-$ver.zip.sha256"
           }
 
-      - name: Package Native macOS Application Bundles
-        shell: pwsh
-        run: |
-          Write-Host "Publishing native macOS engine and application bundles..."
-          
-          # 1. Publish for Apple Silicon (macOS ARM64)
-          $armAppDir = "publish/mac-arm64/Bullet.app/Contents"
-          New-Item -ItemType Directory -Force -Path "$armAppDir/MacOS", "$armAppDir/Resources/app" | Out-Null
-          dotnet publish src/Bullet.Api/Bullet.Api.csproj -c Release -r osx-arm64 --self-contained false -o "$armAppDir/Resources/app"
-          
-          Copy-Item -Path "src/Bullet.Api/wwwroot" -Destination "$armAppDir/Resources/app" -Recurse -Force
-          Copy-Item -Path "scripts/run-mac.sh" -Destination "$armAppDir/MacOS/Bullet" -Force
-          Copy-Item -Path "scripts/run-mac.sh" -Destination "publish/mac-arm64/run-mac.sh" -Force
-          Copy-Item -Path "scripts/Bullet.command" -Destination "publish/mac-arm64/Bullet.command" -Force
-          
-          # 2. Publish for Intel Macs (macOS x64)
-          $x64AppDir = "publish/mac-x64/Bullet.app/Contents"
-          New-Item -ItemType Directory -Force -Path "$x64AppDir/MacOS", "$x64AppDir/Resources/app" | Out-Null
-          dotnet publish src/Bullet.Api/Bullet.Api.csproj -c Release -r osx-x64 --self-contained false -o "$x64AppDir/Resources/app"
-          
-          Copy-Item -Path "src/Bullet.Api/wwwroot" -Destination "$x64AppDir/Resources/app" -Recurse -Force
-          Copy-Item -Path "scripts/run-mac.sh" -Destination "$x64AppDir/MacOS/Bullet" -Force
-          Copy-Item -Path "scripts/run-mac.sh" -Destination "publish/mac-x64/run-mac.sh" -Force
-          Copy-Item -Path "scripts/Bullet.command" -Destination "publish/mac-x64/Bullet.command" -Force
-
-          # 3. Add macOS Application Bundle Info.plist
-          $plistLines = @(
-            '<?xml version="1.0" encoding="UTF-8"?>',
-            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">',
-            '<plist version="1.0">',
-            '<dict>',
-            '    <key>CFBundleExecutable</key>',
-            '    <string>Bullet</string>',
-            '    <key>CFBundleIdentifier</key>',
-            '    <string>com.bullet.api</string>',
-            '    <key>CFBundleName</key>',
-            '    <string>BULLET</string>',
-            '    <key>CFBundleDisplayName</key>',
-            '    <string>BULLET</string>',
-            '    <key>CFBundlePackageType</key>',
-            '    <string>APPL</string>',
-            '    <key>CFBundleShortVersionString</key>',
-            '    <string>1.0.0</string>',
-            '    <key>CFBundleVersion</key>',
-            '    <string>1.0.0</string>',
-            '    <key>LSMinimumSystemVersion</key>',
-            '    <string>11.0</string>',
-            '    <key>NSHighResolutionCapable</key>',
-            '    <true/>',
-            '</dict>',
-            '</plist>'
-          )
-          [System.IO.File]::WriteAllText("$armAppDir/Info.plist", ($plistLines -join "`n"))
-          [System.IO.File]::WriteAllText("$x64AppDir/Info.plist", ($plistLines -join "`n"))
-
-          # Create archives and hashes
-          Compress-Archive -Path "publish/mac-arm64/*" -DestinationPath Bullet-macOS-AppleSilicon-arm64.zip -Force
-          $hashArm = (Get-FileHash -Algorithm SHA256 Bullet-macOS-AppleSilicon-arm64.zip).Hash
-          "$hashArm  Bullet-macOS-AppleSilicon-arm64.zip" | Out-File -Encoding utf8 Bullet-macOS-AppleSilicon-arm64.zip.sha256
-
-          Compress-Archive -Path "publish/mac-x64/*" -DestinationPath Bullet-macOS-Intel-x64.zip -Force
-          $hashX64 = (Get-FileHash -Algorithm SHA256 Bullet-macOS-Intel-x64.zip).Hash
-          "$hashX64  Bullet-macOS-Intel-x64.zip" | Out-File -Encoding utf8 Bullet-macOS-Intel-x64.zip.sha256
-
       - name: Generate Release Notes & Changelog
         shell: pwsh
         run: |
@@ -386,14 +474,29 @@ jobs:
             $zipHash = (Get-Content "Bullet-Desktop-Windows-x64.zip.sha256" -Raw).Trim()
           }
 
-          $macArmHash = ""
-          if (Test-Path "Bullet-macOS-AppleSilicon-arm64.zip.sha256") {
-            $macArmHash = (Get-Content "Bullet-macOS-AppleSilicon-arm64.zip.sha256" -Raw).Trim()
+          # Import and read macOS assets from package-macos job
+          $macArmDmgHash = ""
+          if (Test-Path "dist-macos/Bullet-macOS-AppleSilicon-Setup.dmg.sha256") {
+            $macArmDmgHash = (Get-Content "dist-macos/Bullet-macOS-AppleSilicon-Setup.dmg.sha256" -Raw).Trim()
+            Copy-Item "dist-macos/Bullet-macOS-AppleSilicon-Setup.dmg*" . -Force
           }
 
-          $macX64Hash = ""
-          if (Test-Path "Bullet-macOS-Intel-x64.zip.sha256") {
-            $macX64Hash = (Get-Content "Bullet-macOS-Intel-x64.zip.sha256" -Raw).Trim()
+          $macX64DmgHash = ""
+          if (Test-Path "dist-macos/Bullet-macOS-Intel-Setup.dmg.sha256") {
+            $macX64DmgHash = (Get-Content "dist-macos/Bullet-macOS-Intel-Setup.dmg.sha256" -Raw).Trim()
+            Copy-Item "dist-macos/Bullet-macOS-Intel-Setup.dmg*" . -Force
+          }
+
+          $macArmZipHash = ""
+          if (Test-Path "dist-macos/Bullet-macOS-AppleSilicon-arm64.zip.sha256") {
+            $macArmZipHash = (Get-Content "dist-macos/Bullet-macOS-AppleSilicon-arm64.zip.sha256" -Raw).Trim()
+            Copy-Item "dist-macos/Bullet-macOS-AppleSilicon-arm64.zip*" . -Force
+          }
+
+          $macX64ZipHash = ""
+          if (Test-Path "dist-macos/Bullet-macOS-Intel-x64.zip.sha256") {
+            $macX64ZipHash = (Get-Content "dist-macos/Bullet-macOS-Intel-x64.zip.sha256" -Raw).Trim()
+            Copy-Item "dist-macos/Bullet-macOS-Intel-x64.zip*" . -Force
           }
 
           $lines = @(
@@ -412,23 +515,26 @@ jobs:
             "| Package | OS / Platform | Description |",
             "|---|---|---|",
             "| **[Bullet-Setup.exe](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Setup.exe)** | Windows x64 (Setup) | Single-file Windows setup installer with desktop shortcuts and auto-launch |",
+            "| **[Bullet-macOS-AppleSilicon-Setup.dmg](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-macOS-AppleSilicon-Setup.dmg)** | macOS (Apple Silicon M1-M5) | 1-Click Drag-and-Drop installer disk image (100% self-contained, zero .NET required) |",
+            "| **[Bullet-macOS-Intel-Setup.dmg](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-macOS-Intel-Setup.dmg)** | macOS (Intel x64) | 1-Click Drag-and-Drop installer disk image (100% self-contained, zero .NET required) |",
             "| **[Bullet-Desktop-Windows-x64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Desktop-Windows-x64.zip)** | Windows x64 (Portable) | Portable zero-install package containing standalone executable and bundled assets |",
-            "| **[Bullet-macOS-AppleSilicon-arm64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-macOS-AppleSilicon-arm64.zip)** | macOS (Apple Silicon) | Native Apple Silicon bundle with double-clickable `Bullet.command` launcher |",
-            "| **[Bullet-macOS-Intel-x64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-macOS-Intel-x64.zip)** | macOS (Intel x64) | Native Intel Mac bundle with double-clickable `Bullet.command` launcher |",
+            "| **[Bullet-macOS-AppleSilicon-arm64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-macOS-AppleSilicon-arm64.zip)** | macOS (Apple Silicon) | Native Apple Silicon portable bundle with preserved execution permissions |",
+            "| **[Bullet-macOS-Intel-x64.zip](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-macOS-Intel-x64.zip)** | macOS (Intel x64) | Native Intel Mac portable bundle with preserved execution permissions |",
             "| **[Bullet-Release.cer](https://github.com/${{ github.repository }}/releases/download/$ver/Bullet-Release.cer)** | All | Authenticode public certificate for publisher identity verification |",
             "| **[Install-Certificate.bat](https://github.com/${{ github.repository }}/releases/download/$ver/Install-Certificate.bat)** | Windows | 1-Click script to trust the publisher certificate and eliminate SmartScreen blocks |",
             "",
-            "#### 🛡️ Windows SmartScreen Guidance",
-            "> If Windows Defender SmartScreen shows *'Windows protected your PC'*, this is normal for newly released open-source installers. You can either:",
-            "> 1. Click **More info** -> **Run anyway**.",
-            "> 2. Or download `Install-Certificate.bat` into the same folder as `Bullet-Release.cer` and run it once to install the publisher certificate into your Windows CurrentUser store.",
+            "#### 🛡️ macOS & Windows Security Guidance",
+            "> - **macOS**: Because BULLET is newly released open-source software, right-click `Bullet.app` in `/Applications` and select **Open**, or run `sudo xattr -rd com.apple.quarantine /Applications/Bullet.app` in Terminal.",
+            "> - **Windows**: If SmartScreen prompts, click **More info** -> **Run anyway**, or run `Install-Certificate.bat` to trust the publisher certificate.",
             "",
             "#### 🔐 SHA256 Verification Hashes",
             '```text',
             $installerHash,
             $zipHash,
-            $macArmHash,
-            $macX64Hash,
+            $macArmDmgHash,
+            $macX64DmgHash,
+            $macArmZipHash,
+            $macX64ZipHash,
             '```'
           )
 
@@ -455,6 +561,10 @@ jobs:
             Bullet-Desktop-Windows-x64.zip.sha256
             Bullet-Windows-Portable-*.zip
             Bullet-Windows-Portable-*.zip.sha256
+            Bullet-macOS-AppleSilicon-Setup.dmg
+            Bullet-macOS-AppleSilicon-Setup.dmg.sha256
+            Bullet-macOS-Intel-Setup.dmg
+            Bullet-macOS-Intel-Setup.dmg.sha256
             Bullet-macOS-AppleSilicon-arm64.zip
             Bullet-macOS-AppleSilicon-arm64.zip.sha256
             Bullet-macOS-Intel-x64.zip

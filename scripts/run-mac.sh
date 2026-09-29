@@ -22,10 +22,15 @@ if [ -f "./Bullet.Api" ]; then
 elif [ -f "./Contents/Resources/app/Bullet.Api" ]; then
     chmod +x ./Contents/Resources/app/Bullet.Api 2>/dev/null || true
     EXECUTABLE="./Contents/Resources/app/Bullet.Api"
+elif [ -f "../Resources/app/Bullet.Api" ]; then
+    chmod +x ../Resources/app/Bullet.Api 2>/dev/null || true
+    EXECUTABLE="../Resources/app/Bullet.Api"
 elif [ -f "./Bullet.Api.dll" ]; then
     EXECUTABLE="dotnet ./Bullet.Api.dll"
 elif [ -f "./Contents/Resources/app/Bullet.Api.dll" ]; then
     EXECUTABLE="dotnet ./Contents/Resources/app/Bullet.Api.dll"
+elif [ -f "../Resources/app/Bullet.Api.dll" ]; then
+    EXECUTABLE="dotnet ../Resources/app/Bullet.Api.dll"
 elif [ -f "../src/Bullet.Api/Bullet.Api.csproj" ]; then
     EXECUTABLE="dotnet run --project ../src/Bullet.Api"
 fi

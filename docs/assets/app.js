@@ -353,24 +353,28 @@ Invoke-WebRequest -Uri "https://github.com/bulletapp/bullet/releases/download/v0
   mac_arm: {
     title: "macOS Apple Silicon",
     badge: "Native ARM64 Universal",
-    desc: "Optimized for Apple Silicon hardware acceleration with zero Rosetta emulation overhead.",
-    primaryBtn: { text: "Download for Apple Silicon (.zip)", url: "https://github.com/bulletapp/bullet/releases/download/v0.0.3/Bullet-macOS-AppleSilicon-arm64.zip" },
-    secondaryBtn: { text: "View macOS Guide", url: "https://github.com/bulletapp/bullet/blob/main/README.md#-macos-installation-apple-silicon--intel" },
-    terminal: `# Quick Run via Terminal (Removes Gatekeeper quarantine)
-unzip Bullet-macOS-AppleSilicon-arm64.zip
-xattr -cr Bullet.app
-open Bullet.app`
+    desc: "Optimized for Apple Silicon hardware acceleration with zero Rosetta emulation overhead. 100% self-contained.",
+    primaryBtn: { text: "Download Apple Silicon (.dmg)", url: "https://github.com/bulletapp/bullet/releases/latest" },
+    secondaryBtn: { text: "View macOS Guide", url: "https://github.com/bulletapp/bullet/blob/main/README.md#-macos-installation-guide" },
+    terminal: `# Install via 1-Click Drag-and-Drop DMG
+# 1. Mount the downloaded Bullet-macOS-AppleSilicon-Setup.dmg
+# 2. Drag Bullet.app into your Applications folder
+# 3. If macOS Gatekeeper flags unnotarized open-source binary:
+sudo xattr -rd com.apple.quarantine /Applications/Bullet.app
+open /Applications/Bullet.app`
   },
   mac_intel: {
     title: "macOS Intel (x64)",
     badge: "Intel 64-bit Native",
-    desc: "For Intel Core i5/i7/i9 MacBooks and iMacs running macOS 12+ (Monterey, Ventura, Sonoma, Sequoia).",
-    primaryBtn: { text: "Download for Intel Mac (.zip)", url: "https://github.com/bulletapp/bullet/releases/download/v0.0.3/Bullet-macOS-Intel-x64.zip" },
-    secondaryBtn: { text: "View macOS Guide", url: "https://github.com/bulletapp/bullet/blob/main/README.md#-macos-installation-apple-silicon--intel" },
-    terminal: `# Quick Run for Intel Mac
-unzip Bullet-macOS-Intel-x64.zip
-xattr -cr Bullet.app
-open Bullet.app`
+    desc: "For Intel Core i5/i7/i9 MacBooks and iMacs running macOS 12+ (Monterey, Ventura, Sonoma, Sequoia). 100% self-contained.",
+    primaryBtn: { text: "Download Intel Mac (.dmg)", url: "https://github.com/bulletapp/bullet/releases/latest" },
+    secondaryBtn: { text: "View macOS Guide", url: "https://github.com/bulletapp/bullet/blob/main/README.md#-macos-installation-guide" },
+    terminal: `# Install via 1-Click Drag-and-Drop DMG
+# 1. Mount the downloaded Bullet-macOS-Intel-Setup.dmg
+# 2. Drag Bullet.app into your Applications folder
+# 3. If macOS Gatekeeper flags unnotarized open-source binary:
+sudo xattr -rd com.apple.quarantine /Applications/Bullet.app
+open /Applications/Bullet.app`
   },
   docker: {
     title: "Docker Container (Linux / Cloud)",

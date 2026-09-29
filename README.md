@@ -117,8 +117,9 @@ Pre-built, signed packages are published for Windows and macOS with every releas
 |---|---|---|---|
 | **Windows** | x64 (Installer) | **[`Bullet-Setup.exe`](https://github.com/bulletapp/bullet/releases/latest)** | Recommended single-file installer (desktop & start menu shortcuts, auto-launch, non-elevated per-user install) |
 | **Windows** | x64 (Portable) | **[`Bullet-Desktop-Windows-x64.zip`](https://github.com/bulletapp/bullet/releases/latest)** | Zero-install standalone zip with executable and bundled assets |
-| **macOS** | Apple Silicon (ARM64) | **[`Bullet-macOS-AppleSilicon-arm64.zip`](https://github.com/bulletapp/bullet/releases/latest)** | Native Apple Silicon bundle with double-clickable `Bullet.command` |
-| **macOS** | Intel x64 | **[`Bullet-macOS-Intel-x64.zip`](https://github.com/bulletapp/bullet/releases/latest)** | Native Intel Mac bundle with double-clickable `Bullet.command` |
+| **macOS** | Apple Silicon (M1–M5) | **[`Bullet-macOS-AppleSilicon-Setup.dmg`](https://github.com/bulletapp/bullet/releases/latest)** | Recommended 1-click drag-and-drop installer disk image (100% self-contained, zero .NET required) |
+| **macOS** | Intel x64 | **[`Bullet-macOS-Intel-Setup.dmg`](https://github.com/bulletapp/bullet/releases/latest)** | Recommended 1-click drag-and-drop installer disk image (100% self-contained, zero .NET required) |
+| **macOS** | Portable ZIPs | **[`Bullet-macOS-*-arm64.zip`](https://github.com/bulletapp/bullet/releases/latest)** | Portable bundles with double-clickable `Bullet.command` |
 | **macOS / Web** | Cross-Platform | **Standalone Web App (PWA)** | Installable from Safari ("Add to Dock") or Chrome/Edge ("Install App") |
 | **Docker** | Linux / Any | `docker/docker-compose.yml` | Multi-container setup with PostgreSQL, API, and Web frontend |
 
@@ -156,17 +157,18 @@ All official releases are Authenticode signed with DigiCert RFC 3161 timestamps:
 
 ### 🍎 macOS Installation Guide
 
-1. **Download**: Grab the package matching your Mac hardware:
-   - **Apple Silicon (ARM64)**: `Bullet-macOS-AppleSilicon-arm64.zip`
-   - **Intel Macs**: `Bullet-macOS-Intel-x64.zip`
-2. **Launch via Finder**:
-   - Double-click the downloaded `.zip` to extract.
-   - Double-click **`Bullet.command`** in Finder. It boots the local BULLET Core Engine and launches the interface in your browser.
-   - Or launch from Terminal:
+1. **1-Click Drag-and-Drop Installer (`.dmg`) [Recommended]**:
+   - Download **`Bullet-macOS-AppleSilicon-Setup.dmg`** (for Apple Silicon M1-M5) or **`Bullet-macOS-Intel-Setup.dmg`** (for Intel).
+   - Double-click the `.dmg` file to mount the disk image.
+   - Drag **Bullet.app** into the **Applications** folder shortcut.
+   - **100% Self-Contained**: The .NET runtime is embedded directly inside the application bundle—no .NET SDK, runtime, or Homebrew is needed.
+   - *Gatekeeper bypass*: Because BULLET is newly released open-source software, right-click `Bullet.app` in `/Applications` $\rightarrow$ choose **Open** $\rightarrow$ click **Open**, or run in Terminal:
      ```bash
-     chmod +x run-mac.sh
-     ./run-mac.sh
+     sudo xattr -rd com.apple.quarantine /Applications/Bullet.app
      ```
+2. **Portable ZIP Bundles (`.zip`)**:
+   - Download `Bullet-macOS-AppleSilicon-arm64.zip` or `Bullet-macOS-Intel-x64.zip`.
+   - Double-click to extract, then double-click **`Bullet.command`** in Finder to launch.
 3. **Install as a Native Standalone Mac Web App (PWA)**:
    - **Safari (macOS Sonoma 14+)**: Click **File $\rightarrow$ Add to Dock** to turn BULLET into a native Mac app in your Dock with its own window, keyboard shortcuts, and zero browser chrome.
    - **Chrome / Edge on macOS**: Click the **"Install App"** button in the top navigation bar or address bar to install BULLET into `/Applications/Chrome Apps/BULLET.app`.
