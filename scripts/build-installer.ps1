@@ -33,6 +33,16 @@ dotnet publish "src/Bullet.Desktop/Bullet.Desktop.csproj" -c Release -r win-x64 
 # Clean up debug symbols and temporary files from publish folder
 Get-ChildItem -Path "publish/desktop" -Include "*.pdb", "*.log", "bullet.db*" -Recurse -File | Remove-Item -Force -ErrorAction SilentlyContinue
 
+# Locate code signing certificate
+$cert = (Get-ChildItem Cert:\CurrentUser\My -ErrorAction SilentlyContinue | Where-Object { $_.Subject -like "*bulletapp*" -or $_.Subject -like "*BULLET Open Source Project*" -or $_.Subject -like "*VishalViswanathan03*" } | Select-Object -First 1)
+if ($cert) {
+    Write-Host "Signing desktop binaries in publish/desktop..." -ForegroundColor Cyan
+    Get-ChildItem -Path "publish/desktop" -Filter "*.exe" | ForEach-Object {
+        $sig = Set-AuthenticodeSignature -FilePath $_.FullName -Certificate $cert -TimestampServer "http://timestamp.digicert.com" -HashAlgorithm SHA256
+        Write-Host "Signed $($_.Name): $($sig.Status)" -ForegroundColor Green
+    }
+}
+
 # 3. Create Payload Archive
 Write-Host "[3/5] Packaging Embedded Application Payload..." -ForegroundColor Yellow
 $payloadZip = "src/Bullet.Installer/payload.zip"
@@ -72,6 +82,7 @@ if ($cert) {
     Write-Host "`nAuthenticode Signing Installer Binaries with DigiCert timestamp..." -ForegroundColor Cyan
     Get-ChildItem -Path "dist-installer" -Filter "*.exe" | ForEach-Object {
         Write-Host "Signing $($_.Name)..." -ForegroundColor Yellow
+        $sig = Set-AuthenticodeSignature -FilePath $_.FullName -Certificate $cert -TimestampServer "http://timestamp.digicert.com" -HashAlgorithm SHA256
         $statusColor = if ($sig.Status -eq 'Valid') { 'Green' } else { 'DarkYellow' }
         Write-Host "Signature status: $($sig.Status)" -ForegroundColor $statusColor
     }
@@ -84,6 +95,10 @@ Write-Host "`nCreating Portable ZIP Archive (Bullet-Desktop-Windows-x64.zip)..."
 $portableZip = "dist-installer/Bullet-Desktop-Windows-x64.zip"
 if (Test-Path $portableZip) { Remove-Item $portableZip -Force }
 Compress-Archive -Path "publish/desktop/*" -DestinationPath $portableZip -Force
+
+# Create Version-Tagged Aliases for Release
+Copy-Item "dist-installer/Bullet-Setup.exe" "dist-installer/Bullet-Setup-v0.0.3.exe" -Force
+Copy-Item "dist-installer/Bullet-Desktop-Windows-x64.zip" "dist-installer/Bullet-Windows-Portable-v0.0.3.zip" -Force
 
 # Generate SHA256 Checksums
 Write-Host "`nComputing SHA256 Checksums for Release Artifacts..." -ForegroundColor Cyan
