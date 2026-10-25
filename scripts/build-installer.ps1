@@ -47,7 +47,8 @@ if ($cert) {
 Write-Host "[3/5] Packaging Embedded Application Payload..." -ForegroundColor Yellow
 $payloadZip = "src/Bullet.Installer/payload.zip"
 if (Test-Path $payloadZip) { Remove-Item $payloadZip -Force }
-Compress-Archive -Path "publish/desktop/*" -DestinationPath $payloadZip -Force
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+[System.IO.Compression.ZipFile]::CreateFromDirectory((Get-Item "publish/desktop").FullName, (Get-Item "src/Bullet.Installer").FullName + "\payload.zip", [System.IO.Compression.CompressionLevel]::Fastest, $false)
 $zipSize = (Get-Item $payloadZip).Length / 1MB
 Write-Host "Payload archive created: $([Math]::Round($zipSize, 2)) MB" -ForegroundColor Green
 
@@ -90,11 +91,31 @@ if ($cert) {
     Write-Host "`n[Notice] No code-signing certificate found in Cert:\CurrentUser\My. Installers left unsigned for local dev." -ForegroundColor DarkGray
 }
 
+# Copy certificate and helper launchers into portable publish directory
+Copy-Item "dist-installer/Bullet-Release.cer" "publish/desktop/Bullet-Release.cer" -Force -ErrorAction SilentlyContinue
+Copy-Item "installer/Install-Certificate.bat" "publish/desktop/Install-Certificate.bat" -Force -ErrorAction SilentlyContinue
+Copy-Item "installer/Launch-Bullet.bat" "publish/desktop/Launch-Bullet.bat" -Force -ErrorAction SilentlyContinue
+
 # Create Portable Zip Archive
 Write-Host "`nCreating Portable ZIP Archive (Bullet-Desktop-Windows-x64.zip)..." -ForegroundColor Yellow
 $portableZip = "dist-installer/Bullet-Desktop-Windows-x64.zip"
 if (Test-Path $portableZip) { Remove-Item $portableZip -Force }
-Compress-Archive -Path "publish/desktop/*" -DestinationPath $portableZip -Force
+[System.IO.Compression.ZipFile]::CreateFromDirectory((Get-Item "publish/desktop").FullName, (Get-Item "dist-installer").FullName + "\Bullet-Desktop-Windows-x64.zip", [System.IO.Compression.CompressionLevel]::Fastest, $false)
+
+# Create All-in-One 1-Click Setup Bundle (Bullet-Windows-Setup-Bundle.zip)
+Write-Host "`nCreating 1-Click Setup Bundle (Bullet-Windows-Setup-Bundle.zip)..." -ForegroundColor Yellow
+$setupBundleDir = "publish/setup-bundle"
+if (Test-Path $setupBundleDir) { Remove-Item $setupBundleDir -Recurse -Force }
+New-Item -ItemType Directory -Path $setupBundleDir -Force | Out-Null
+Copy-Item "dist-installer/Bullet-Setup.exe" "$setupBundleDir/Bullet-Setup.exe" -Force
+Copy-Item "dist-installer/Bullet-Release.cer" "$setupBundleDir/Bullet-Release.cer" -Force
+Copy-Item "installer/Install-Bullet.bat" "$setupBundleDir/Install-Bullet.bat" -Force
+Copy-Item "installer/Install-Bullet.bat" "$setupBundleDir/Install.bat" -Force
+
+$setupBundleZip = "dist-installer/Bullet-Windows-Setup-Bundle.zip"
+if (Test-Path $setupBundleZip) { Remove-Item $setupBundleZip -Force }
+[System.IO.Compression.ZipFile]::CreateFromDirectory((Get-Item $setupBundleDir).FullName, (Get-Item "dist-installer").FullName + "\Bullet-Windows-Setup-Bundle.zip", [System.IO.Compression.CompressionLevel]::Fastest, $false)
+Remove-Item $setupBundleDir -Recurse -Force -ErrorAction SilentlyContinue
 
 # Create Version-Tagged Aliases for Release
 Copy-Item "dist-installer/Bullet-Setup.exe" "dist-installer/Bullet-Setup-v0.0.3.exe" -Force

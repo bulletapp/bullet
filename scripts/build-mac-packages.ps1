@@ -62,6 +62,7 @@ if (Test-Path "$armTarget/wwwroot") { Remove-Item "$armTarget/wwwroot" -Recurse 
 New-Item -ItemType Directory -Path "$armTarget/wwwroot" -Force | Out-Null
 Copy-Item -Path "src/Bullet.Api/wwwroot/*" -Destination "$armTarget/wwwroot" -Recurse -Force
 Copy-Item -Path "scripts/run-mac.sh" -Destination "publish/mac-arm64/run-mac.sh" -Force
+Copy-Item -Path "scripts/Bullet.command" -Destination "publish/mac-arm64/Bullet.command" -Force
 Get-ChildItem -Path $armTarget -Include "*.pdb" -Recurse -File | Remove-Item -Force -ErrorAction SilentlyContinue
 
 $armZip = "dist-installer/Bullet-macOS-AppleSilicon-arm64.zip"
@@ -79,6 +80,7 @@ if (Test-Path "$x64Target/wwwroot") { Remove-Item "$x64Target/wwwroot" -Recurse 
 New-Item -ItemType Directory -Path "$x64Target/wwwroot" -Force | Out-Null
 Copy-Item -Path "src/Bullet.Api/wwwroot/*" -Destination "$x64Target/wwwroot" -Recurse -Force
 Copy-Item -Path "scripts/run-mac.sh" -Destination "publish/mac-x64/run-mac.sh" -Force
+Copy-Item -Path "scripts/Bullet.command" -Destination "publish/mac-x64/Bullet.command" -Force
 Get-ChildItem -Path $x64Target -Include "*.pdb" -Recurse -File | Remove-Item -Force -ErrorAction SilentlyContinue
 
 $x64Zip = "dist-installer/Bullet-macOS-Intel-x64.zip"
