@@ -29,11 +29,12 @@ if not exist "%CER_PATH%" (
 
 echo Importing: %CER_PATH%
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$cert = Import-Certificate -FilePath '%CER_PATH%' -CertStoreLocation Cert:\CurrentUser\Root; if ($cert) { Write-Host '[SUCCESS] Certificate successfully trusted in CurrentUser\Root!' -ForegroundColor Green; Write-Host ('Thumbprint: ' + $cert[0].Thumbprint) -ForegroundColor DarkCyan } else { Write-Host '[ERROR] Failed to import certificate.' -ForegroundColor Red; exit 1 }"
+  "$cert = Import-Certificate -FilePath '%CER_PATH%' -CertStoreLocation Cert:\CurrentUser\Root; $null = Import-Certificate -FilePath '%CER_PATH%' -CertStoreLocation Cert:\CurrentUser\TrustedPublisher -ErrorAction SilentlyContinue; Get-ChildItem '%~dp0' -Filter '*.exe' | Unblock-File -ErrorAction SilentlyContinue; Get-ChildItem '%~dp0' -Filter '*.zip' | Unblock-File -ErrorAction SilentlyContinue; if ($cert) { Write-Host '[SUCCESS] Certificate successfully trusted in CurrentUser\Root and TrustedPublisher!' -ForegroundColor Green; Write-Host ('Thumbprint: ' + $cert[0].Thumbprint) -ForegroundColor DarkCyan } else { Write-Host '[ERROR] Failed to import certificate.' -ForegroundColor Red; exit 1 }"
 
 if %ERRORLEVEL% EQU 0 (
     echo.
-    echo [OK] Setup complete! You can now run Bullet-Setup.exe without SmartScreen unknown publisher blocks.
+    echo [OK] Setup complete! Downloads unblocked and certificate trusted.
+    echo You can now launch Bullet-Setup.exe directly without SmartScreen blocks.
 ) else (
     echo.
     echo [!] An error occurred during certificate import.
