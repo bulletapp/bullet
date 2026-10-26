@@ -118,8 +118,9 @@ if (Test-Path $setupBundleZip) { Remove-Item $setupBundleZip -Force }
 Remove-Item $setupBundleDir -Recurse -Force -ErrorAction SilentlyContinue
 
 # Create Version-Tagged Aliases for Release
-Copy-Item "dist-installer/Bullet-Setup.exe" "dist-installer/Bullet-Setup-v0.0.3.exe" -Force
-Copy-Item "dist-installer/Bullet-Desktop-Windows-x64.zip" "dist-installer/Bullet-Windows-Portable-v0.0.3.zip" -Force
+$bulletVersion = (Get-Content "src/Bullet.Web/package.json" -Raw | ConvertFrom-Json).version
+Copy-Item "dist-installer/Bullet-Setup.exe" "dist-installer/Bullet-Setup-v$bulletVersion.exe" -Force
+Copy-Item "dist-installer/Bullet-Desktop-Windows-x64.zip" "dist-installer/Bullet-Windows-Portable-v$bulletVersion.zip" -Force
 
 # Generate SHA256 Checksums
 Write-Host "`nComputing SHA256 Checksums for Release Artifacts..." -ForegroundColor Cyan
