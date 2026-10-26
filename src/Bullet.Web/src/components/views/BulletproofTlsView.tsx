@@ -25,8 +25,7 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
   const [caPemPreviewOpen, setCaPemPreviewOpen] = useState(false);
   const caFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Add Client Certificate Modal State
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  // Add Client Certificate Form State
   const [certType, setCertType] = useState<'PFX' | 'PEM'>('PFX');
   const [profileName, setProfileName] = useState('');
   const [hostPattern, setHostPattern] = useState('');
@@ -192,7 +191,7 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
     e.target.value = '';
   };
 
-  // Reset modal state
+  // Reset form state
   const resetForm = () => {
     setProfileName('');
     setHostPattern('');
@@ -246,7 +245,6 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
         insecureSkipVerify: skipVerify,
       });
 
-      setIsAddModalOpen(false);
       resetForm();
       await loadData();
     } catch (err: any) {
@@ -311,17 +309,6 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
             </p>
           </div>
         </div>
-
-        <button
-          onClick={() => {
-            resetForm();
-            setIsAddModalOpen(true);
-          }}
-          className="px-3 py-1.5 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold flex items-center gap-1.5 transition shadow-sm cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5 stroke-[3]" />
-          <span>Add Client Certificate</span>
-        </button>
       </div>
 
       {/* Main Content Area */}
@@ -454,194 +441,142 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
         {/* 2. CLIENT CERTIFICATES SECTION (mTLS AUTHENTICATION)          */}
         {/* ============================================================== */}
         <section className="bg-bullet-surface border border-bullet-border rounded-lg p-5 space-y-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Key className="w-4 h-4 text-emerald-400" />
-                <h2 className="font-bold text-slate-100 text-sm">Client Certificates</h2>
-              </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Add client certificates for mutual TLS (mTLS). When sending requests, Bullet matches the target host and port automatically.
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Key className="w-4 h-4 text-emerald-400" />
+              <h2 className="font-bold text-slate-100 text-sm">Client Certificates</h2>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Add client certificates for mutual TLS (mTLS). When sending requests, Bullet matches the target host and port automatically.
+            </p>
+          </div>
+
+          {/* Certificate Table / Cards List */}
+          {clientCertProfiles.length > 0 && (
+            <div className="space-y-2 pt-2 border-t border-bullet-border/60">
+              {clientCertProfiles.map((p) => {
+                const isEnabled = p.isEnabled ?? true;
+                const isPfx = p.certType === 'PFX' || (!p.clientCertPem && !p.certFileName);
+                return (
+                  <div
+                    key={p.id}
+                    className={`flex items-center justify-between p-3 rounded-lg border transition ${
+                      isEnabled
+                        ? 'bg-bullet-bg border-bullet-border hover:border-slate-700'
+                        : 'bg-bullet-bg/50 border-bullet-border/50 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`p-2 rounded flex-shrink-0 ${
+                        isPfx ? 'bg-purple-500/10 text-purple-400' : 'bg-cyan-500/10 text-cyan-400'
+                      }`}>
+                        <Key className="w-4 h-4" />
+                      </div>
+
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-200 text-xs truncate">{p.name}</span>
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                            isPfx
+                              ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
+                              : 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
+                          }`}>
+                            {isPfx ? 'PFX' : 'CRT + KEY'}
+                          </span>
+                          {p.hasPassword && (
+                            <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] flex items-center gap-1">
+                              <Lock className="w-2.5 h-2.5" />
+                              Protected
+                            </span>
+                          )}
+                          {p.allowSelfSigned && (
+                            <span className="px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[10px]">
+                              Self-Signed OK
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                          <div className="flex items-center gap-1">
+                            <Globe className="w-3 h-3 text-slate-500" />
+                            <span className="text-slate-300 font-semibold">{p.hostPattern || '* (All Hosts)'}</span>
+                          </div>
+                          <span className="text-slate-600">•</span>
+                          <div className="flex items-center gap-1">
+                            <Server className="w-3 h-3 text-slate-500" />
+                            <span>Port: {p.port ? p.port : 'All ports'}</span>
+                          </div>
+                          <span className="text-slate-600">•</span>
+                          <span className="text-slate-500 text-[10px] truncate">
+                            {isPfx
+                              ? (p.pfxFileName || 'certificate.pfx')
+                              : `${p.certFileName || 'cert.crt'} & ${p.keyFileName || 'key.key'}`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right controls */}
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      {/* Toggle active switch */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleProfile(p)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
+                          isEnabled ? 'bg-emerald-500' : 'bg-slate-700'
+                        }`}
+                        title={isEnabled ? 'Certificate Active (Click to Pause)' : 'Certificate Paused (Click to Enable)'}
+                      >
+                        <span
+                          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                            isEnabled ? 'translate-x-4.5' : 'translate-x-0.5'
+                          }`}
+                        />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteProfile(p.id, p.name)}
+                        className="p-1.5 text-slate-500 hover:text-rose-400 rounded hover:bg-rose-500/10 transition cursor-pointer"
+                        title="Delete Certificate"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ============================================================== */}
+          {/* 3. ADD CLIENT CERTIFICATE INLINE FORM CARD                     */}
+          {/* ============================================================== */}
+          <div className="bg-bullet-bg border border-bullet-border rounded-lg p-4 space-y-4">
+            <div className="border-b border-bullet-border pb-2.5">
+              <span className="font-bold text-slate-100 text-xs flex items-center gap-1.5">
+                <Plus className="w-3.5 h-3.5 text-emerald-400" />
+                Add Client Certificate (mTLS)
+              </span>
+              <p className="text-[10px] text-slate-500 mt-0.5">
+                Configure a certificate for a specific host and port to authenticate requests automatically.
               </p>
             </div>
 
-            <button
-              onClick={() => {
-                resetForm();
-                setIsAddModalOpen(true);
-              }}
-              className="px-3 py-1.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Certificate</span>
-            </button>
-          </div>
-
-          {/* Certificate Table / Cards */}
-          <div className="pt-2 border-t border-bullet-border/60">
-            {clientCertProfiles.length === 0 ? (
-              <div className="py-10 text-center space-y-3">
-                <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center mx-auto text-slate-500">
-                  <Lock className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-slate-300 font-medium text-xs">No client certificates added yet</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5 max-w-md mx-auto">
-                    Add a client certificate (.pfx or .crt + .key) and specify the host to enable automatic mutual TLS authentication.
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    resetForm();
-                    setIsAddModalOpen(true);
-                  }}
-                  className="px-3.5 py-1.5 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold inline-flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Your First Certificate</span>
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {clientCertProfiles.map((p) => {
-                  const isEnabled = p.isEnabled ?? true;
-                  const isPfx = p.certType === 'PFX' || (!p.clientCertPem && !p.certFileName);
-                  return (
-                    <div
-                      key={p.id}
-                      className={`flex items-center justify-between p-3 rounded-lg border transition ${
-                        isEnabled
-                          ? 'bg-bullet-bg border-bullet-border hover:border-slate-700'
-                          : 'bg-bullet-bg/50 border-bullet-border/50 opacity-60'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className={`p-2 rounded flex-shrink-0 ${
-                          isPfx ? 'bg-purple-500/10 text-purple-400' : 'bg-cyan-500/10 text-cyan-400'
-                        }`}>
-                          <Key className="w-4 h-4" />
-                        </div>
-
-                        <div className="min-w-0 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-200 text-xs truncate">{p.name}</span>
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                              isPfx
-                                ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
-                                : 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
-                            }`}>
-                              {isPfx ? 'PFX' : 'CRT + KEY'}
-                            </span>
-                            {p.hasPassword && (
-                              <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] flex items-center gap-1">
-                                <Lock className="w-2.5 h-2.5" />
-                                Protected
-                              </span>
-                            )}
-                            {p.allowSelfSigned && (
-                              <span className="px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[10px]">
-                                Self-Signed OK
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-3 text-[11px] text-slate-400">
-                            <div className="flex items-center gap-1">
-                              <Globe className="w-3 h-3 text-slate-500" />
-                              <span className="text-slate-300 font-semibold">{p.hostPattern || '* (All Hosts)'}</span>
-                            </div>
-                            <span className="text-slate-600">•</span>
-                            <div className="flex items-center gap-1">
-                              <Server className="w-3 h-3 text-slate-500" />
-                              <span>Port: {p.port ? p.port : 'All ports'}</span>
-                            </div>
-                            <span className="text-slate-600">•</span>
-                            <span className="text-slate-500 text-[10px] truncate">
-                              {isPfx
-                                ? (p.pfxFileName || 'certificate.pfx')
-                                : `${p.certFileName || 'cert.crt'} & ${p.keyFileName || 'key.key'}`}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right controls */}
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        {/* Toggle active switch */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleProfile(p)}
-                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
-                            isEnabled ? 'bg-emerald-500' : 'bg-slate-700'
-                          }`}
-                          title={isEnabled ? 'Certificate Active (Click to Pause)' : 'Certificate Paused (Click to Enable)'}
-                        >
-                          <span
-                            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                              isEnabled ? 'translate-x-4.5' : 'translate-x-0.5'
-                            }`}
-                          />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteProfile(p.id, p.name)}
-                          className="p-1.5 text-slate-500 hover:text-rose-400 rounded hover:bg-rose-500/10 transition cursor-pointer"
-                          title="Delete Certificate"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
-
-      {/* ============================================================== */}
-      {/* 3. ADD CLIENT CERTIFICATE MODAL (POSTMAN PARITY)               */}
-      {/* ============================================================== */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0b101b] border border-bullet-border rounded-xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-            {/* Modal Header */}
-            <div className="px-5 py-4 border-b border-bullet-border flex items-center justify-between bg-bullet-bg flex-shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded bg-emerald-500/10 text-emerald-400">
-                  <Key className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-100 text-sm">Add Client Certificate</h3>
-                  <p className="text-[11px] text-slate-400">Provide certificate files and target host pattern for mTLS</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-slate-400 hover:text-slate-200 p-1 rounded hover:bg-slate-800 transition cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Modal Form Body */}
-            <form onSubmit={handleSaveCertificate} className="flex-1 overflow-y-auto p-5 space-y-4">
+            <form onSubmit={handleSaveCertificate} className="space-y-4">
               {/* Host and Port Row */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="col-span-2 space-y-1">
                   <label className="text-slate-300 font-semibold block text-[11px]">
-                    Host <span className="text-rose-400">*</span>
+                    Host Pattern <span className="text-rose-400">*</span>
                   </label>
                   <input
                     type="text"
                     data-testid="tls-host-pattern-input"
-                    required
                     placeholder="e.g. api.example.com, localhost, *.internal.net"
                     value={hostPattern}
                     onChange={(e) => setHostPattern(e.target.value)}
-                    className="w-full p-2 bg-bullet-bg border border-bullet-border rounded text-slate-200 outline-none focus:border-emerald-500 text-xs"
+                    className="w-full p-2 bg-bullet-surface border border-bullet-border rounded text-slate-200 outline-none focus:border-emerald-500 text-xs"
                   />
                   <span className="text-[10px] text-slate-500 block">Wildcards (*.domain.com) supported</span>
                 </div>
@@ -653,16 +588,16 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
                     placeholder="e.g. 443"
                     value={port}
                     onChange={(e) => setPort(e.target.value)}
-                    className="w-full p-2 bg-bullet-bg border border-bullet-border rounded text-slate-200 outline-none focus:border-emerald-500 text-xs"
+                    className="w-full p-2 bg-bullet-surface border border-bullet-border rounded text-slate-200 outline-none focus:border-emerald-500 text-xs"
                   />
                   <span className="text-[10px] text-slate-500 block">Optional (blank = all)</span>
                 </div>
               </div>
 
-              {/* Profile Name (Optional) */}
+              {/* Profile Name */}
               <div className="space-y-1">
                 <label className="text-slate-300 font-semibold block text-[11px]">
-                  Profile Name <span className="text-slate-500 font-normal">(Optional label)</span>
+                  Profile Name <span className="text-slate-500 font-normal">(Label in Bullet)</span>
                 </label>
                 <input
                   type="text"
@@ -670,14 +605,14 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
                   placeholder="e.g. Internal Banking mTLS Cert"
                   value={profileName}
                   onChange={(e) => setProfileName(e.target.value)}
-                  className="w-full p-2 bg-bullet-bg border border-bullet-border rounded text-slate-200 outline-none focus:border-emerald-500 text-xs"
+                  className="w-full p-2 bg-bullet-surface border border-bullet-border rounded text-slate-200 outline-none focus:border-emerald-500 text-xs"
                 />
               </div>
 
               {/* Certificate Type Segmented Selector */}
               <div className="space-y-2">
                 <label className="text-slate-300 font-semibold block text-[11px]">Certificate File Format</label>
-                <div className="grid grid-cols-2 gap-2 bg-bullet-bg p-1 rounded-lg border border-bullet-border">
+                <div className="grid grid-cols-2 gap-2 bg-bullet-surface p-1 rounded-lg border border-bullet-border">
                   <button
                     type="button"
                     onClick={() => setCertType('PFX')}
@@ -708,7 +643,7 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
 
               {/* PFX Options */}
               {certType === 'PFX' && (
-                <div className="space-y-3 bg-bullet-bg p-3.5 rounded-lg border border-bullet-border">
+                <div className="space-y-3 bg-bullet-surface p-3.5 rounded-lg border border-bullet-border">
                   <input
                     type="file"
                     ref={pfxFileInputRef}
@@ -718,9 +653,7 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
                   />
 
                   <div className="space-y-1.5">
-                    <label className="text-slate-300 font-medium block text-[11px]">
-                      PFX File <span className="text-rose-400">*</span>
-                    </label>
+                    <label className="text-slate-300 font-medium block text-[11px]">PFX File</label>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
@@ -731,7 +664,7 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
                         <span>{pfxFileName ? 'Change PFX File' : 'Select PFX File'}</span>
                       </button>
                       <span className="text-slate-400 text-xs truncate">
-                        {pfxFileName || 'No file chosen'}
+                        {pfxFileName || 'No file chosen (or enter password/settings)'}
                       </span>
                     </div>
                   </div>
@@ -744,12 +677,12 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
                         placeholder="Enter PFX password if protected"
                         value={pfxPassword}
                         onChange={(e) => setPfxPassword(e.target.value)}
-                        className="w-full p-2 pr-9 bg-bullet-surface border border-bullet-border rounded text-slate-200 outline-none focus:border-purple-500 text-xs"
+                        className="w-full p-2 pr-9 bg-bullet-bg border border-bullet-border rounded text-slate-200 outline-none focus:border-purple-500 text-xs"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPfxPassword(!showPfxPassword)}
-                        className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-200"
+                        className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-200 cursor-pointer"
                       >
                         {showPfxPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
@@ -760,7 +693,7 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
 
               {/* CRT / PEM Options */}
               {certType === 'PEM' && (
-                <div className="space-y-3 bg-bullet-bg p-3.5 rounded-lg border border-bullet-border">
+                <div className="space-y-3 bg-bullet-surface p-3.5 rounded-lg border border-bullet-border">
                   <input
                     type="file"
                     ref={certFileInputRef}
@@ -779,9 +712,7 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
                   <div className="grid grid-cols-2 gap-3">
                     {/* CRT File */}
                     <div className="space-y-1.5">
-                      <label className="text-slate-300 font-medium block text-[11px]">
-                        Certificate File (.crt, .pem) <span className="text-rose-400">*</span>
-                      </label>
+                      <label className="text-slate-300 font-medium block text-[11px]">Certificate File (.crt, .pem)</label>
                       <button
                         type="button"
                         onClick={() => certFileInputRef.current?.click()}
@@ -794,9 +725,7 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
 
                     {/* KEY File */}
                     <div className="space-y-1.5">
-                      <label className="text-slate-300 font-medium block text-[11px]">
-                        Private Key File (.key, .pem) <span className="text-rose-400">*</span>
-                      </label>
+                      <label className="text-slate-300 font-medium block text-[11px]">Private Key File (.key, .pem)</label>
                       <button
                         type="button"
                         onClick={() => keyFileInputRef.current?.click()}
@@ -816,12 +745,12 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
                         placeholder="Optional passphrase for encrypted private key"
                         value={keyPassphrase}
                         onChange={(e) => setKeyPassphrase(e.target.value)}
-                        className="w-full p-2 pr-9 bg-bullet-surface border border-bullet-border rounded text-slate-200 outline-none focus:border-cyan-500 text-xs"
+                        className="w-full p-2 pr-9 bg-bullet-bg border border-bullet-border rounded text-slate-200 outline-none focus:border-cyan-500 text-xs"
                       />
                       <button
                         type="button"
                         onClick={() => setShowKeyPassphrase(!showKeyPassphrase)}
-                        className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-200"
+                        className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-200 cursor-pointer"
                       >
                         {showKeyPassphrase ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
@@ -848,7 +777,7 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
                             placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"
                             value={clientCertPem}
                             onChange={(e) => setClientCertPem(e.target.value)}
-                            className="w-full h-20 p-2 bg-bullet-surface border border-bullet-border rounded text-slate-200 font-mono text-[10px] outline-none"
+                            className="w-full h-20 p-2 bg-bullet-bg border border-bullet-border rounded text-slate-200 font-mono text-[10px] outline-none"
                           />
                         </div>
                         <div>
@@ -858,7 +787,7 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
                             placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;...&#10;-----END RSA PRIVATE KEY-----"
                             value={clientKeyPem}
                             onChange={(e) => setClientKeyPem(e.target.value)}
-                            className="w-full h-20 p-2 bg-bullet-surface border border-bullet-border rounded text-slate-200 font-mono text-[10px] outline-none"
+                            className="w-full h-20 p-2 bg-bullet-bg border border-bullet-border rounded text-slate-200 font-mono text-[10px] outline-none"
                           />
                         </div>
                       </div>
@@ -890,13 +819,13 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-bullet-border">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-bullet-border">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={resetForm}
                   className="px-4 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs cursor-pointer transition"
                 >
-                  Cancel
+                  Clear
                 </button>
 
                 <button
@@ -905,13 +834,13 @@ export const BulletproofTlsView: React.FC<BulletproofTlsViewProps> = ({ rangeId 
                   disabled={isSubmitting || (!hostPattern.trim() && !profileName.trim())}
                   className="px-4 py-1.5 rounded bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition shadow"
                 >
-                  {isSubmitting ? 'Saving...' : 'Add Certificate'}
+                  {isSubmitting ? 'Saving...' : 'Save Certificate Profile'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
-      )}
+        </section>
+      </div>
     </div>
   );
 };

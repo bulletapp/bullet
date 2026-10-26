@@ -147,26 +147,10 @@ async function runTest() {
     }
     console.log(`   ✓ Saved screenshot to: ${caScreenPath}`);
 
-    // 4. Test "Add Client Certificate" Modal
-    console.log('\n[Step 4] Opening "Add Client Certificate" modal...');
-    const addCertButtons = await page.$$('button');
-    let addBtn = null;
-    for (const b of addCertButtons) {
-      const text = await (await b.getProperty('innerText')).jsonValue();
-      if (text.includes('Add Client Certificate') || text.includes('Add Certificate')) {
-        addBtn = b;
-        break;
-      }
-    }
-
-    if (!addBtn) throw new Error('Could not find Add Certificate button');
-    await addBtn.click();
-    await new Promise((r) => setTimeout(r, 800));
-
-    // Check modal opened
-    const modalOpened = await page.evaluate(() => document.body.innerText.includes('Add Client Certificate'));
-    if (!modalOpened) throw new Error('Add Client Certificate modal did not open!');
-    console.log('   ✓ Modal opened cleanly.');
+    // 4. Verify "Add Client Certificate" Form
+    console.log('\n[Step 4] Verifying "Add Client Certificate" form...');
+    await page.waitForSelector('[data-testid="tls-profile-name-input"]', { timeout: 5000 });
+    console.log('   ✓ Add Client Certificate form is mounted and ready.');
 
     // Fill in Host, Port, Profile Name, Passphrase
     console.log('\n[Step 5] Entering Certificate metadata (Host, Port, Passphrase)...');
