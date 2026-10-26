@@ -145,17 +145,49 @@ export interface TLSProfile {
   id: string;
   rangeId: string;
   name: string;
+  description?: string;
   hostPattern?: string;
+  port?: number | null;
+  certType?: string; // 'PFX' | 'PEM' | 'CA'
+  isEnabled?: boolean;
+
+  // Client Cert (PFX)
+  clientCertPfxBase64?: string;
+  clientCertPassword?: string;
+  pfxFileName?: string;
+
+  // Client Cert (CRT + KEY)
   clientCertificatePem?: string;
   clientCertPem?: string;
   clientKeyPem?: string;
+  certFileName?: string;
+  keyFileName?: string;
+
+  // Root CA
   certificateAuthorityPem?: string;
   caBundlePem?: string;
+  caFileName?: string;
+  isCaCertificateEnabled?: boolean;
+
+  hasClientCert?: boolean;
+  hasCaBundle?: boolean;
+  hasPassword?: boolean;
+
   minTlsVersion?: string;
   maxTlsVersion?: string;
   cipherSuites?: string[];
-  insecureSkipVerify: boolean;
+  insecureSkipVerify?: boolean;
   allowSelfSigned?: boolean;
+  verifyHostName?: boolean;
+  createdAtUtc?: string;
+}
+
+export interface CaConfig {
+  id?: string;
+  rangeId: string;
+  isCaCertificateEnabled: boolean;
+  caFileName?: string | null;
+  caBundlePem?: string | null;
 }
 
 export interface TargetRange {

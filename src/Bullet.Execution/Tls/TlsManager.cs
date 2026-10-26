@@ -81,8 +81,8 @@ public class TlsManager : ITlsManager
                         return true;
                 }
 
-                // If custom CA bundle is provided, check if certificate chain is trusted by our bundle
-                if (!string.IsNullOrWhiteSpace(profile.CaBundlePem) && certificate != null && chain != null)
+                // If custom CA bundle is provided and enabled, check if certificate chain is trusted by our bundle
+                if (profile.IsCaCertificateEnabled && !string.IsNullOrWhiteSpace(profile.CaBundlePem) && certificate != null && chain != null)
                 {
                     try
                     {

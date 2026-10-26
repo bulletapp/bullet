@@ -1,6 +1,6 @@
 import * as signalR from '@microsoft/signalr';
 import {
-  Range, Arsenal, Squad, Shot, Loadout, Round, TLSProfile,
+  Range, Arsenal, Squad, Shot, Loadout, Round, TLSProfile, CaConfig,
   TargetRange, Sentinel, ShotLog, Impact, FiringRun, CookieRecord,
   MeshStatus, DiscoveredRange, MeshJoinResponse, ActiveShareInfo
 } from '../types/bullet';
@@ -153,11 +153,17 @@ export const bulletApi = {
     request<Round>(`/loadouts/rounds/${roundId}`, { method: 'PUT', body: JSON.stringify(round) }),
   deleteRound: (roundId: string) => request<void>(`/loadouts/rounds/${roundId}`, { method: 'DELETE' }),
 
-  // TLS Profiles
+  // TLS Profiles & Certificates (Postman Parity)
   getTlsProfiles: (rangeId: string) => request<TLSProfile[]>(`/tls-profiles?rangeId=${rangeId}`),
+  getTlsProfile: (id: string) => request<TLSProfile>(`/tls-profiles/${id}`),
   createTlsProfile: (profile: Partial<TLSProfile>) =>
     request<TLSProfile>('/tls-profiles', { method: 'POST', body: JSON.stringify(profile) }),
+  updateTlsProfile: (id: string, profile: Partial<TLSProfile>) =>
+    request<TLSProfile>(`/tls-profiles/${id}`, { method: 'PUT', body: JSON.stringify(profile) }),
   deleteTlsProfile: (id: string) => request<void>(`/tls-profiles/${id}`, { method: 'DELETE' }),
+  getCaConfig: (rangeId: string) => request<CaConfig>(`/tls-profiles/ca?rangeId=${rangeId}`),
+  saveCaConfig: (ca: Partial<CaConfig>) =>
+    request<TLSProfile>('/tls-profiles/ca', { method: 'POST', body: JSON.stringify(ca) }),
 
   // Sentinels
   getSentinels: (rangeId: string) => request<Sentinel[]>(`/sentinels?rangeId=${rangeId}`),

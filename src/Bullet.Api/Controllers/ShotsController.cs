@@ -184,12 +184,6 @@ public class ShotsController : ControllerBase
                 .FirstOrDefaultAsync(l => l.RangeId == shot.Arsenal.RangeId, cancellationToken);
         }
 
-        TLSProfile? tlsProfile = null;
-        if (shot.TLSProfileId.HasValue)
-        {
-            tlsProfile = await _db.TLSProfiles.FindAsync(shot.TLSProfileId.Value);
-        }
-
         // Apply any transient overrides from client editor before firing
         if (overrides != null)
         {
@@ -210,6 +204,7 @@ public class ShotsController : ControllerBase
         }
 
         var initialCookies = new Dictionary<string, string>();
+        string resolvedTargetUrl = shot.Url;
         if (shot.Arsenal != null)
         {
             var rounds = _tokenResolver.MergeRoundsByPrecedence(
@@ -217,7 +212,7 @@ public class ShotsController : ControllerBase
                 loadout?.Rounds,
                 shot.Arsenal.Range?.SharedRounds,
                 null);
-            var resolvedTargetUrl = _tokenResolver.Resolve(shot.Url, rounds);
+            resolvedTargetUrl = _tokenResolver.Resolve(shot.Url, rounds);
             var host = Uri.TryCreate(resolvedTargetUrl, UriKind.Absolute, out var uri) ? uri.Host : null;
             if (!string.IsNullOrEmpty(host))
             {
@@ -225,6 +220,9 @@ public class ShotsController : ControllerBase
                 foreach (var c in cookies) initialCookies[c.Name] = c.Value;
             }
         }
+
+        // Postman Parity: Auto-match TLS Client Certificate by Host & Port, plus Workspace CA Bundle
+        var tlsProfile = await ResolveTlsProfileAsync(shot.Arsenal?.RangeId, resolvedTargetUrl, shot.TLSProfileId);
 
         var execRequest = new ShotExecutionRequest
         {
@@ -343,13 +341,8 @@ public class ShotsController : ControllerBase
             loadout = await _db.Loadouts.Include(l => l.Rounds).FirstOrDefaultAsync(l => l.Id == req.LoadoutId.Value, cancellationToken);
         }
 
-        TLSProfile? tls = null;
-        if (req.TlsProfileId.HasValue)
-        {
-            tls = await _db.TLSProfiles.FindAsync(req.TlsProfileId.Value);
-        }
-
         var initialCookies = new Dictionary<string, string>();
+        string resolvedTargetUrl = shot.Url;
         if (req.RangeId.HasValue)
         {
             var rounds = _tokenResolver.MergeRoundsByPrecedence(
@@ -360,7 +353,7 @@ public class ShotsController : ControllerBase
             {
                 foreach (var (k, v) in req.AdHocRounds) rounds[k] = v;
             }
-            var resolvedTargetUrl = _tokenResolver.Resolve(shot.Url, rounds);
+            resolvedTargetUrl = _tokenResolver.Resolve(shot.Url, rounds);
             var host = Uri.TryCreate(resolvedTargetUrl, UriKind.Absolute, out var uri) ? uri.Host : null;
             if (!string.IsNullOrEmpty(host))
             {
@@ -368,6 +361,9 @@ public class ShotsController : ControllerBase
                 foreach (var c in cookies) initialCookies[c.Name] = c.Value;
             }
         }
+
+        // Postman Parity: Auto-match TLS Client Certificate by Host & Port, plus Workspace CA Bundle
+        var tls = await ResolveTlsProfileAsync(req.RangeId, resolvedTargetUrl, req.TlsProfileId);
 
         var execReq = new ShotExecutionRequest
         {
@@ -427,6 +423,132 @@ public class ShotsController : ControllerBase
         }
 
         return Ok(impact);
+    }
+
+    private async Task<TLSProfile?> ResolveTlsProfileAsync(Guid? rangeId, string targetUrl, Guid? explicitProfileId)
+    {
+        if (explicitProfileId.HasValue)
+        {
+            var explicitProfile = await _db.TLSProfiles.FindAsync(explicitProfileId.Value);
+            if (explicitProfile != null)
+            {
+                // If explicit profile has no CA bundle, but workspace has active CA bundle, attach it
+                if (string.IsNullOrEmpty(explicitProfile.CaBundlePem) && rangeId.HasValue)
+                {
+                    var ca = await _db.TLSProfiles.FirstOrDefaultAsync(t => t.RangeId == rangeId.Value && t.IsCaCertificateEnabled && !string.IsNullOrEmpty(t.CaBundlePem));
+                    if (ca != null)
+                    {
+                        explicitProfile.CaBundlePem = ca.CaBundlePem;
+                        explicitProfile.CaFileName = ca.CaFileName;
+                        explicitProfile.IsCaCertificateEnabled = true;
+                    }
+                }
+                return explicitProfile;
+            }
+        }
+
+        if (!rangeId.HasValue) return null;
+
+        var profiles = await _db.TLSProfiles
+            .Where(t => t.RangeId == rangeId.Value)
+            .ToListAsync();
+
+        if (profiles.Count == 0) return null;
+
+        string? host = null;
+        int port = 443;
+        if (Uri.TryCreate(targetUrl, UriKind.Absolute, out var uri))
+        {
+            host = uri.Host;
+            port = uri.Port > 0 ? uri.Port : 443;
+        }
+
+        TLSProfile? matchedClient = null;
+        if (!string.IsNullOrEmpty(host))
+        {
+            matchedClient = profiles.FirstOrDefault(p =>
+                p.IsEnabled &&
+                (!string.IsNullOrEmpty(p.ClientCertPfxBase64) || !string.IsNullOrEmpty(p.ClientCertPem)) &&
+                MatchesHostAndPort(p.HostPattern, p.Port, host, port));
+        }
+
+        var caProfile = profiles.FirstOrDefault(p =>
+            p.IsCaCertificateEnabled &&
+            !string.IsNullOrEmpty(p.CaBundlePem));
+
+        if (matchedClient != null && caProfile != null)
+        {
+            if (matchedClient.Id == caProfile.Id) return matchedClient;
+
+            return new TLSProfile
+            {
+                Id = matchedClient.Id,
+                RangeId = matchedClient.RangeId,
+                Name = matchedClient.Name,
+                HostPattern = matchedClient.HostPattern,
+                Port = matchedClient.Port,
+                CertType = matchedClient.CertType,
+                ClientCertPfxBase64 = matchedClient.ClientCertPfxBase64,
+                ClientCertPassword = matchedClient.ClientCertPassword,
+                PfxFileName = matchedClient.PfxFileName,
+                ClientCertPem = matchedClient.ClientCertPem,
+                ClientKeyPem = matchedClient.ClientKeyPem,
+                CertFileName = matchedClient.CertFileName,
+                KeyFileName = matchedClient.KeyFileName,
+                CaBundlePem = caProfile.CaBundlePem,
+                CaFileName = caProfile.CaFileName,
+                IsCaCertificateEnabled = true,
+                VerifyHostName = matchedClient.VerifyHostName,
+                AllowSelfSigned = matchedClient.AllowSelfSigned
+            };
+        }
+
+        return matchedClient ?? caProfile;
+    }
+
+    private static bool MatchesHostAndPort(string? hostPattern, int? profilePort, string requestHost, int requestPort)
+    {
+        if (string.IsNullOrWhiteSpace(hostPattern)) return false;
+
+        // If port is explicitly specified on profile, must match
+        if (profilePort.HasValue && profilePort.Value > 0 && profilePort.Value != requestPort)
+        {
+            return false;
+        }
+
+        var pattern = hostPattern.Trim().ToLowerInvariant();
+        var host = requestHost.Trim().ToLowerInvariant();
+
+        // Check if hostPattern contains a port, e.g. "api.domain.com:8443"
+        if (pattern.Contains(':'))
+        {
+            var parts = pattern.Split(':', 2);
+            pattern = parts[0];
+            if (int.TryParse(parts[1], out var parsedPort))
+            {
+                if (parsedPort != requestPort)
+                    return false;
+            }
+        }
+
+        if (pattern == "*" || pattern == host)
+        {
+            return true;
+        }
+
+        if (pattern.StartsWith("*."))
+        {
+            var suffix = pattern[1..]; // ".domain.com"
+            return host.EndsWith(suffix, StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (pattern.Contains('*'))
+        {
+            var regex = "^" + System.Text.RegularExpressions.Regex.Escape(pattern).Replace("\\*", ".*") + "$";
+            return System.Text.RegularExpressions.Regex.IsMatch(host, regex, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
+
+        return string.Equals(pattern, host, StringComparison.OrdinalIgnoreCase);
     }
 }
 

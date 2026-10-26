@@ -40,6 +40,16 @@ public static class DatabaseSeeder
         try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Shots ADD COLUMN GrpcProtoFileName TEXT;"); } catch { }
         try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Shots ADD COLUMN GrpcUseTls INTEGER NOT NULL DEFAULT 0;"); } catch { }
 
+        // Safely migrate SQLite schema for new TLSProfile columns
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE TLSProfiles ADD COLUMN Port INTEGER;"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE TLSProfiles ADD COLUMN CertType TEXT NOT NULL DEFAULT 'PEM';"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE TLSProfiles ADD COLUMN IsEnabled INTEGER NOT NULL DEFAULT 1;"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE TLSProfiles ADD COLUMN PfxFileName TEXT;"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE TLSProfiles ADD COLUMN CertFileName TEXT;"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE TLSProfiles ADD COLUMN KeyFileName TEXT;"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE TLSProfiles ADD COLUMN CaFileName TEXT;"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE TLSProfiles ADD COLUMN IsCaCertificateEnabled INTEGER NOT NULL DEFAULT 1;"); } catch { }
+
         if (await db.Ranges.AnyAsync())
         {
             var demoRange = await db.Ranges.FirstOrDefaultAsync(r => r.Name == "Bullet Demo Range");
